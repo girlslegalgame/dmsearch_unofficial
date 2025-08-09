@@ -14,7 +14,7 @@ $response = [];
 // ★★★ card と card_detail をJOINして、基本情報を一度に取得 ★★★
 $stmt = $pdo->prepare("
     SELECT 
-        c.card_name, c.cost, c.pow,
+        c.card_name, c.cost, c.pow, c.text,
         cd.modelnum, cd.mana
     FROM card c
     JOIN card_detail cd ON c.card_id = cd.card_id
@@ -33,8 +33,10 @@ if (!$card_data) {
 $response['card_name'] = $card_data['card_name'] ?? '---';
 $response['cost'] = ($card_data['cost'] == 2147483647) ? '∞' : ($card_data['cost'] ?? '---');
 $response['pow'] = ($card_data['pow'] == 2147483647) ? '∞' : ($card_data['pow'] ?? '---');
-$response['mana'] = $card_data['mana'] ?? '---'; // NULLの場合は'---'を表示
+$response['mana'] = $card_data['mana'] ?? '---';
 
+// ★★★ 修正点：レスポンスに modelnum を追加 ★★★
+$response['modelnum'] = $card_data['modelnum'] ?? null;
 $modelnum = $card_data['modelnum'] ?? null;
 
 
@@ -82,35 +84,33 @@ $stmt->execute([$card_id]);
 $illustrators = $stmt->fetchAll(PDO::FETCH_COLUMN);
 $response['illustrator'] = !empty($illustrators) ? implode(' / ', $illustrators) : '---';
 
-// --- 特殊能力テキスト (textファイル) ---
-$response['text'] = '（テキスト情報なし）';
-if ($modelnum) {
-    $text_file_path = 'text/' . $modelnum . '.txt';
-    if (file_exists($text_file_path)) {
-        $raw_text = file_get_contents($text_file_path);
-        $lines = explode("\n", $raw_text);
-        $processed_lines = [];
-        foreach ($lines as $line) {
-            $trimmed_line = trim($line);
-            if (empty($trimmed_line)) {
-                continue;
-            }
-            $escaped_line = htmlspecialchars($trimmed_line);
-            if (strpos($escaped_line, '{br}') === false && strpos($escaped_line, '{st}') === false) {
-                $processed_lines[] = '■ ' . $escaped_line;
-            } else {
-                $processed_lines[] = $escaped_line;
-            }
-        }
-        $formatted_text = implode('<br>', $processed_lines);
+// --- 特殊能力テキスト ---
+// ★★★ 修正点：textはcardテーブルから直接取得するように変更 ★★★
+$raw_text = $card_data['text'];
+if ($raw_text) {
+    $lines = explode("\n", $raw_text);
+    $processed_lines = [];
+    foreach ($lines as $line) {
+        $trimmed_line = trim($line);
+        if (empty($trimmed_line)) continue;
+        
+        $escaped_line = htmlspecialchars($trimmed_line);
+        
+        // アイコン置換
         $final_replacements = [
             '{br}' => '<img src="parts/card_list_block.webp" alt="Blocker" class="text-icon">',
             '{st}' => '<img src="parts/card_list_strigger.webp" alt="S-Trigger" class="text-icon">',
         ];
-        $final_text = str_replace(array_keys($final_replacements), array_values($final_replacements), $formatted_text);
-        $response['text'] = $final_text;
+        $escaped_line = str_replace(array_keys($final_replacements), array_values($final_replacements), $escaped_line);
+        
+        // ■ の付与（ただし、特定の能力には付けないなどの調整も可能）
+        $processed_lines[] = '■ ' . $escaped_line;
     }
+    $response['text'] = implode('<br>', $processed_lines);
+} else {
+    $response['text'] = '（テキスト情報なし）';
 }
+
 
 echo json_encode($response);
 ?>
