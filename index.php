@@ -2,7 +2,40 @@
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-require_once 'db_connect.php'; 
+
+try {
+    // Railwayの本番環境かどうかを判断
+    if (getenv('RAILWAY_ENVIRONMENT')) {
+        // 【本番環境】Railwayが提供する環境変数を読み込む
+        $db_host = getenv('MYSQLHOST');
+        $db_port = getenv('MYSQLPORT');
+        $db_name = getenv('MYSQLDATABASE'); // ここに 'railway' が入るはず
+        $db_user = getenv('MYSQLUSER');
+        $db_pass = getenv('MYSQLPASSWORD');
+    } else {
+        // 【ローカル環境】XAMPP用の設定
+        $db_host = '127.0.0.1';
+        $db_port = 3306;
+        $db_name = 'mysql'; // あなたのローカルのDB名
+        $db_user = 'root';
+        $db_pass = '';
+    }
+
+    // 接続設定を組み立てる（dbnameを確実に含める）
+    $dsn = "mysql:host={$db_host};port={$db_port};dbname={$db_name};charset=utf8mb4";
+    $options = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+    ];
+
+    // データベースに接続！
+    $pdo = new PDO($dsn, $db_user, $db_pass, $options);
+
+} catch (PDOException $e) {
+    // 接続に失敗したら、具体的なエラーを出して、ここで処理を完全に止める
+    die("DATABASE CONNECTION FAILED: " . $e->getMessage());
+}
 
 /**
  * 種族リストを、PHPの機能だけで、特殊文字（ヴ、小文字）と清濁音を完全に考慮してソートする
