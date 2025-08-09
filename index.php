@@ -1,7 +1,4 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 
 /**
  * 種族リストを、PHPの機能だけで、特殊文字（ヴ、小文字）と清濁音を完全に考慮してソートする
@@ -47,7 +44,7 @@ function customRaceSort($a, $b) {
 }
 
 // === 初期設定 ===
-$pdo = new PDO('mysql:host=localhost;dbname=mysql;charset=utf8', 'dmuser', 'dmpass');
+$pdo = new PDO('mysql:host=localhost;dbname=dmsearch;charset=utf8', 'dmuser', 'dmpass');
 $perPage = 50;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $perPage;
@@ -204,4 +201,204 @@ if ($selected_rarity_id > 0) {
 if ($selected_soul_id != 0) {
     $joins['card_race_soul'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
     if ($selected_soul_id == -1) {
-        $conditions[] = "card_race
+        $conditions[] = "card_race.soul_id IS NULL";
+    } else {
+        $conditions[] = "card_race.soul_id = :soul_id";
+        $params[':soul_id'] = $selected_soul_id;
+    }
+}
+if ($selected_frame_id > 0) {
+    $conditions[] = "cd.frame_id = :frame_id";
+    $params[':frame_id'] = $selected_frame_id;
+}
+if ($selected_ability_id != 0) {
+    if ($selected_ability_id == -1) {
+        $conditions[] = "(card.text IS NULL OR card.text = '')";
+    } else {
+        $joins['card_ability_ability'] = 'LEFT JOIN card_ability ON card.card_id = card_ability.card_id';
+        $conditions[] = "card_ability.ability_id = :ability_id";
+        $params[':ability_id'] = $selected_ability_id;
+    }
+}
+if ($selected_illus_id > 0) {
+    $joins['card_illus_illus'] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id';
+    $conditions[] = "card_illus.illus_id = :illus_id";
+    $params[':illus_id'] = $selected_illus_id;
+}
+
+// --- Part 4: テーブルをまたぐ真偽値/ENUMによる絞り込み ---
+if ($selected_twinpact !== '0') {
+    $conditions[] = "cd.twinpact = :twinpact";
+    $params[':twinpact'] = ($selected_twinpact === '1') ? 1 : 0;
+}
+if ($selected_treasure_id != '0') {
+    $joins['card_rarity_treasure'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id';
+    if ($selected_treasure_id == '-1') {
+        $conditions[] = "card_rarity.treasure_id IS NULL";
+    } else {
+        $conditions[] = "card_rarity.treasure_id = :treasure_id";
+        $params[':treasure_id'] = intval($selected_treasure_id);
+    }
+}
+if ($selected_regulation !== '0') {
+    $regulation_map = ['1' => '制限なし', '2' => '殿堂', '3' => 'プレミアム殿堂'];
+    if (array_key_exists($selected_regulation, $regulation_map)) {
+        $conditions[] = "cd.regulation = :regulation";
+        $params[':regulation'] = $regulation_map[$selected_regulation];
+    }
+}
+if ($selected_secret !== '0') {
+    $joins['card_rarity_secret'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id';
+    $conditions[] = "card_rarity.secret = :secret";
+    $params[':secret'] = ($selected_secret === '1') ? 1 : 0;
+}
+
+// --- Part 5: 収録商品検索 ---
+if ($selected_goods_id > 0) {
+    $conditions[] = "cd.goods_id = :goods_id";
+    $params[':goods_id'] = $selected_goods_id;
+}
+if ($selected_goodstype_id > 0) {
+    $joins['goods_goodstype'] = 'LEFT JOIN goods ON cd.goods_id = goods.goods_id';
+    $conditions[] = "goods.goodstype_id = :goodstype_id";
+    $params[':goodstype_id'] = $selected_goodstype_id;
+}
+
+// --- Part 6: マナ検索 ---
+if ($selected_mana !== 'all') {
+    if ($selected_mana === '-1') {
+        $conditions[] = "cd.mana IS NULL";
+    } else {
+        $conditions[] = "cd.mana = :mana";
+        $params[':mana'] = intval($selected_mana);
+    }
+}
+
+// --- Part 7: 文明検索 ---
+$civ_summary_subquery = "(SELECT card_id, COUNT(civilization_id) as civ_count FROM card_civilization GROUP BY card_id)";
+$civ_type_conditions = [];
+if (!$cost_zero && !$cost_infinity) {
+    if ($mono_color_status == 1) {
+        $civ_type_conditions[] = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1)";
+    }
+    if ($multi_color_status == 1) {
+        $multi_cond = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count > 1)";
+        if(!empty($selected_exclude_civs)) {
+            foreach($selected_exclude_civs as $exclude_id) { $multi_cond .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($exclude_id) . ")"; }
+        }
+        $civ_type_conditions[] = $multi_cond;
+    }
+}
+$civ_select_conditions = [];
+if (!empty($selected_main_civs)) {
+    foreach($selected_main_civs as $main_id) { $civ_select_conditions[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")"; }
+}
+if (!empty($civ_type_conditions)) { $conditions[] = '(' . implode(' OR ', $civ_type_conditions) . ')'; }
+if (!empty($civ_select_conditions)) { $conditions[] = '(' . implode(' OR ', $civ_select_conditions) . ')'; }
+if (!$cost_zero && !$cost_infinity && empty($civ_type_conditions) && empty($civ_select_conditions)) {
+    $conditions[] = "1 = 0";
+}
+
+
+// === SQLクエリの実行 ===
+$join_str = !empty($joins) ? implode(' ', $joins) : '';
+$where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
+
+// --- 総件数取得 ---
+$count_sql = "SELECT COUNT(DISTINCT card.card_id) FROM card JOIN card_detail cd ON card.card_id = cd.card_id {$join_str} {$where}";
+$stmt = $pdo->prepare($count_sql);
+$stmt->execute($params);
+$total = $stmt->fetchColumn();
+
+
+// --- カード情報取得 ---
+// ORDER BY句を動的に生成
+$order_by_clause = '';
+switch ($selected_sort) {
+    case 'release_old':
+        $order_by_clause = 'ORDER BY cd.release_date ASC, card.card_id ASC';
+        break;
+    case 'cost_desc':
+        $order_by_clause = 'ORDER BY card.cost DESC, civ_ids ASC, card.card_id ASC';
+        break;
+    case 'cost_asc':
+        $order_by_clause = 'ORDER BY card.cost ASC, civ_ids ASC, card.card_id ASC';
+        break;
+    case 'name_asc':
+        $order_by_clause = 'ORDER BY card.reading ASC, card.card_id ASC';
+        break;
+    case 'name_desc':
+        $order_by_clause = 'ORDER BY card.reading DESC, card.card_id DESC';
+        break;
+    // ★★★ 今回の修正箇所 ★★★
+    case 'power_desc':
+        $order_by_clause = 'ORDER BY card.pow DESC, civ_ids ASC, card.card_id ASC';
+        break;
+    case 'power_asc':
+        $order_by_clause = 'ORDER BY card.pow ASC, civ_ids ASC, card.card_id ASC';
+        break;
+    // ★★★ ここまで ★★★
+    default: // release_new
+        $order_by_clause = 'ORDER BY cd.release_date DESC, card.card_id ASC';
+        break;
+}
+
+// 最終的なSQL
+$sql = "
+    SELECT 
+        card.card_id, 
+        card.reading,
+        card.cost,
+        card.pow,
+        cd.modelnum,
+        cd.release_date,
+        GROUP_CONCAT(DISTINCT cc.civilization_id ORDER BY cc.civilization_id ASC SEPARATOR '') AS civ_ids
+    FROM card
+    JOIN card_detail cd ON card.card_id = cd.card_id
+    LEFT JOIN card_civilization cc ON card.card_id = cc.card_id
+    {$join_str}
+    {$where}
+    GROUP BY card.card_id, cd.modelnum, cd.release_date, card.reading, card.cost, card.pow
+    {$order_by_clause}
+    LIMIT $perPage OFFSET $offset
+";
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$cards = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// === テンプレート表示のための準備 ===
+$totalPages = ceil($total / $perPage);
+$civ_stmt = $pdo->query("SELECT civilization_id, civilization_name FROM civilization ORDER BY civilization_id ASC");
+$civilization_list = $civ_stmt->fetchAll(PDO::FETCH_ASSOC);
+$char_stmt = $pdo->query("SELECT characteristics_id, characteristics_name FROM characteristics ORDER BY characteristics_id ASC");
+$characteristics_list = $char_stmt->fetchAll(PDO::FETCH_ASSOC);
+$type_stmt = $pdo->query("SELECT cardtype_id, cardtype_name FROM cardtype ORDER BY cardtype_id ASC");
+$cardtype_list = $type_stmt->fetchAll(PDO::FETCH_ASSOC);
+$race_stmt = $pdo->query("SELECT race_id, race_name, reading FROM race");
+$race_list = $race_stmt->fetchAll(PDO::FETCH_ASSOC);
+usort($race_list, 'customRaceSort');
+$rarity_stmt = $pdo->query("SELECT rarity_id, rarity_name FROM rarity ORDER BY rarity_id ASC");
+$rarity_list = $rarity_stmt->fetchAll(PDO::FETCH_ASSOC);
+$ability_stmt = $pdo->query("SELECT ability_id, ability_name, reading FROM ability ORDER BY reading COLLATE utf8mb4_unicode_ci ASC");
+$ability_list = $ability_stmt->fetchAll(PDO::FETCH_ASSOC);
+$treasure_stmt = $pdo->query("SELECT treasure_id, treasure_name FROM treasure ORDER BY treasure_id ASC");
+$treasure_list = $treasure_stmt->fetchAll(PDO::FETCH_ASSOC);
+$soul_stmt = $pdo->query("SELECT soul_id, soul_name FROM soul ORDER BY soul_id ASC");
+$soul_list = $soul_stmt->fetchAll(PDO::FETCH_ASSOC);
+$frame_stmt = $pdo->query("SELECT frame_id, frame_name FROM frame ORDER BY frame_id ASC");
+$frame_list = $frame_stmt->fetchAll(PDO::FETCH_ASSOC);
+if ($selected_goodstype_id > 0) {
+    $goods_stmt = $pdo->prepare("SELECT goods_id, goods_name FROM goods WHERE goodstype_id = ? ORDER BY goods_id ASC");
+    $goods_stmt->execute([$selected_goodstype_id]);
+} else {
+    $goods_stmt = $pdo->query("SELECT goods_id, goods_name FROM goods ORDER BY goods_id ASC");
+}
+$goods_list = $goods_stmt->fetchAll(PDO::FETCH_ASSOC);
+$goodstype_stmt = $pdo->query("SELECT goodstype_id, goodstype_name FROM goodstype ORDER BY goodstype_id ASC");
+$goodstype_list = $goodstype_stmt->fetchAll(PDO::FETCH_ASSOC);
+$illustrator_stmt = $pdo->query("SELECT illus_id, illus_name FROM illus ORDER BY reading COLLATE utf8mb4_unicode_ci ASC");
+$illustrator_list = $illustrator_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// === HTMLテンプレートの読み込み ===
+include 'template.html';
+?>
