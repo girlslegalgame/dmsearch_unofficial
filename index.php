@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+require_once 'db_connect.php'; 
 
 /**
  * 種族リストを、PHPの機能だけで、特殊文字（ヴ、小文字）と清濁音を完全に考慮してソートする
@@ -44,7 +48,6 @@ function customRaceSort($a, $b) {
 }
 
 // === 初期設定 ===
-$pdo = new PDO('mysql:host=localhost;dbname=dmsearch;charset=utf8', 'dmuser', 'dmpass');
 $perPage = 50;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $perPage;
