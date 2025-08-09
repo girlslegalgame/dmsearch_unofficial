@@ -3,17 +3,6 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-echo "<pre>"; // 見やすくするために整形
-echo "--- Railway Environment Variables ---<br>";
-echo "RAILWAY_ENVIRONMENT: "; var_dump(getenv('RAILWAY_ENVIRONMENT'));
-echo "MYSQLHOST: ";           var_dump(getenv('MYSQLHOST'));
-echo "MYSQLPORT: ";           var_dump(getenv('MYSQLPORT'));
-echo "MYSQLDATABASE: ";       var_dump(getenv('MYSQLDATABASE')); // ★おそらくこれが空になっている
-echo "MYSQLUSER: ";           var_dump(getenv('MYSQLUSER'));
-echo "MYSQLPASSWORD: ";       var_dump(getenv('MYSQLPASSWORD') ? 'Exists' : 'Not Exists'); // パスワード自体は表示しない
-echo "</pre>";
-die(); // ここで処理を強制的に終了する
-
 try {
     // Railwayの本番環境かどうかを判断
     if (getenv('RAILWAY_ENVIRONMENT')) {
