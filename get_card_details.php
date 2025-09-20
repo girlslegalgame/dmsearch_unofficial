@@ -53,8 +53,9 @@ function format_text_for_display($raw_text, $is_ability) {
         '{SS}' => '<img src="parts/card_list_silentskill.webp" alt="Silent_Skill" class="text-icon">',
         '{WS}' => '<img src="parts/card_list_wavestriker.webp" alt="Wave_Striker" class="text-icon">',
         '{MM}' => '<img src="parts/card_list_metamorph.webp" alt="Metamorph" class="text-icon">',
-        '{AC}' => '<img src="parts/card_list_accel" alt="Accel" class="text-icon">',
-        '{SB}' => '<img src="parts/card_list_strike_back" alt="Strike-Back" class="text-icon">',
+        '{AC}' => '<img src="parts/card_list_accel.webp" alt="Accel" class="text-icon">',
+        '{SB}' => '<img src="parts/card_list_strike_back.webp" alt="Strike-Back" class="text-icon">',
+        '{FE}' => '<img src="parts/card_list_fortenergy.webp" alt="Fort-Energy" class="text-icon">',
     ];
 
     $lines = explode("\n", $raw_text);
