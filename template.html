@@ -199,15 +199,21 @@
                     </div>
                 </div>
                 <div class="search-group">
-                    <div class="select-group">
+                <div class="race-select-group">
+                    <div class="race-search-header">
                         <label class="search-label">種族</label>
-                        <select name="race_id" class="styled-select">
-                            <option value="0" <?= ($selected_race_id == 0) ? 'selected' : '' ?>>指定なし</option>
-                            <?php foreach ($race_list as $race): ?>
-                                <option value="<?= $race['race_id'] ?>" <?= ($race['race_id'] == $selected_race_id) ? 'selected' : '' ?>><?= htmlspecialchars($race['race_name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div class="and-or-toggle">
+                            <input type="radio" id="race-and" name="race_search_mode" value="AND" <?= $race_search_mode === 'AND' ? 'checked' : '' ?>>
+                            <label for="race-and">AND</label>
+                            <input type="radio" id="race-or" name="race_search_mode" value="OR" <?= $race_search_mode === 'OR' ? 'checked' : '' ?>>
+                            <label for="race-or">OR</label>
+                        </div>
                     </div>
+                    <div id="race-select-box" class="race-select-box">
+                        <span class="placeholder">種族を選択</span>
+                        <div class="selected-races-display"></div>
+                    </div>
+                </div>
                     <div class="select-group">
                         <label class="search-label">特殊能力</label>
                         <select name="ability_id" class="styled-select">
@@ -436,5 +442,25 @@
 </template>
 
 <script src="script.js"></script>
+    <div id="race-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content race-modal-content">
+            <div class="modal-header">
+                <h3>種族選択</h3>
+                <span id="race-modal-clear-btn" class="modal-clear-btn">クリア</span>
+            </div>
+            <div class="race-modal-body">
+                <div class="race-modal-search-bar">
+                    <input type="text" id="race-modal-search-input" placeholder="&#xF002; 種族名">
+                </div>
+                <div id="race-modal-list" class="race-modal-list">
+                    <!-- ここにJavaScriptで種族リストが挿入される -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="race-modal-cancel-btn" class="btn-secondary">キャンセル</button>
+                <button type="button" id="race-modal-confirm-btn" class="btn-primary">決定</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
