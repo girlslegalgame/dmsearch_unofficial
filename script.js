@@ -236,6 +236,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         updateToggleButtonLabel();
         updateCivilizationControls();
+        
+        if (selectedRaces) selectedRaces.clear(); // 選択済み種族のMapを空にする
+        updateSelectedRacesDisplay(); // 表示を更新し、隠しフィールドを削除する      
+        
         if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
     }
     if (resetButtons.length > 0) {
