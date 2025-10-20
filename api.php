@@ -7,23 +7,14 @@ $query = isset($_GET['query']) ? trim($_GET['query']) : '';
 $response = [];
 
 switch ($type) {
-    case 'race':
+    case 'race': // ★★★ 新しいcaseを追加 ★★★
         $orderBy = "ORDER BY reading COLLATE utf8mb4_unicode_ci ASC";
-
-        if (!empty($query)) {
-            // サジェスト検索時は20件に絞る
-            $sql = "SELECT race_id AS id, race_name AS name FROM race WHERE reading LIKE :query {$orderBy} LIMIT 20";
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindValue(':query', '%' . $query . '%');
-        } else {
-            // ★★★ 全件取得時の上限を、より安全な値(150件)に見直す ★★★
-            $sql = "SELECT race_id AS id, race_name AS name FROM race {$orderBy} LIMIT 150";
-            $stmt = $pdo->prepare($sql);
-        }
+        $sql = "SELECT race_id AS id, race_name AS name FROM race WHERE race_name LIKE :query OR reading LIKE :query {$orderBy} LIMIT 50";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':query', '%' . $query . '%');
         $stmt->execute();
         $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
         break;
-
     case 'goods':
         $goodstype_id = isset($_GET['goodstype_id']) ? intval($_GET['goodstype_id']) : 0;
         if ($goodstype_id > 0) {
