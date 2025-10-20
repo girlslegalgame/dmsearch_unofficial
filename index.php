@@ -75,7 +75,8 @@ $year_min = isset($_GET['year_min']) ? $_GET['year_min'] : '';
 $year_max = isset($_GET['year_max']) ? $_GET['year_max'] : '';
 $selected_char_id = isset($_GET['characteristics_id']) ? intval($_GET['characteristics_id']) : 0;
 $selected_cardtype_id = isset($_GET['cardtype_id']) ? intval($_GET['cardtype_id']) : 0; 
-$selected_race_id = isset($_GET['race_id']) ? intval($_GET['race_id']) : 0;
+$selected_race_ids = isset($_GET['race_ids']) && is_array($_GET['race_ids']) ? array_map('intval', $_GET['race_ids']) : [];
+$race_search_mode = isset($_GET['race_search_mode']) && $_GET['race_search_mode'] === 'OR' ? 'OR' : 'AND';
 $selected_rarity_id = isset($_GET['rarity_id']) ? intval($_GET['rarity_id']) : 0;
 $selected_ability_id = isset($_GET['ability_id']) ? intval($_GET['ability_id']) : 0;
 $selected_twinpact = isset($_GET['twinpact_filter']) ? $_GET['twinpact_filter'] : '0';
@@ -152,7 +153,25 @@ if ($year_min !== '' && is_numeric($year_min)) { $conditions[] = "cd.release_dat
 if ($year_max !== '' && is_numeric($year_max)) { $conditions[] = "cd.release_date <= :date_max"; $params[':date_max'] = $year_max . '-12-31'; }
 if ($selected_char_id > 0) { $joins['card_cardtype_char'] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.characteristics_id = :characteristics_id"; $params[':characteristics_id'] = $selected_char_id; }
 if ($selected_cardtype_id > 0) { $joins['card_cardtype_type'] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.cardtype_id = :cardtype_id"; $params[':cardtype_id'] = $selected_cardtype_id; }
-if ($selected_race_id > 0) { $joins['card_race_race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id'; $conditions[] = "card_race.race_id = :race_id"; $params[':race_id'] = $selected_race_id; }
+// --- 種族検索 (AND/OR対応) ---
+if (!empty($selected_race_ids)) {
+    $joins['card_race_race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
+    
+    if ($race_search_mode === 'AND') {
+        // AND検索: 指定された種族をすべて持つ
+        $conditions[] = "(SELECT COUNT(DISTINCT race_id) FROM card_race WHERE card_id = card.card_id AND race_id IN (" . implode(',', array_fill(0, count($selected_race_ids), '?')) . ")) = " . count($selected_race_ids);
+        foreach ($selected_race_ids as $race_id) {
+            $params[] = $race_id;
+        }
+    } else {
+        // OR検索: 指定された種族のいずれかを持つ
+        $placeholders = implode(',', array_fill(0, count($selected_race_ids), '?'));
+        $conditions[] = "card_race.race_id IN ({$placeholders})";
+        foreach ($selected_race_ids as $race_id) {
+            $params[] = $race_id;
+        }
+    }
+}
 if ($selected_rarity_id > 0) { $joins['card_rarity_rarity'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.rarity_id = :rarity_id"; $params[':rarity_id'] = $selected_rarity_id; }
 if ($selected_soul_id != 0) {
     $joins['card_race_soul'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
