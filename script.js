@@ -251,6 +251,130 @@ document.addEventListener('DOMContentLoaded', () => {
     updateToggleButtonLabel();
     updateCivilizationControls();
 
+    // --- 種族モーダル関連の要素を取得 ---
+    const raceSelectBox = document.getElementById('race-select-box');
+    const raceModal = document.getElementById('race-modal');
+    const raceModalCloseBtn = raceModal.querySelector('.close-btn'); // 修正: ヘッダーの閉じるボタンは共通クラス
+    const raceModalClearBtn = document.getElementById('race-modal-clear-btn');
+    const raceModalSearchInput = document.getElementById('race-modal-search-input');
+    const raceModalList = document.getElementById('race-modal-list');
+    const raceModalCancelBtn = document.getElementById('race-modal-cancel-btn');
+    const raceModalConfirmBtn = document.getElementById('race-modal-confirm-btn');
+    const selectedRacesDisplay = document.querySelector('.selected-races-display');
+    const racePlaceholder = document.querySelector('.placeholder');
+
+    let allRaces = [];
+    let selectedRaces = new Map();
+
+    // --- 種族リストをレンダリングする関数 ---
+    function renderRaceList(races) {
+        raceModalList.innerHTML = '';
+        races.forEach(race => {
+            const isChecked = selectedRaces.has(race.id);
+            const item = document.createElement('div');
+            item.className = 'race-list-item';
+            item.innerHTML = `
+                <label for="race-${race.id}">${race.name}</label>
+                <input type="checkbox" id="race-${race.id}" data-id="${race.id}" data-name="${race.name}" ${isChecked ? 'checked' : ''}>
+            `;
+            raceModalList.appendChild(item);
+        });
+    }
+
+    // --- 選択された種族を表示エリアに反映する関数 ---
+    function updateSelectedRacesDisplay() {
+        const raceNames = Array.from(selectedRaces.values());
+        if (raceNames.length > 0) {
+            selectedRacesDisplay.textContent = raceNames.join('、');
+            racePlaceholder.style.display = 'none';
+        } else {
+            selectedRacesDisplay.textContent = '';
+            racePlaceholder.style.display = 'block';
+        }
+
+        // 隠しフィールドを生成
+        const existingHiddenFields = searchForm.querySelectorAll('input[name="race_ids[]"]');
+        existingHiddenFields.forEach(field => field.remove());
+        
+        selectedRaces.forEach((name, id) => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'race_ids[]';
+            hiddenInput.value = id;
+            searchForm.appendChild(hiddenInput);
+        });
+    }
+
+    // --- 種族モーダルを開く処理 ---
+    if (raceSelectBox) {
+        raceSelectBox.addEventListener('click', () => {
+            raceModal.style.display = 'flex';
+            // 全種族リストがキャッシュされていなければ取得
+            if (allRaces.length === 0) {
+                fetch('api.php?type=race&query=')
+                    .then(response => response.json())
+                    .then(data => {
+                        allRaces = data;
+                        renderRaceList(allRaces);
+                    });
+            } else {
+                renderRaceList(allRaces);
+            }
+        });
+    }
+
+    // --- モーダル内のイベントリスナー ---
+    const closeModal = () => raceModal.style.display = 'none';
+    if(raceModalCloseBtn) raceModalCloseBtn.addEventListener('click', closeModal);
+    if(raceModalCancelBtn) raceModalCancelBtn.addEventListener('click', closeModal);
+
+    if (raceModalClearBtn) {
+        raceModalClearBtn.addEventListener('click', () => {
+            selectedRaces.clear();
+            renderRaceList(raceModalSearchInput.value ? allRaces.filter(r => r.name.includes(raceModalSearchInput.value) || r.reading.includes(raceModalSearchInput.value)) : allRaces);
+        });
+    }
+    
+    if (raceModalConfirmBtn) {
+        raceModalConfirmBtn.addEventListener('click', () => {
+            updateSelectedRacesDisplay();
+            closeModal();
+        });
+    }
+
+    if (raceModalList) {
+        raceModalList.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                const id = e.target.dataset.id;
+                const name = e.target.dataset.name;
+                if (e.target.checked) {
+                    selectedRaces.set(id, name);
+                } else {
+                    selectedRaces.delete(id);
+                }
+            }
+        });
+    }
+
+    // サジェスト検索
+    let debounceTimeout;
+    if (raceModalSearchInput) {
+        raceModalSearchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                const query = raceModalSearchInput.value;
+                fetch(`api.php?type=race&query=${query}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        renderRaceList(data);
+                    });
+            }, 300); // 300ms待機
+        });
+    }
+    
+    // --- ページ読み込み時に選択状態を復元 ---
+    const initialRaceIds = Array.from(searchForm.querySelectorAll('input[name="race_ids[]"]')).map(input => input.value);    
+    
     // --- ⑥ モーダル機能 ---
     const modal = document.getElementById('card-modal');
     if (modal) {
