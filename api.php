@@ -8,8 +8,7 @@ $response = [];
 
 switch ($type) {
     case 'race': // ★★★ 新しいcaseを追加 ★★★
-        $orderBy = "ORDER BY reading COLLATE utf8mb4_unicode_ci ASC";
-        $sql = "SELECT race_id AS id, race_name AS name FROM race WHERE race_name LIKE :query OR reading LIKE :query {$orderBy} LIMIT 50";
+        $sql = "SELECT race_id AS id, race_name AS name, reading FROM race WHERE race_name LIKE :query OR reading LIKE :query LIMIT 100";
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':query', '%' . $query . '%');
         $stmt->execute();
