@@ -153,21 +153,17 @@ if ($year_min !== '' && is_numeric($year_min)) { $conditions[] = "cd.release_dat
 if ($year_max !== '' && is_numeric($year_max)) { $conditions[] = "cd.release_date <= :date_max"; $params[':date_max'] = $year_max . '-12-31'; }
 if ($selected_char_id > 0) { $joins['card_cardtype_char'] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.characteristics_id = :characteristics_id"; $params[':characteristics_id'] = $selected_char_id; }
 if ($selected_cardtype_id > 0) { $joins['card_cardtype_type'] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.cardtype_id = :cardtype_id"; $params[':cardtype_id'] = $selected_cardtype_id; }
-// --- 種族検索 (AND/OR対応) ---
 if (!empty($selected_race_ids)) {
     $joins['card_race_race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
     $race_placeholders = [];
     foreach ($selected_race_ids as $index => $race_id) {
-        $placeholder = ':race_id_' . $index; // ユニークなプレースホルダー名を生成 (例: :race_id_0)
+        $placeholder = ':race_id_' . $index;
         $race_placeholders[] = $placeholder;
-        $params[$placeholder] = $race_id; // 名前付きでパラメータをセット
+        $params[$placeholder] = $race_id;
     }
-    
     if ($race_search_mode === 'AND') {
-        // AND検索: 指定された種族をすべて持つ
         $conditions[] = "(SELECT COUNT(DISTINCT race_id) FROM card_race WHERE card_id = card.card_id AND race_id IN (" . implode(',', $race_placeholders) . ")) = " . count($selected_race_ids);
     } else {
-        // OR検索: 指定された種族のいずれかを持つ
         $conditions[] = "card_race.race_id IN (" . implode(',', $race_placeholders) . ")";
     }
 }
@@ -277,19 +273,20 @@ if (!empty($all_matching_card_ids)) {
     
     // --- ステップ4: 総件数の確定と、PHPでの高度なソート ---
     $total = count($unique_cards);
-    usort($unique_cards, function($a, $b) use ($selected_sort) {
-        $rarity_cmp = ($b['rarity_id'] ?? 0) <=> ($a['rarity_id'] ?? 0);
-        $a_civ_count = $a['civ_count'] ?? 99;
-        $b_civ_count = $b['civ_count'] ?? 99;
-        $civ_count_cmp = ($a_civ_count > 1 ? 1 : 0) <=> ($b_civ_count > 1 ? 1 : 0); // 単色(0)を多色(1)より優先
-        if ($a_civ_count == 1 && $b_civ_count == 1) { // 両方単色なら
-             $min_civ_id_cmp = ($a['min_civ_id'] ?? 99) <=> ($b['min_civ_id'] ?? 99);
-        } else {
-             $min_civ_id_cmp = 0; // 多色同士や単色vs多色ではID比較はしない
+    if (!function_exists('get_civ_priority')) {
+        function get_civ_priority($card) {
+            $civ_count = $card['civ_count'] ?? 99;
+            $min_civ_id = $card['min_civ_id'] ?? 99;
+            if ($civ_count > 1) return 7;
+            if ($min_civ_id == 6) return 0;
+            if ($min_civ_id >= 1 && $min_civ_id <= 5) return $min_civ_id;
+            return 99;
         }
-        $civ_cmp = $civ_count_cmp ?: $min_civ_id_cmp;
+    }
+    usort($unique_cards, function($a, $b) use ($selected_sort) {
+        $civ_cmp = get_civ_priority($a) <=> get_civ_priority($b);
+        $rarity_cmp = ($b['rarity_id'] ?? 0) <=> ($a['rarity_id'] ?? 0);
         $id_cmp = $a['card_id'] <=> $b['card_id'];
-
         switch ($selected_sort) {
             case 'release_old': $main_cmp = strcmp($a['release_date'], $b['release_date']); break;
             case 'cost_desc': $main_cmp = ($b['cost'] ?? -1) <=> ($a['cost'] ?? -1); break;
@@ -317,31 +314,26 @@ if (!empty($all_matching_card_ids)) {
             $cards[] = $card;
         }
     }
-} // ★★★ ここに、抜けていた閉じカッコ `}` を追加 ★★★
-// --- カード画像のパスを事前に処理する ---
-foreach ($cards as $key => &$card) { // ★参照渡し(&)に変更
-    $modelnum = $card['modelnum'];
-    $image_url = ''; // デフォルトは空
+}
 
+// --- カード画像のパスを事前に処理する ---
+foreach ($cards as $key => &$card) {
+    $modelnum = $card['modelnum'];
+    $image_url = '';
     if ($modelnum) {
-        // modelnumから商品型番（例: 'dm01'）を抽出
         $parts = explode('-', $modelnum);
         $series_folder = strtolower($parts[0]);
-        
         $image_path = "card/" . $series_folder . "/" . $modelnum . ".webp";
         $folder_path = "card/" . $series_folder . "/" . $modelnum;
-        
-        // modelnumに対応する画像ファイルが存在しないか、またはそれがフォルダである場合（＝セットカード）
         if (!file_exists($image_path) || is_dir($folder_path)) {
             $image_url = $folder_path . "/" . $modelnum . "a.webp";
         } else {
-            // 通常のカードの場合
             $image_url = $image_path;
         }
     }
     $card['image_url'] = $image_url;
 }
-unset($card); // ループ後の参照を解除
+unset($card);
 
 // === テンプレート表示のための準備 ===
 $totalPages = ceil($total / $perPage);
