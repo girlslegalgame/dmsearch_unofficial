@@ -156,20 +156,19 @@ if ($selected_cardtype_id > 0) { $joins['card_cardtype_type'] = 'LEFT JOIN card_
 // --- 種族検索 (AND/OR対応) ---
 if (!empty($selected_race_ids)) {
     $joins['card_race_race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
+    $race_placeholders = [];
+    foreach ($selected_race_ids as $index => $race_id) {
+        $placeholder = ':race_id_' . $index; // ユニークなプレースホルダー名を生成 (例: :race_id_0)
+        $race_placeholders[] = $placeholder;
+        $params[$placeholder] = $race_id; // 名前付きでパラメータをセット
+    }
     
     if ($race_search_mode === 'AND') {
         // AND検索: 指定された種族をすべて持つ
-        $conditions[] = "(SELECT COUNT(DISTINCT race_id) FROM card_race WHERE card_id = card.card_id AND race_id IN (" . implode(',', array_fill(0, count($selected_race_ids), '?')) . ")) = " . count($selected_race_ids);
-        foreach ($selected_race_ids as $race_id) {
-            $params[] = $race_id;
-        }
+        $conditions[] = "(SELECT COUNT(DISTINCT race_id) FROM card_race WHERE card_id = card.card_id AND race_id IN (" . implode(',', $race_placeholders) . ")) = " . count($selected_race_ids);
     } else {
         // OR検索: 指定された種族のいずれかを持つ
-        $placeholders = implode(',', array_fill(0, count($selected_race_ids), '?'));
-        $conditions[] = "card_race.race_id IN ({$placeholders})";
-        foreach ($selected_race_ids as $race_id) {
-            $params[] = $race_id;
-        }
+        $conditions[] = "card_race.race_id IN (" . implode(',', $race_placeholders) . ")";
     }
 }
 if ($selected_rarity_id > 0) { $joins['card_rarity_rarity'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.rarity_id = :rarity_id"; $params[':rarity_id'] = $selected_rarity_id; }
