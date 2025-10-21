@@ -193,9 +193,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleBtn) toggleBtn.addEventListener('click', toggleCheckboxes);
     searchCheckboxes.forEach(cb => cb.addEventListener('change', updateToggleButtonLabel));
 
-    // --- ④ リセットボタンのイベントリスナー ---
+    // --- ④ リセットボタンのイベントリスナー (実績のある安定版) ---
     function resetSearch() {
-        if (searchForm) searchForm.reset();
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) searchInput.value = "";
+        if (costMinInput) { costMinInput.value = ""; costMinInput.disabled = false; }
+        if (costMaxInput) { costMaxInput.value = ""; costMaxInput.disabled = false; }
+        if (costZeroCheck) costZeroCheck.checked = false;
+        if (costInfinityCheck) costInfinityCheck.checked = false;
+        if (powMinInput) { powMinInput.value = ""; powMinInput.disabled = false; }
+        if (powMaxInput) { powMaxInput.value = ""; powMaxInput.disabled = false; }
+        if (powInfinityCheck) powInfinityCheck.checked = false;
+        const yearMinInput = document.querySelector('input[name="year_min"]');
+        const yearMaxInput = document.querySelector('input[name="year_max"]');
+        if (yearMinInput) yearMinInput.value = "";
+        if (yearMaxInput) yearMaxInput.value = "";
+        document.querySelectorAll('select.styled-select, select.is-empty2').forEach(select => {
+             if (select.id !== 'sort-order') {
+                 if (select.name === 'mana_filter') { select.value = 'all'; } 
+                 else { select.value = '0'; }
+             }
+        });
+        const searchName = document.querySelector('input[name="search_name"]');
+        const searchReading = document.querySelector('input[name="search_reading"]');
+        const searchText = document.querySelector('input[name="search_text"]');
+        if(searchName) searchName.checked = true;
+        if(searchReading) searchReading.checked = true;
+        if(searchText) searchText.checked = true;
+        document.querySelectorAll('input[name="search_race"], input[name="search_flavortext"], input[name="search_illus"]').forEach(cb => cb.checked = false);
         document.querySelectorAll('.civ-btn').forEach(button => {
             const targetInput = document.getElementById(button.dataset.targetInput);
             const buttonId = button.dataset.targetInput;
@@ -207,13 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (targetInput) targetInput.value = '0';
             }
         });
-        const searchName = document.querySelector('input[name="search_name"]');
-        const searchReading = document.querySelector('input[name="search_reading"]');
-        const searchText = document.querySelector('input[name="search_text"]');
-        if(searchName) searchName.checked = true;
-        if(searchReading) searchReading.checked = true;
-        if(searchText) searchText.checked = true;
-        if (showSameNameCheck) showSameNameCheck.checked = true;
         
         if (selectedRaces) selectedRaces.clear();
         updateSelectedRacesDisplay();
@@ -249,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const racePlaceholder = document.querySelector('.race-select-group .placeholder');
         let allRaces = [];
         let selectedRaces = new Map();
-
         function renderRaceList(races) {
             raceModalList.innerHTML = '';
             races.sort(customRaceSortJS);
@@ -280,15 +297,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchForm.appendChild(hiddenInput);
             });
         }
-
-        const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お'=>'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ'=>'08b','け':'09a','げ'=>'09b','こ':'10a','ご'=>'10b','さ':'11a','ざ':'11b','し':'12a','じ'=>'12b','す':'13a','ず'=>'13b','せ':'14a','ぜ'=>'14b','そ':'15a','ぞ'=>'15b','た':'16a','だ':'16b','ち':'17a','ぢ'=>'17b','っ':'18a','つ':'18b','づ'=>'18b','て':'19a','で'=>'19b','と'=>'20a','ど'=>'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の'=>'25a','は':'26a','ば'=>'26b','ぱ':'26c','ひ':'27a','び'=>'27b','ぴ'=>'27c','ふ':'28a','ぶ'=>'28b','ぷ'=>'28c','へ':'29a','べ'=>'29b','ぺ'=>'29c','ほ':'30a','ぼ'=>'30b','ぽ'=>'30c','ま':'31a','み'=>'32a','む'=>'33a','め'=>'34a','も'=>'35a','ゃ':'36a','や'=>'36b','ゅ'=>'37a','ゆ'=>'37b','ょ'=>'38a','よ'=>'38b','ら':'39a','り'=>'40a','る'=>'41a','れ'=>'42a','ろ'=>'43a','わ'=>'44a','を'=>'45a','ん'=>'46a','ー'=>'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ'=>'03b','ェ'=>'04a','エ'=>'04b','ォ':'05a','オ'=>'05b','カ':'06a','ガ'=>'06b','キ':'07a','ギ':'07b','ク'=>'08a','グ'=>'08b','ケ':'09a','ゲ'=>'09b','コ':'10a','ゴ'=>'10b','サ':'11a','ザ'=>'11b','シ'=>'12a','ジ'=>'12b','ス'=>'13a','ズ'=>'13b','セ':'14a','ゼ'=>'14b','ソ':'15a','ゾ'=>'15b','タ':'16a','ダ'=>'16b','チ':'17a','ヂ'=>'17b','ッ':'18a','ツ'=>'18b','ヅ'=>'18b','テ':'19a','デ'=>'19b','ト'=>'20a','ド'=>'20b','ナ':'21a','ニ'=>'22a','ヌ'=>'23a','ネ'=>'24a','ノ'=>'25a','ハ'=>'26a','バ'=>'26b','パ'=>'26c','ヒ'=>'27a','ビ'=>'27b','ピ'=>'27c','フ'=>'28a','ブ'=>'28b','プ'=>'28c','ヘ'=>'29a','ベ'=>'29b','ペ'=>'29c','ホ'=>'30a','ボ'=>'30b','ポ'=>'30c','マ'=>'31a','ミ'=>'32a','ム'=>'33a','メ'=>'34a','モ'=>'35a','ャ'=>'36a','ヤ'=>'36b','ュ'=>'37a','ユ'=>'37b','ョ'=>'38a','ヨ'=>'38b','ラ'=>'39a','リ'=>'40a','ル'=>'41a','レ'=>'42a','ロ'=>'43a','ワ'=>'44a','ヲ'=>'45a','ン'=>'46a'};
+        const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お'=>'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ'=>'08b','け':'09a','げ'=>'09b','こ':'10a','ご'=>'10b','さ':'11a','ざ':'11b','し':'12a','じ'=>'12b','す':'13a','ず'=>'13b','せ':'14a','ぜ'=>'14b','そ':'15a','ぞ'=>'15b','た':'16a','だ':'16b','ち':'17a','ぢ'=>'17b','っ':'18a','つ':'18b','づ'=>'18b','て':'19a','で'=>'19b','と'=>'20a','ど'=>'20b','な':'21a','に'=>'22a','ぬ'=>'23a','ね'=>'24a','の'=>'25a','は':'26a','ば'=>'26b','ぱ'=>'26c','ひ'=>'27a','び'=>'27b','ぴ'=>'27c','ふ':'28a','ぶ'=>'28b','ぷ'=>'28c','へ':'29a','べ'=>'29b','ぺ'=>'29c','ほ':'30a','ぼ'=>'30b','ぽ'=>'30c','ま':'31a','み'=>'32a','む'=>'33a','め'=>'34a','も'=>'35a','ゃ':'36a','や'=>'36b','ゅ'=>'37a','ゆ'=>'37b','ょ'=>'38a','よ'=>'38b','ら':'39a','り'=>'40a','る'=>'41a','れ'=>'42a','ろ'=>'43a','わ'=>'44a','を'=>'45a','ん'=>'46a','ー'=>'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ'=>'03a','ウ'=>'03b','ェ'=>'04a','エ'=>'04b','ォ'=>'05a','オ'=>'05b','カ':'06a','ガ'=>'06b','キ':'07a','ギ'=>'07b','ク'=>'08a','グ'=>'08b','ケ':'09a','ゲ'=>'09b','コ':'10a','ゴ'=>'10b','サ':'11a','ザ'=>'11b','シ':'12a','ジ'=>'12b','ス'=>'13a','ズ'=>'13b','セ':'14a','ゼ'=>'14b','ソ':'15a','ゾ'=>'15b','タ':'16a','ダ'=>'16b','チ':'17a','ヂ'=>'17b','ッ':'18a','ツ'=>'18b','ヅ'=>'18b','テ':'19a','デ'=>'19b','ト'=>'20a','ド'=>'20b','ナ':'21a','ニ'=>'22a','ヌ'=>'23a','ネ'=>'24a','ノ'=>'25a','ハ'=>'26a','バ'=>'26b','パ'=>'26c','ヒ'=>'27a','ビ'=>'27b','ピ'=>'27c','フ'=>'28a','ブ'=>'28b','プ'=>'28c','ヘ'=>'29a','ベ'=>'29b','ペ'=>'29c','ホ'=>'30a','ボ'=>'30b','ポ'=>'30c','マ'=>'31a','ミ'=>'32a','ム'=>'33a','メ'=>'34a','モ'=>'35a','ャ'=>'36a','ヤ'=>'36b','ュ'=>'37a','ユ'=>'37b','ョ'=>'38a','ヨ'=>'38b','ラ'=>'39a','リ'=>'40a','ル'=>'41a','レ'=>'42a','ロ'=>'43a','ワ'=>'44a','ヲ'=>'45a','ン'=>'46a'};
         function getSortableString(str) { return str.split('').map(char => sortMap[char] || char).join(''); }
         function customRaceSortJS(a, b) {
             const sortA = getSortableString(a.reading);
             const sortB = getSortableString(b.reading);
             return sortA.localeCompare(sortB);
         }
-
         raceSelectBox.addEventListener('click', () => {
             raceModal.style.display = 'flex';
             if (allRaces.length === 0) {
@@ -305,8 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const closeRaceModal = () => { if(raceModal) raceModal.style.display = 'none'; };
         if(raceModalCloseBtn) raceModalCloseBtn.addEventListener('click', closeRaceModal);
         if(raceModalCancelBtn) raceModalCancelBtn.addEventListener('click', closeRaceModal);
-        if(raceModal.querySelector('.modal-overlay')) {
-            raceModal.querySelector('.modal-overlay').addEventListener('click', (e) => {
+        if(raceModal.closest('.modal-overlay')) {
+            raceModal.closest('.modal-overlay').addEventListener('click', (e) => {
                 if (e.target === e.currentTarget) closeRaceModal();
             });
         }
@@ -350,19 +365,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const initialRaceFields = document.querySelectorAll('input[name="race_ids[]"]');
         if (initialRaceFields.length > 0) {
-            fetch('api.php?type=race&query=')
-                .then(response => response.json())
-                .then(data => {
-                    allRaces = data;
-                    const raceMap = new Map(allRaces.map(r => [String(r.id), r.name]));
-                    initialRaceFields.forEach(field => {
-                        const id = field.value;
-                        if (raceMap.has(id)) {
-                            selectedRaces.set(id, raceMap.get(id));
-                        }
+            if (allRaces.length === 0) {
+                fetch('api.php?type=race&query=')
+                    .then(response => response.json())
+                    .then(data => {
+                        allRaces = data;
+                        const raceMap = new Map(allRaces.map(r => [String(r.id), r.name]));
+                        initialRaceFields.forEach(field => {
+                            const id = field.value;
+                            if (raceMap.has(id)) {
+                                selectedRaces.set(id, raceMap.get(id));
+                            }
+                        });
+                        updateSelectedRacesDisplay();
                     });
-                    updateSelectedRacesDisplay();
-                });
+            }
         } else {
             updateSelectedRacesDisplay();
         }
@@ -477,17 +494,11 @@ document.addEventListener('DOMContentLoaded', () => {
         function formatAbilityText(rawText) {
             if (!rawText || rawText.trim() === '') return '（テキスト情報なし）';
             const iconMap = {
-                '{ST}' : '<img src="parts/card_list_strigger.webp" alt="S-Trigger" class="text-icon">',
-                '{BR}' : '<img src="parts/card_list_block.webp" alt="Blocker" class="text-icon">',
-                '{SV}' : '<img src="parts/card_list_survivor.webp" alt="Survivor" class="text-icon">',
-                '{TT}' : '<img src="parts/card_list_taptrigger.webp" alt="Tap-Trigger" class="text-icon">',
-                '{TR}' : '<img src="parts/card_list_turborush.webp" alt="Turbo-Rush" class="text-icon">',
-                '{SS}' : '<img src="parts/card_list_silentskill.webp" alt="Silent_Skill" class="text-icon">',
-                '{WS}' : '<img src="parts/card_list_wavestriker.webp" alt="Wave_Striker" class="text-icon">',
-                '{MM}' : '<img src="parts/card_list_metamorph.webp" alt="Metamorph" class="text-icon">',
-                '{AC}' : '<img src="parts/card_list_accel.webp" alt="Accel" class="text-icon">',
-                '{SB}' : '<img src="parts/card_list_strike_back.webp" alt="Strike-Back" class="text-icon">',
-                '{FE}' : '<img src="parts/card_list_fortenergy.webp" alt="Fort-Energy" class="text-icon">',
+                '{st}': '<img src="parts/card_list_strigger.webp" alt="S-Trigger" class="text-icon">',
+                '{br}': '<img src="parts/card_list_block.webp" alt="Blocker" class="text-icon">',
+                '{sv}': '<img src="parts/card_list_survivor.webp" alt="Survivor" class="text-icon">',
+                '{TT}': '<img src="parts/card_list_taptrigger.webp" alt="Tap-Trigger" class="text-icon">',
+                '{TR}': '<img src="parts/card_list_turborush.webp" alt="Turbo-Rush" class="text-icon">',
             };
             const iconTags = Object.keys(iconMap);
             return rawText.split('\n').map(line => {
@@ -499,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')');
                 let processedLine = trimmed.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 for (const tag of iconTags) {
-                    processedLine = processedLine.replace(new RegExp(tag.replace(/\{/g, '\\{').replace(/\}/g, '\\}'), 'gi'), iconMap[tag.toLowerCase()] || iconMap[tag.toUpperCase()]);
+                    processedLine = processedLine.replace(new RegExp(tag.replace(/\{/g, '\\{').replace(/\}/g, '\\}'), 'gi'), iconMap[tag]);
                 }
                 let prefix = '';
                 let wrapperClass = '';
@@ -530,4 +541,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});```
+});
