@@ -7,27 +7,35 @@ $query = isset($_GET['query']) ? trim($_GET['query']) : '';
 
 $response = [];
 
+try {
+    $columns_stmt = $pdo->query("SHOW COLUMNS FROM race");
+    $columns = $columns_stmt->fetchAll(PDO::FETCH_COLUMN);
+    $has_reading_column = in_array('reading', $columns);
+} catch (PDOException $e) {
+    echo json_encode(['error' => 'Database schema error: ' . $e->getMessage()]);
+    exit;
+}
+
 switch ($type) {
     case 'race':
         // ★★★ COALESCEを使って、NULLを安全に扱う ★★★
-        $sql = "
-            SELECT 
-                race_id AS id, 
-                race_name AS name, 
-                reading 
-            FROM race 
-            WHERE 
-                race_name LIKE :query 
-                OR COALESCE(reading, '') LIKE :query 
-            LIMIT 150
-        ";
+        $sql_where_parts = ['race_name LIKE :query'];
+        $params = [':query' => '%' . $query . '%'];
+
+        if ($has_reading_column) {
+            $sql_where_parts[] = 'reading LIKE :query';
+        }
+
+        // readingカラムの有無で、SELECT句も動的に変更
+        $select_reading = $has_reading_column ? 'reading' : 'NULL AS reading';
+        
+        $sql = "SELECT race_id AS id, race_name AS name, {$select_reading} FROM race WHERE " . implode(' OR ', $sql_where_parts) . " LIMIT 150";
         
         $stmt = $pdo->prepare($sql);
-        $stmt->bindValue(':query', '%' . $query . '%');
-        $stmt->execute();
+        $stmt->execute($params); // ★★★ executeに、すべてのパラメータを一度に渡す ★★★
         $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
         break;
-
+    
     case 'goods':
         $goodstype_id = isset($_GET['goodstype_id']) ? intval($_GET['goodstype_id']) : 0;
         if ($goodstype_id > 0) {
