@@ -367,14 +367,19 @@ document.addEventListener('DOMContentLoaded', () => {
             raceModalSearchInput.addEventListener('input', () => {
                 clearTimeout(debounceTimeout);
                 debounceTimeout = setTimeout(() => {
-                    const query = raceModalSearchInput.value.toLowerCase();
-                    const filteredRaces = allRaces.filter(r => {
-                        const nameMatch = r.name.toLowerCase().includes(query);
-                        const readingMatch = r.reading ? r.reading.toLowerCase().includes(query) : false;
-                        return nameMatch || readingMatch;
-                    });
-                    renderRaceList(filteredRaces);
-                }, 250);
+                    const query = raceModalSearchInput.value;
+                    if (query.length === 0) {
+                        // 文字が空になったら、キャッシュされた全件リストを表示
+                        renderRaceList(allRaces);
+                    } else {
+                        // 文字が入力されたら、APIにサジェスト検索を要求
+                        fetch(`api.php?type=race&query=${encodeURIComponent(query)}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                renderRaceList(data); // 絞り込まれた結果を表示
+                            });
+                    }
+                }, 300); // 300ms待機
             });
         }
         const initialRaceFields = document.querySelectorAll('input[name="race_ids[]"]');
