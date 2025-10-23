@@ -317,13 +317,15 @@ document.addEventListener('DOMContentLoaded', () => {
         raceSelectBox.addEventListener('click', () => {
             raceModal.style.display = 'flex';
             if (allRaces.length === 0) {
-                fetch('api.php?type=race&query=')
+                // 初回のみ、全件取得してキャッシュする
+                fetch('api.php?type=race&query=') // queryが空なので、全件取得モード
                     .then(response => response.json())
                     .then(data => {
-                        allRaces = data;
-                        renderRaceList(allRaces);
+                        allRaces = data; // 取得した全件をキャッシュ
+                        renderRaceList(allRaces); // 全件をソートして表示
                     });
             } else {
+                // 2回目以降は、キャッシュされた全件リストを表示する
                 renderRaceList(allRaces);
             }
         });
