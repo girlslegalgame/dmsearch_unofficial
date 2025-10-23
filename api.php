@@ -43,5 +43,23 @@ switch ($type) {
         break;
 }
 
-echo json_encode($response);
+// echo json_encode($response);
+// ★★★ここからが最後のデバッグコード★★★
+header('Content-Type: text/plain; charset=utf-8'); // JSONではなく、ただのテキストとして表示
+echo "--- DEBUGGING API RESPONSE ---\n\n";
+
+echo "Received parameters:\n";
+echo "type: " . htmlspecialchars($type) . "\n";
+echo "query: " . htmlspecialchars($query) . "\n\n";
+
+if (isset($sql)) {
+    echo "Executed SQL:\n";
+    echo $sql . "\n\n";
+}
+
+echo "Response Data (before json_encode):\n";
+print_r($response);
+
+echo "\n\n--- END OF DEBUG ---";
+// ★★★ここまでが最後のデバッグコード★★★
 ?>
