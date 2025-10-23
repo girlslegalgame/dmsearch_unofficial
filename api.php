@@ -18,21 +18,23 @@ try {
 
 switch ($type) {
     case 'race':
-        // ★★★ ここからが、最後の修正 ★★★
-        $sql_where_parts = ['race_name LIKE :query_name'];
-        $params = [':query_name' => '%' . $query . '%'];
+        // readingカラムの有無で、SELECT句とWHERE句を動的に変更
+        $select_reading = $has_reading_column ? ', reading' : ', NULL AS reading';
+        $where_reading = $has_reading_column ? 'OR reading LIKE :query' : '';
 
-        if ($has_reading_column) {
-            $sql_where_parts[] = 'reading LIKE :query_reading';
-            $params[':query_reading'] = '%' . $query . '%'; // ★ reading用のパラメータを追加
+        if (!empty($query)) {
+            // ★★★ サジェスト検索モード ★★★
+            // queryに文字が入っている場合は、絞り込んで返す
+            $sql = "SELECT race_id AS id, race_name AS name {$select_reading} FROM race WHERE race_name LIKE :query {$where_reading} LIMIT 50";
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':query', '%' . $query . '%');
+        } else {
+            // ★★★ 全件取得モード ★★★
+            // queryが空の場合は、LIMITなしで全件を返す
+            $sql = "SELECT race_id AS id, race_name AS name {$select_reading} FROM race";
+            $stmt = $pdo->prepare($sql);
         }
-
-        $select_reading = $has_reading_column ? 'reading' : 'NULL AS reading';
-        
-        $sql = "SELECT race_id AS id, race_name AS name, {$select_reading} FROM race WHERE " . implode(' OR ', $sql_where_parts) . " LIMIT 150";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
+        $stmt->execute();
         $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
         break;
     
