@@ -9,12 +9,18 @@ $response = [];
 
 switch ($type) {
     case 'race':
-        // readingカラムの有無に応じて、SQL文を動的に切り替える
-        if ($has_reading_column) {
-            $sql = "SELECT race_id AS id, race_name AS name, reading FROM race WHERE race_name LIKE :query OR reading LIKE :query LIMIT 150";
-        } else {
-            $sql = "SELECT race_id AS id, race_name AS name, NULL AS reading FROM race WHERE race_name LIKE :query LIMIT 150";
-        }
+        // ★★★ COALESCEを使って、NULLを安全に扱う ★★★
+        $sql = "
+            SELECT 
+                race_id AS id, 
+                race_name AS name, 
+                reading 
+            FROM race 
+            WHERE 
+                race_name LIKE :query 
+                OR COALESCE(reading, '') LIKE :query 
+            LIMIT 150
+        ";
         
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':query', '%' . $query . '%');
