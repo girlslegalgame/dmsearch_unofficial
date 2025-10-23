@@ -29,7 +29,7 @@ switch ($type) {
 
         $select_reading = $has_reading_column ? 'reading' : 'NULL AS reading';
         
-        $sql = "SELECT race_id AS id, race_name AS name, {$select_reading} FROM race WHERE " . implode(' OR ', $sql_where_parts);
+        $sql = "SELECT race_id AS id, race_name AS name, {$select_reading} FROM race WHERE " . implode(' OR ', $sql_where_parts) . " LIMIT 150";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
