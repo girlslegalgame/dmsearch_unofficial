@@ -18,21 +18,21 @@ try {
 
 switch ($type) {
     case 'race':
-        // ★★★ COALESCEを使って、NULLを安全に扱う ★★★
-        $sql_where_parts = ['race_name LIKE :query'];
-        $params = [':query' => '%' . $query . '%'];
+        // ★★★ ここからが、最後の修正 ★★★
+        $sql_where_parts = ['race_name LIKE :query_name'];
+        $params = [':query_name' => '%' . $query . '%'];
 
         if ($has_reading_column) {
-            $sql_where_parts[] = 'reading LIKE :query';
+            $sql_where_parts[] = 'reading LIKE :query_reading';
+            $params[':query_reading'] = '%' . $query . '%'; // ★ reading用のパラメータを追加
         }
 
-        // readingカラムの有無で、SELECT句も動的に変更
         $select_reading = $has_reading_column ? 'reading' : 'NULL AS reading';
         
         $sql = "SELECT race_id AS id, race_name AS name, {$select_reading} FROM race WHERE " . implode(' OR ', $sql_where_parts) . " LIMIT 150";
         
         $stmt = $pdo->prepare($sql);
-        $stmt->execute($params); // ★★★ executeに、すべてのパラメータを一度に渡す ★★★
+        $stmt->execute($params);
         $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
         break;
     
