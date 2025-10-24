@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateToggleButtonLabel();
     updateCivilizationControls();
 
-    // --- ⑦ 種族選択モーダルのロジック ---
+// --- ⑥ 種族選択モーダルのロジック (真の最終版) ---
     const raceSelectBox = document.getElementById('race-select-box');
     const raceModal = document.getElementById('race-modal');
     if (raceSelectBox && raceModal) {
@@ -272,10 +272,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const raceModalConfirmBtn = document.getElementById('race-modal-confirm-btn');
         const selectedRacesDisplay = document.querySelector('.selected-races-display');
         const racePlaceholder = document.querySelector('.race-select-group .placeholder');
-        let allRaces = [];
         
+        let allRaces = []; // 全種族リストをキャッシュする場所
+        let selectedRaces = new Map();
+
+        // PHPのcustomRaceSortをJavaScriptで再現
         const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ':'03b','ェ':'04a','エ':'04b','ォ':'05a','オ':'05b','カ':'06a','ガ':'06b','キ':'07a','ギ':'07b','ク':'08a','グ':'08b','ケ':'09a','ゲ':'09b','コ':'10a','ゴ':'10b','サ':'11a','ザ':'11b','シ':'12a','ジ':'12b','ス':'13a','ズ':'13b','セ':'14a','ゼ':'14b','ソ':'15a','ゾ':'15b','タ':'16a','ダ':'16b','チ':'17a','ヂ':'17b','ッ':'18a','ツ':'18b','ヅ':'18b','テ':'19a','デ':'19b','ト':'20a','ド':'20b','ナ':'21a','ニ':'22a','ヌ':'23a','ネ':'24a','ノ':'25a','ハ':'26a','バ':'26b','パ':'26c','ヒ':'27a','ビ':'27b','ピ':'27c','フ':'28a','ブ':'28b','プ':'28c','ヘ':'29a','ベ':'29b','ペ':'29c','ホ':'30a','ボ':'30b','ポ':'30c','マ':'31a','ミ':'32a','ム':'33a','メ':'34a','モ':'35a','ャ':'36a','ヤ':'36b','ュ':'37a','ユ':'37b','ョ':'38a','ヨ':'38b','ラ':'39a','リ':'40a','ル':'41a','レ':'42a','ロ':'43a','ワ':'44a','ヲ':'45a','ン':'46a'};
-        function getSortableString(str) { if (!str) return ''; return str.split('').map(char => sortMap[char] || char).join(''); }
+        function getSortableString(str) {
+            if (!str) return '';
+            return str.split('').map(char => sortMap[char] || char).join('');
+        }
         function customRaceSortJS(a, b) {
             const readingA = a.reading || '';
             const readingB = b.reading || '';
@@ -283,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const sortB = getSortableString(readingB);
             return sortA.localeCompare(sortB);
         }
+
         function renderRaceList(races) {
             if (!raceModalList) return;
             raceModalList.innerHTML = '';
@@ -314,35 +321,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchForm.appendChild(hiddenInput);
             });
         }
+        
+        // ★★★ サジェスト検索とリスト表示を担う、唯一の関数 ★★★
+        function updateRaceList() {
+            const query = raceModalSearchInput ? raceModalSearchInput.value.toLowerCase() : '';
+            const filteredRaces = allRaces.filter(r => {
+                const nameMatch = r.name.toLowerCase().includes(query);
+                const readingMatch = r.reading ? r.reading.toLowerCase().includes(query) : false;
+                return nameMatch || readingMatch;
+            });
+            renderRaceList(filteredRaces);
+        }
+
         raceSelectBox.addEventListener('click', () => {
             raceModal.style.display = 'flex';
             if (allRaces.length === 0) {
-                // 初回のみ、全件取得してキャッシュする
-                fetch('api.php?type=race&query=') // queryが空なので、全件取得モード
+                fetch('api.php?type=race&query=')
                     .then(response => response.json())
                     .then(data => {
-                        allRaces = data; // 取得した全件をキャッシュ
-                        renderRaceList(allRaces); // 全件をソートして表示
+                        allRaces = data;
+                        updateRaceList();
                     });
             } else {
-                // 2回目以降は、キャッシュされた全件リストを表示する
-                renderRaceList(allRaces);
+                updateRaceList();
             }
         });
+        
         const closeRaceModal = () => { if(raceModal) raceModal.style.display = 'none'; };
         if(raceModalCloseBtn) raceModalCloseBtn.addEventListener('click', closeRaceModal);
         if(raceModalCancelBtn) raceModalCancelBtn.addEventListener('click', closeRaceModal);
-        if(raceModal.closest('.modal-overlay')) {
-            raceModal.closest('.modal-overlay').addEventListener('click', (e) => {
+        const raceModalOverlay = raceModal.closest('.modal-overlay');
+        if(raceModalOverlay) {
+            raceModalOverlay.addEventListener('click', (e) => {
                 if (e.target === e.currentTarget) closeRaceModal();
             });
         }
+
         if (raceModalClearBtn) {
             raceModalClearBtn.addEventListener('click', () => {
                 selectedRaces.clear();
-                const currentQuery = raceModalSearchInput ? raceModalSearchInput.value.toLowerCase() : '';
-                const filteredRaces = currentQuery ? allRaces.filter(r => r.name.toLowerCase().includes(currentQuery) || (r.reading && r.reading.toLowerCase().includes(currentQuery))) : allRaces;
-                renderRaceList(filteredRaces);
+                updateRaceList();
             });
         }
         if (raceModalConfirmBtn) {
@@ -364,26 +382,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+
         let debounceTimeout;
         if (raceModalSearchInput) {
             raceModalSearchInput.addEventListener('input', () => {
                 clearTimeout(debounceTimeout);
-                debounceTimeout = setTimeout(() => {
-                    const query = raceModalSearchInput.value;
-                    if (query.length === 0) {
-                        // 文字が空になったら、キャッシュされた全件リストを表示
-                        renderRaceList(allRaces);
-                    } else {
-                        // 文字が入力されたら、APIにサジェスト検索を要求
-                        fetch(`api.php?type=race&query=${encodeURIComponent(query)}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                renderRaceList(data); // 絞り込まれた結果を表示
-                            });
-                    }
-                }, 300); // 300ms待機
+                debounceTimeout = setTimeout(updateRaceList, 250);
+            });
+            raceModalSearchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                }
             });
         }
+        
         const initialRaceFields = document.querySelectorAll('input[name="race_ids[]"]');
         if (initialRaceFields.length > 0) {
             if (allRaces.length === 0) {
@@ -405,7 +417,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSelectedRacesDisplay();
         }
     }
-
     // --- ⑧ カード詳細モーダルのロジック ---
     const cardDetailModal = document.getElementById('card-modal');
     function openCardDetailModal(cardId) {
