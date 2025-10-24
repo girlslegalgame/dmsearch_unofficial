@@ -25,14 +25,17 @@ switch ($type) {
         if (!empty($query)) {
             // ★★★ サジェスト検索モード ★★★
             // queryに文字が入っている場合は、絞り込んで返す
+            $where_reading = $has_reading_column ? 'OR reading LIKE :query' : '';
             $sql = "SELECT race_id AS id, race_name AS name {$select_reading} FROM race WHERE race_name LIKE :query {$where_reading} LIMIT 50";
             $stmt = $pdo->prepare($sql);
-            $stmt->bindValue(':query', '%' . $query . '%');
+            // executeに、すべてのプレースホルダーに対応する値を一度に渡す
+            $stmt->execute([':query' => '%' . $query . '%']);
         } else {
             // ★★★ 全件取得モード ★★★
             // queryが空の場合は、LIMITなしで全件を返す
             $sql = "SELECT race_id AS id, race_name AS name {$select_reading} FROM race";
             $stmt = $pdo->prepare($sql);
+            $stmt->execute();
         }
         $stmt->execute();
         $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
