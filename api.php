@@ -56,40 +56,6 @@ switch ($type) {
         break;
 }
 
-// echo json_encode($response);
-// ★★★ここからが最後のデバッグコード★★★
-header('Content-Type: text/plain; charset=utf-8');
-echo "--- FINAL API DEBUG ---\n\n";
+echo json_encode($response);
 
-echo "[Request Parameters]\n";
-echo "type: " . htmlspecialchars($type) . "\n";
-echo "query: " . htmlspecialchars($query) . "\n\n";
-
-if (isset($pdo)) {
-    echo "[Database Connection]\nOK\n\n";
-} else {
-    echo "[Database Connection]\nFAILED\n\n";
-}
-
-echo "[Schema Check]\n";
-echo "Has 'reading' column: " . ($has_reading_column ? 'Yes' : 'No') . "\n\n";
-
-if (isset($sql)) {
-    echo "[Executed SQL]\n";
-    echo $sql . "\n\n";
-}
-if (isset($params)) {
-    echo "[Bound Parameters]\n";
-    print_r($params);
-    echo "\n";
-}
-
-echo "[Row Count]\n";
-echo count($response) . " rows returned.\n\n";
-
-echo "[Response Data Sample (first 5 rows)]\n";
-print_r(array_slice($response, 0, 5));
-
-echo "\n--- END OF DEBUG ---";
-// ★★★ここまでが最後のデバッグコード★★★
 ?>
