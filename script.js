@@ -203,84 +203,84 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 // --- ⑤ リセットボタンのイベントリスナー (真の最終版) ---
-function resetSearch() {
-// テキスト入力
-const searchInput = document.querySelector('input[name="search"]');
-if (searchInput) searchInput.value = "";
-code
-Code
-// コスト
-    if (costMinInput) { costMinInput.value = ""; costMinInput.disabled = false; }
-    if (costMaxInput) { costMaxInput.value = ""; costMaxInput.disabled = false; }
-    if (costZeroCheck) costZeroCheck.checked = false;
-    if (costInfinityCheck) costInfinityCheck.checked = false;
 
-    // パワー
-    if (powMinInput) { powMinInput.value = ""; powMinInput.disabled = false; }
-    if (powMaxInput) { powMaxInput.value = ""; powMaxInput.disabled = false; }
-    if (powInfinityCheck) powInfinityCheck.checked = false;
+    function resetSearch() {
+        // 1. テキスト入力
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) searchInput.value = "";
 
-    // 発売年
-    const yearMinInput = document.querySelector('input[name="year_min"]');
-    const yearMaxInput = document.querySelector('input[name="year_max"]');
-    if (yearMinInput) yearMinInput.value = "";
-    if (yearMaxInput) yearMaxInput.value = "";
+        // 2. 検索対象チェックボックス
+        const searchName = document.querySelector('input[name="search_name"]');
+        const searchReading = document.querySelector('input[name="search_reading"]');
+        const searchText = document.querySelector('input[name="search_text"]');
+        if(searchName) searchName.checked = true;
+        if(searchReading) searchReading.checked = true;
+        if(searchText) searchText.checked = true;
+        document.querySelectorAll('input[name="search_race"], input[name="search_flavortext"], input[name="search_illus"]').forEach(cb => { if(cb) cb.checked = false; });
 
-    // ドロップダウン (ならびかえは除く)
-    document.querySelectorAll('select.styled-select, .select01 select').forEach(select => {
-         if (select.id !== 'sort-order') {
-             if (select.name === 'mana_filter') { select.value = 'all'; } 
-             else { select.value = '0'; }
-         }
-    });
+        // 3. 文明ボタン
+        document.querySelectorAll('.civ-btn').forEach(button => {
+            const targetInput = document.getElementById(button.dataset.targetInput);
+            const buttonId = button.dataset.targetInput;
+            if (buttonId === 'mono_color' || buttonId === 'multi_color') {
+                button.classList.remove('is-off');
+                if (targetInput) targetInput.value = '1';
+            } else {
+                button.classList.add('is-off');
+                if (targetInput) targetInput.value = '0';
+            }
+        });
 
-    // 検索対象チェックボックス
-    const searchName = document.querySelector('input[name="search_name"]');
-    const searchReading = document.querySelector('input[name="search_reading"]');
-    const searchText = document.querySelector('input[name="search_text"]');
-    if(searchName) searchName.checked = true;
-    if(searchReading) searchReading.checked = true;
-    if(searchText) searchText.checked = true;
-    document.querySelectorAll('input[name="search_race"], input[name="search_flavortext"], input[name="search_illus"]').forEach(cb => cb.checked = false);
+        // 4. コスト
+        if (costMinInput) { costMinInput.value = ""; costMinInput.disabled = false; }
+        if (costMaxInput) { costMaxInput.value = ""; costMaxInput.disabled = false; }
+        if (costZeroCheck) costZeroCheck.checked = false;
+        if (costInfinityCheck) costInfinityCheck.checked = false;
 
-    // 「同名カード」チェックボックスはリセットしない
+        // 5. パワー
+        if (powMinInput) { powMinInput.value = ""; powMinInput.disabled = false; }
+        if (powMaxInput) { powMaxInput.value = ""; powMaxInput.disabled = false; }
+        if (powInfinityCheck) powInfinityCheck.checked = false;
 
-    // 文明ボタン
-    document.querySelectorAll('.civ-btn').forEach(button => {
-        const targetInput = document.getElementById(button.dataset.targetInput);
-        const buttonId = button.dataset.targetInput;
-        if (buttonId === 'mono_color' || buttonId === 'multi_color') {
-            button.classList.remove('is-off');
-            if (targetInput) targetInput.value = '1';
-        } else {
-            button.classList.add('is-off');
-            if (targetInput) targetInput.value = '0';
+        // 6. 発売年
+        const yearMinInput = document.querySelector('input[name="year_min"]');
+        const yearMaxInput = document.querySelector('input[name="year_max"]');
+        if (yearMinInput) yearMinInput.value = "";
+        if (yearMaxInput) yearMaxInput.value = "";
+        
+        // 7. その他詳細条件のドロップダウン (ならびかえは除く)
+        document.querySelectorAll('select.styled-select, .select01 select, .is-empty2').forEach(select => {
+             if (select.id !== 'sort-order') {
+                 if (select.name === 'mana_filter') {
+                    select.value = 'all';
+                 } else {
+                    select.value = '0';
+                 }
+             }
+        });
+
+        // 8. 種族選択UI
+        if (typeof selectedRaces !== 'undefined' && selectedRaces.clear) {
+            selectedRaces.clear();
         }
-    });
-    
-    // ★★★ 新しい種族選択UIのリセット処理 ★★★
-    if (typeof selectedRaces !== 'undefined' && selectedRaces.clear) {
-        selectedRaces.clear();
+        if (typeof updateSelectedRacesDisplay !== 'undefined') {
+            updateSelectedRacesDisplay();
+        }
+        
+        // 9. 最後にUIの状態を更新
+        updateToggleButtonLabel();
+        updateCivilizationControls();
+        if (goodsTypeSelect) {
+            goodsTypeSelect.dispatchEvent(new Event('change'));
+        }
     }
-    if (typeof updateSelectedRacesDisplay !== 'undefined') {
-        updateSelectedRacesDisplay();
-    }
-    
-    // 最後にUIの状態を更新
-    updateToggleButtonLabel();
-    updateCivilizationControls();
-    if (goodsTypeSelect) {
-        goodsTypeSelect.dispatchEvent(new Event('change'));
-    }
-}
 
-if (resetButtons.length > 0) {
-    resetButtons.forEach(button => {
-        // ★★★ 再検索をトリガーしないように修正 ★★★
-        button.addEventListener('click', resetSearch);
-    });
-}
-    
+    if (resetButtons.length > 0) {
+        resetButtons.forEach(button => {
+            // ★★★ 再検索をトリガーしないように修正 ★★★
+            button.addEventListener('click', resetSearch);
+        });
+    }    
 
 
 // --- ⑥ 種族選択モーダルのロジック (真の最終版) ---
