@@ -259,15 +259,20 @@ document.addEventListener('DOMContentLoaded', () => {
              }
         });
 
-        // 8. 種族選択UI
+        // 1. 種族モーダルの「クリア」と同じ処理を実行
         if (typeof selectedRaces !== 'undefined' && selectedRaces.clear) {
             selectedRaces.clear();
         }
+
+        // 2. 種族モーダルの「決定」と同じ処理を実行
         if (typeof updateSelectedRacesDisplay !== 'undefined') {
             updateSelectedRacesDisplay();
         }
-        selectedRaces.clear();
-        updateSelectedRacesDisplay();
+
+        // 3. もし種族モーダルが開いていれば、リスト表示も更新する
+        if (typeof raceModal !== 'undefined' && raceModal.style.display !== 'none' && typeof updateRaceList !== 'undefined') {
+            updateRaceList();
+        }
         
         // 9. 最後にUIの状態を更新
         updateToggleButtonLabel();
