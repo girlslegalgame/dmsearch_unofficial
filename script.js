@@ -275,6 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // 9. 最後にUIの状態を更新
+        selectedRaces.clear();
+        updateSelectedRacesDisplay();
+        
         updateToggleButtonLabel();
         updateCivilizationControls();
         if (goodsTypeSelect) {
