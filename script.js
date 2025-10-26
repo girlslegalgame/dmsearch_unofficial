@@ -137,19 +137,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(input2) input2.value = '';
             }
         };
+
         if(check1) {
             check1.addEventListener('change', () => {
-                if (check1.checked && check2) check2.checked = false;
+                // もしcheck1がONになったら、check2をOFFにする
+                if (check1.checked && check2) {
+                    check2.checked = false;
+                }
                 toggleInputs();
             });
         }
+
         if (check2) {
             check2.addEventListener('change', () => {
-                if (check2.checked && check1) check2.checked = false;
+                // もしcheck2がONになったら、check1をOFFにする
+                if (check2.checked && check1) {
+                    check1.checked = false;
+                }
                 toggleInputs();
             });
         }
-        toggleInputs();
+
+        toggleInputs(); // 初期表示時にも実行
     };
     if (costZeroCheck && costInfinityCheck && costMinInput && costMaxInput) {
         setupCheckboxToggle(costZeroCheck, costInfinityCheck, costMinInput, costMaxInput);
