@@ -1,0 +1,617 @@
+.container {
+    display: flex;
+    justify-content: center;
+}
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+.card {
+    text-align: left;
+}
+img {
+    width: 174.72px;
+    height: 244.33px;
+}
+form {
+    /* text-align: center; を削除 */
+    margin-bottom: 10px;
+}
+/* ★★★ 中央揃え用のコンテナを追加 ★★★ */
+.main-form-container {
+    text-align: center;
+}
+.pagination {
+    text-align: center;
+    margin-top: 20px;
+}
+.pagination a {
+    display: inline-block;
+    padding: 6px 12px;
+    margin: 0 4px;
+    text-decoration: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    color: #333;
+    background-color: #f8f8f8;
+}
+.pagination a:hover {
+    background-color: #e0e0e0;
+}
+input[type="text"] {
+    width: 960px;
+    height: 50px;
+    font-size: 18px;
+    padding: 8px 12px;
+    box-sizing: border-box;
+} 
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 15px;
+    max-width: 960px;
+    margin: 10px auto 0 auto; /* 上余白を追加 */
+}
+.checkbox-label {
+    font-weight: bold;
+    min-width: 80px;
+}
+button {
+    font-size: 16px;
+    padding: 6px 15px;
+    margin-top: 8px;
+    margin-left: 5px;
+    cursor: pointer;
+}
+/* --- 文明検索エリアのレイアウト --- */
+.search-group-container {
+    max-width: 960px;
+    margin: 10px auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+}
+.search-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 20px;
+}
+.search-label {
+    font-weight: bold;
+    min-width: 120px;
+    text-align: left;
+}
+.civ-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* --- 文明ボタンのスタイル --- */
+.civ-btn {
+    padding: 0;
+    border: 2px solid transparent;
+    background: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+}
+.civ-btn:not(.is-off) {
+    border-color: #007bff; /* ONの時の枠線 */
+}
+.civ-btn img {
+    display: block;
+    width: 75px; /* ボタンのサイズ */
+    height: auto;
+}
+.civ-btn.is-off {
+    opacity: 0.5; /* OFFの時は半透明 */
+}
+.civ-btn.is-off:hover {
+    opacity: 0.8;
+}
+
+/* --- 「さらに条件を絞る」のスタイル --- */
+#toggle-advanced-btn.detailBtn {
+    display: inline-block; 
+    background-color: #6c757d;
+    color: white;
+    border: 1px solid #6c757d;
+    border-radius: 4px;
+    padding: 8px 16px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    text-align: center;
+}
+/* --- 詳細検索エリアの表示/非表示制御 (max-height版) --- */
+#advanced-search-area {
+    max-height: 0; /* ★初期状態では、最大の高さを0にする */
+    overflow: hidden; /* ★はみ出した要素を完全に隠す */
+    transition: max-height 0.5s cubic-bezier(0, 1, 0, 1); /* ★アニメーションを設定 */
+    margin-top: 15px;
+    /* display: block; は、元の状態に戻るので不要 */
+}
+
+#advanced-search-area > div {
+    /* この中にある直接の子要素（search-group-containerなど）が対象 */
+    min-height: 0; /* ★Safariなどでの表示崩れを防ぐためのおまじない */
+}
+
+#advanced-search-area.is-open {
+    /* ★is-openクラスが付いたら、最大の高さを十分に大きな値にする */
+    /* この値は、中身がどれだけ大きくなっても収まるように、余裕を持った値に設定する */
+    max-height: 2000px; 
+    transition: max-height 1s ease-in-out; /* 開くときは少しゆっくり */
+}
+/* --- ラベルの左寄せ専用スタイル --- */
+.left-align-label {
+    display: block; 
+    text-align: left;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+/* --- コスト・パワー範囲入力欄のスタイル --- */
+.cost-range-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cost-input {
+    width: 100px;
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+.cost-range-container span {
+    font-size: 18px;
+    font-weight: bold;
+}
+.cost-input::-webkit-outer-spin-button,
+.cost-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* --- インライン表示用のチェックボックスラベル --- */
+.checkbox-label-inline {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+/* --- 特定のグループだけを中央寄せにする専用スタイル --- */
+.num-range-container {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* 各要素間のスペース */
+}
+.rangenum-input {
+    width: 430px; /* 入力欄の幅 */
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+.num-range-container span {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.rangenum-input::-webkit-outer-spin-button,
+.rangenum-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.rangenum-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* --- ドロップダウンリストの共通スタイル --- */
+.styled-select {
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 180px; /* ドロップダウンの幅 */
+    cursor: pointer;
+}
+
+/* --- ドロップダウンリストのグループスタイル --- */
+.select-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+.select-group .search-label {
+    font-weight: bold;
+    min-width: auto;
+}
+
+/* --- カード画像のカーソル --- */
+.card-image-item {
+    cursor: pointer;
+}
+
+/* --- モーダルウィンドウのスタイル --- */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 2000;
+}
+.modal-content {
+    background-color: #fff; border-radius: 8px;
+    width: 90%; max-width: 850px; max-height: 90vh;
+    display: flex; flex-direction: column;
+}
+.modal-header {
+    background-color: #212529; color: white;
+    padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-radius: 8px 8px 0 0;
+}
+.modal-header h3 { margin: 0; font-size: 1.2em; }
+.close-btn { font-size: 2em; font-weight: bold; cursor: pointer; }
+
+.modal-body { display: flex; padding: 20px; gap: 20px; }
+.modal-left { flex-shrink: 0; }
+.modal-left img { width: 240px; height: auto; display: block; }
+.modal-right { flex-grow: 1; min-width: 0; }
+
+.detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    table-layout: fixed;
+}
+.detail-table th, .detail-table td { 
+    border: 1px solid #dee2e6; 
+    padding: 6px 8px; 
+    vertical-align: middle; 
+    text-align: center;
+}
+.detail-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    width: 25%;
+}
+
+.ability-section { margin-top: 15px; }
+.ability-section h4 {
+    margin: 0; padding: 6px 8px;
+    background-color: #f8f9fa; border: 1px solid #dee2e6;
+    font-size: 0.9em; text-align: center; font-weight: bold;
+}
+.ability-text {
+    border: 1px solid #dee2e6; border-top: none; padding: 10px;
+    font-size: 0.9em; line-height: 1.6;
+    text-align: left;
+}
+/* --- 特殊能力テキスト内のアイコン画像 --- */
+.text-icon {
+    height: 1em; /* ★★★ 高さを16ピクセルに固定 ★★★ */
+    width: auto; /* 幅は自動調整（比率を維持） */
+    vertical-align: middle;
+    margin: 0 2px;
+}
+.pagination a.current-page {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    font-weight: bold;
+}
+.pagination span.ellipsis {
+    display: inline-block;
+    padding: 6px 12px;
+    margin: 0 4px;
+    color: #333;
+}
+
+/* --- モーダルスクロール対応 --- */
+.modal-body-scrollable {
+    overflow-y: auto;
+    padding: 20px;
+}
+.modal-card-instance {
+    border-bottom: 2px solid #eee;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+.modal-card-instance:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+/*
+ * ===============================================
+ *  並び替え & フィルターセクション (最終版)
+ * ===============================================
+ */
+
+#sort-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 960px;
+    margin: 20px auto 10px auto;
+    padding: 0 10px; /* 左右の余白を追加 */
+    box-sizing: border-box;
+}
+
+.sort-areaLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sort-areaLeft p {
+    margin: 0;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.sort-areaRight {
+    /* 右寄せなので特に指定は不要 */
+}
+
+.select01 select.is-empty2 {
+    color: #000;
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 200px;
+    cursor: pointer;
+}
+
+.check01 input[type="checkbox"] {
+    display: none;
+}
+
+.check01 input[type="checkbox"]+label {
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    padding-left: 25px;
+    user-select: none;
+}
+
+.check01 input[type="checkbox"]+label::before {
+    content: "";
+    position: absolute;
+    display: block;
+    box-sizing: border-box;
+    width: 17px;
+    height: 17px;
+    margin-top: -8px;
+    left: 0;
+    top: 50%;
+    border: 1px solid #000;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.check01 input[type="checkbox"]:checked+label::after {
+    content: "";
+    position: absolute;
+    display: block;
+    box-sizing: border-box;
+    width: 13px;
+    height: 7px;
+    margin-top: -7px;
+    top: 50%;
+    left: 2px;
+    transform: rotate(-45deg);
+    border-bottom: 3px solid #000;
+    border-left: 3px solid #000;
+}
+/* --- 能力テキストの字下げスタイル --- */
+.indented-text {
+    padding-left: 1.5em; /* 字下げの幅を定義 (emはフォントサイズ基準の単位) */
+    display: block; /* 念のためブロック要素として扱う */
+}
+/* --- 「カード一覧」見出しのスタイル --- */
+h2 {
+    font-size: 2.5em; /* 文字サイズを大きくする (emは基準フォントサイズの倍数) */
+    margin-bottom: 0; /* 下の余白を少し詰める */
+}
+/* --- 検索結果の件数表示 --- */
+.search-results-summary {
+    text-align: center;
+    margin-top: 5px; /* 上の余白を少し詰める */
+    margin-bottom: 20px; /* 下に十分な余白を確保 */
+    font-size: 1.5em; /* 文字サイズを大きくする */
+    font-weight: bold;
+    color: #333;
+}
+.search-results-summary p {
+    margin: 0;
+}
+
+/* --- 検索結果0件のメッセージ --- */
+.no-results {
+    width: 100%;
+    text-align: center;
+    padding: 50px 20px;
+    margin: 20px 0;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+}
+.no-results p {
+    margin: 0;
+    font-size: 1.2em;
+    color: #6c757d;
+}
+/* 画面幅が640px以下の場合に、この中のスタイルを適用する */
+@media screen and (max-width: 640px) {
+
+    /* --- カード一覧の列数を2列に変更 --- */
+    .card-grid {
+        grid-template-columns: repeat(2, 1fr); /* 5列から2列に変更 */
+        gap: 10px; /* カード間の余白を少し詰める */
+    }
+    
+    /* --- フォーム全体の幅を調整 --- */
+    input[type="text"],
+    .checkbox-container,
+    #sort-area,
+    .search-group-container {
+        width: 95%; /* 固定幅(960px)から、画面幅に対する割合(95%)に変更 */
+        max-width: none; /* max-widthの指定を解除 */
+    }
+
+    /* --- 検索ワード入力欄のフォントサイズを調整 --- */
+    input[type="text"] {
+        font-size: 16px;
+        height: 45px;
+    }
+
+    /* --- 検索対象チェックボックスのレイアウト調整 --- */
+    .checkbox-container {
+        flex-wrap: wrap; /* 折り返すようにする */
+        justify-content: center; /* 中央揃えにする */
+    }
+    .checkbox-container button {
+        margin-left: auto; /* 全解除ボタンを右端に */
+    }
+    
+        .search-group-container {
+        padding: 10px 8px; /* 内側の余白を少し調整 */
+    }
+    .search-group {
+        flex-wrap: wrap; /* 中の要素が折り返すようにする */
+        gap: 10px; /* 要素間の隙間を調整 */
+    }
+    
+    .search-group-container {
+        padding: 10px;
+    }
+    .search-group {
+        flex-wrap: wrap; 
+        gap: 15px 10px; /* 縦横の隙間を調整 */
+    }
+    
+    /* --- 文明ボタンのレイアウト調整 (自動折り返し版) --- */
+    .civ-buttons {
+        justify-content: flex-start; /* 左寄せ */
+        width: 100%;
+        gap: 8px; /* ボタン間の隙間 */
+        flex-wrap: wrap; /* ★★★ これが魔法の一行 ★★★ */
+    }
+    .civ-btn img {
+        width: 65px; /* スマホ用にボタンサイズを少し調整 */
+    }
+    .exclude-civ-wrapper {
+
+    }
+
+    /* --- コスト、パワー、発売年の入力欄 --- */
+    .num-range-container,
+    .cost-range-container {
+        width: 100%;
+        justify-content: space-between; /* 左右の入力欄を引き離す */
+    }
+    .rangenum-input {
+        width: calc(50% - 20px); /* 幅を約半分に */
+    }
+    
+
+    /* --- ドロップダウンリストのレイアウト調整 --- */
+    .select-group {
+        flex-grow: 1; 
+        flex-basis: calc(50% - 10px); /* 基本幅を約半分に */
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start; /* ★★★ 中身を左寄せにする ★★★ */
+    }
+    .styled-select,
+    .is-empty2 { /* ★ is-empty2も対象に含める */
+        width: 100%;
+        min-width: 0;
+    }
+    /* 1つしか無い要素を全幅にする */
+    .search-group .select-group:only-child {
+        flex-basis: 100%;
+    }
+    /* ラベルを左寄せに戻す */
+    .select-group .search-label { /* ★セレクタをより詳細に */
+         width: 100%;
+         text-align: left;
+    }
+    /* --- 親コンテナの並び方向を「縦」に変更 --- */
+    #sort-area {
+        flex-direction: column; 
+        align-items: flex-start;
+        gap: 15px; 
+    }
+
+    /* --- 左側のコンテナのスタイル調整 --- */
+    .sort-areaLeft {
+        width: 100%;
+        display: flex; /* ★★★ ラベルとセレクトを横並びに保つ ★★★ */
+        align-items: center; /* ★★★ 上下中央揃え ★★★ */
+        gap: 10px;
+    }
+    
+    .sort-areaLeft p {
+        white-space: nowrap; /* ★★★ 「ならびかえ」ラベルの改行を禁止 ★★★ */
+    }
+
+    /* --- 右側のコンテナのスタイル調整 --- */
+    .sort-areaRight {
+        width: 100%;
+    }
+    
+}
+
+@media screen and (max-width: 640px) {
+
+    /* --- モーダル本体のレイアウトを縦並びに変更 --- */
+    .modal-body {
+        flex-direction: column; /* 横並び(row)から縦並び(column)に変更 */
+        /* align-items は不要なので削除 */
+    }
+
+    /* --- 画像エリア (.modal-left) --- */
+    .modal-left {
+        width: 100%; /* 幅を100%に */
+        display: flex; /* ★★★ 中のimgを中央揃えにするためにflexを指定 ★★★ */
+        justify-content: center; /* ★★★ 水平方向（左右）の中央揃え ★★★ */
+        margin-bottom: 20px;
+    }
+    
+    /* --- 詳細情報エリア (.modal-right) --- */
+    .modal-right {
+        width: 100%; /* 幅を100%に */
+    }
+
+    /* --- 画像サイズを、スマホ画面に合わせて少し調整 --- */
+    .modal-left img {
+        width: 220px;
+    }
+
+    /* --- ★★★ テーブルのレイアウト崩れを修正 ★★★ --- */
+    .detail-table {
+        table-layout: fixed; /* テーブルのレイアウト計算を固定に戻す */
+        width: 100%; /* 親要素の幅いっぱいに広がるようにする */
+    }
+    .detail-table th,
+    .detail-table td {
+        width: 25%; /* すべてのセルを、テーブル幅の25%に均等割り付け */
+        /* widthの重複を避けるため、thとtdを一緒に指定する */
+    }
+}
