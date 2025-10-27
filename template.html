@@ -216,14 +216,21 @@
                     </div>
                 </div>
                     <div class="select-group">
-                        <label class="search-label">特殊能力</label>
-                        <select name="ability_id" class="styled-select">
-                            <option value="0" <?= ($selected_ability_id == 0) ? 'selected' : '' ?>>指定なし</option>
-                            <option value="-1" <?= ($selected_ability_id == -1) ? 'selected' : '' ?>>(能力なし)</option>
-                            <?php foreach ($ability_list as $ability): ?>
-                                <option value="<?= $ability['ability_id'] ?>" <?= ($ability['ability_id'] == $selected_ability_id) ? 'selected' : '' ?>><?= htmlspecialchars($ability['ability_name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div class="ability-select-group" style="flex-grow: 1;"> <!-- styleは仮です -->
+                            <div class="ability-search-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <label class="search-label">特殊能力</label>
+                                <div class="and-or-toggle">
+                                    <input type="radio" id="ability-and" name="ability_search_mode" value="AND" checked>
+                                    <label for="ability-and">AND</label>
+                                    <input type="radio" id="ability-or" name="ability_search_mode" value="OR">
+                                    <label for="ability-or">OR</label>
+                                </div>
+                            </div>
+                            <div id="ability-select-box" class="race-select-box"> <!-- race-select-boxクラスを流用 -->
+                                <span class="placeholder">特殊能力を選択</span>
+                                <div class="selected-abilities-display"></div>
+        　　　　　　　　　　　</div>
+   　　　　　　　　　　　 </div>
                     </div>
                 </div>
                 <div class="search-group">
@@ -460,6 +467,27 @@
             <div class="modal-footer">
                 <button type="button" id="race-modal-cancel-btn" class="btn-secondary">キャンセル</button>
                 <button type="button" id="race-modal-confirm-btn" class="btn-primary">決定</button>
+            </div>
+        </div>
+    </div>
+    <!-- ▼▼▼ 特殊能力選択モーダル ▼▼▼ -->
+    <div id="ability-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content race-modal-content">
+            <div class="modal-header">
+                <h3>特殊能力選択</h3>
+                <span id="ability-modal-clear-btn" class="modal-clear-btn">クリア</span>
+            </div>
+            <div class="race-modal-body">
+                <div class="race-modal-search-bar">
+                    <input type="text" id="ability-modal-search-input" placeholder="&#xF002; 特殊能力名">
+                </div>
+                <div id="ability-modal-list" class="race-modal-list">
+                    <!-- ここにJavaScriptで特殊能力リストが挿入される -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="ability-modal-cancel-btn" class="btn-secondary">キャンセル</button>
+                <button type="button" id="ability-modal-confirm-btn" class="btn-primary">決定</button>
             </div>
         </div>
     </div>
