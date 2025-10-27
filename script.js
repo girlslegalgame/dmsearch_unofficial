@@ -257,26 +257,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchForm.appendChild(hiddenInput);
             });
         }
-        function updateRaceList() {
+    // ★★★ サジェスト検索「専用」の関数 ★★★
+        function performRaceSuggestSearch() {
             const query = raceModalSearchInput ? raceModalSearchInput.value.toLowerCase() : '';
+            
+            // queryが空の場合は、キャッシュされた全件リストを表示
+            if (query.length === 0) {
+                const sortedRaces = [...allRaces].sort(customRaceSortJS);
+                renderRaceList(sortedRaces);
+                return;
+            }
+
+            // queryがある場合は、キャッシュをフィルタリング
             const filteredRaces = allRaces.filter(r => {
                 const nameMatch = r.name.toLowerCase().includes(query);
                 const readingMatch = r.reading ? r.reading.toLowerCase().includes(query) : false;
                 return nameMatch || readingMatch;
             });
             renderRaceList(filteredRaces);
-        }
+            
         raceSelectBox.addEventListener('click', () => {
             raceModal.style.display = 'flex';
             if (allRaces.length === 0) {
+                // 初回のみ、APIから全件取得
                 fetch('api.php?type=race&query=')
                     .then(response => response.json())
                     .then(data => {
                         allRaces = data;
-                        updateRaceList();
+                        // ★★★ 取得後、即座にソートして表示 ★★★
+                        const sortedRaces = [...allRaces].sort(customRaceSortJS);
+                        renderRaceList(sortedRaces);
                     });
             } else {
-                updateRaceList();
+                // ★★★ 2回目以降は、キャッシュを即座にソートして表示 ★★★
+                const sortedRaces = [...allRaces].sort(customRaceSortJS);
+                renderRaceList(sortedRaces);
             }
         });
         const closeRaceModal = () => { if(raceModal) raceModal.style.display = 'none'; };
