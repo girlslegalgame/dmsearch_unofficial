@@ -40,6 +40,31 @@ switch ($type) {
         $stmt->execute();
         $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
         break;
+    case 'ability':
+        // abilityテーブルにreadingカラムがあるかチェック
+        try {
+            $columns_stmt_ability = $pdo->query("SHOW COLUMNS FROM ability");
+            $columns_ability = $columns_stmt_ability->fetchAll(PDO::FETCH_COLUMN);
+            $has_reading_column_ability = in_array('reading', $columns_ability);
+        } catch (PDOException $e) {
+            echo json_encode(['error' => 'Database schema error for ability table: ' . $e->getMessage()]);
+            exit;
+        }
+
+        $select_reading_ability = $has_reading_column_ability ? ', reading' : ', NULL AS reading';
+        
+        if (!empty($query)) {
+            $where_reading_ability = $has_reading_column_ability ? 'OR reading LIKE :query' : '';
+            $sql = "SELECT ability_id AS id, ability_name AS name {$select_reading_ability} FROM ability WHERE ability_name LIKE :query {$where_reading_ability} LIMIT 50";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([':query' => '%' . $query . '%']);
+        } else {
+            $sql = "SELECT ability_id AS id, ability_name AS name {$select_reading_ability} FROM ability";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute();
+        }
+        $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        break;
     
     case 'goods':
         $goodstype_id = isset($_GET['goodstype_id']) ? intval($_GET['goodstype_id']) : 0;
