@@ -12,7 +12,7 @@ function customRaceSort($a, $b) {
     static $charMap = null;
     if ($charMap === null) {
         $charMap = [
-            'ゔぁ'=>'03c01','ゔぃ'=>'03c02','ゔぇ'=>'03c04','ゔぉ'=>'03c05','ヴァ'=>'03c01','ヴィ'=>'03c02','ヴェ'=>'03c04','ヴォ'=>'03c05','ぁ'=>'01a','あ'=>'01b','ぃ'=>'02a','い'=>'02b','ぅ'=>'03a','う'=>'03b','ぇ'=>'04a','え'=>'04b','ぉ'=>'05a','お'=>'05b','か'=>'06a','が'=>'06b','き'=>'07a','ぎ'=>'07b','く'=>'08a','ぐ'=>'08b','け'=>'09a','げ'=>'09b','こ'=>'10a','ご'=>'10b','さ'=>'11a','ざ'=>'11b','し'=>'12a','じ'=>'12b','す'=>'13a','ず'=>'13b','せ'=>'14a','ぜ'=>'14b','そ'=>'15a','ぞ'=>'15b','た'=>'16a','だ'=>'16b','ち'=>'17a','ぢ'=>'17b','っ'=>'18a','つ'=>'18b','づ'=>'18b','て'=>'19a','で'=>'19b','と'=>'20a','ど'=>'20b','な'=>'21a','に'=>'22a','ぬ'=>'23a','ね'=>'24a','の'=>'25a','は'=>'26a','ば'=>'26b','ぱ'=>'26c','ひ'=>'27a','び'=>'27b','ぴ'=>'27c','ふ'=>'28a','ぶ'=>'28b','ぷ'=>'28c','へ'=>'29a','べ'=>'29b','ぺ'=>'29c','ほ'=>'30a','ぼ'=>'30b','ぽ'=>'30c','ま'=>'31a','み'=>'32a','む'=>'33a','め'=>'34a','も'=>'35a','ゃ'=>'36a','や'=>'36b','ゅ'=>'37a','ゆ'=>'37b','ょ'=>'38a','よ'=>'38b','ら'=>'39a','り'=>'40a','る'=>'41a','れ'=>'42a','ろ'=>'43a','わ'=>'44a','を'=>'45a','ん'=>'46a','ー'=>'47a','ゔ'=>'03c03','ヴ'=>'03c03','ァ'=>'01a','ア'=>'01b','ィ'=>'02a','イ'=>'02b','ゥ'=>'03a','ウ'=>'03b','ェ'=>'04a','エ'=>'04b','ォ'=>'05a','オ'=>'05b','カ'=>'06a','ガ'=>'06b','キ'=>'07a','ギ'=>'07b','ク'=>'08a','グ'=>'08b','ケ'=>'09a','ゲ'=>'09b','コ'=>'10a','ゴ'=>'10b','サ'=>'11a','ザ'=>'11b','シ'=>'12a','ジ'=>'12b','ス'=>'13a','ズ'=>'13b','セ'=>'14a','ゼ'=>'14b','ソ'=>'15a','ゾ'=>'15b','タ'=>'16a','ダ'=>'16b','チ'=>'17a','ヂ'=>'17b','ッ'=>'18a','ツ'=>'18b','ヅ'=>'18b','テ'=>'19a','デ'=>'19b','ト'=>'20a','ド'=>'20b','ナ'=>'21a','ニ'=>'22a','ヌ'=>'23a','ネ'=>'24a','ノ'=>'25a','ハ'=>'26a','バ'=>'26b','パ'=>'26c','ヒ'=>'27a','ビ'=>'27b','ピ'=>'27c','フ'=>'28a','ブ'=>'28b','プ'=>'28c','ヘ'=>'29a','ベ'=>'29b','ペ'=>'29c','ホ'=>'30a','ボ'=>'30b','ポ'=>'30c','マ'=>'31a','ミ'=>'32a','ム'=>'33a','メ'=>'34a','モ'=>'35a','ャ'=>'36a','ヤ'=>'36b','ュ'=>'37a','ユ'=>'37b','ョ'=>'38a','ヨ'=>'38b','ラ'=>'39a','リ'=>'40a','ル'=>'41a','レ'=>'42a','ロ'=>'43a','ワ'=>'44a','ヲ'=>'45a','ン'=>'46a',
+            'ゔぁ'=>'03c01','ゔぃ'=>'03c02','ゔぇ'=>'03c04','ゔぉ'=>'03c05','ヴァ'=>'03c01','ヴィ'=>'03c02','ヴェ'=>'03c04','ヴォ'=>'03c05','ぁ'=>'01a','あ'=>'01b','ぃ'=>'02a','い'=>'02b','ぅ'=>'03a','う'=>'03b','ぇ'=>'04a','え'=>'04b','ぉ'=>'05a','お'=>'05b','か'=>'06a','が'=>'06b','き'=>'07a','ぎ'=>'07b','く'=>'08a','ぐ'=>'08b','け'=>'09a','げ'=>'09b','こ'=>'10a','ご'=>'10b','さ'=>'11a','ざ'=>'11b','し'=>'12a','じ'=>'12b','す'=>'13a','ず'=>'13b','せ'=>'14a','ぜ'=>'14b','そ'=>'15a','ぞ'=>'15b','た'=>'16a','だ'=>'16b','ち'=>'17a','ぢ'=>'17b','っ'=>'18a','つ'=>'18b','づ'=>'18b','て'=>'19a','で'=>'19b','と'=>'20a','ど'=>'20b','な'=>'21a','に'=>'22a','ぬ'=>'23a','ね'=>'24a','の'=>'25a','は'=>'26a','ば'=>'26b','ぱ'=>'26c','ひ'=>'27a','び'=>'27b','ぴ'=>'27c','ふ'=>'28a','ぶ'=>'28b','ぷ'=>'28c','へ'=>'29a','べ'=>'29b','ぺ'=>'29c','ほ'=>'30a','ぼ'=>'30b','ぽ'=>'30c','ま'=>'31a','み'=>'32a','む'=>'33a','め'=>'34a','も'=>'35a','ゃ'=>'36a','や'=>'36b','ゅ'=>'37a','ゆ'=>'37b','ょ'=>'38a','よ'=>'38b','ら'=>'39a','り'=>'40a','る'=>'41a','れ'=>'42a','ろ'=>'43a','わ'=>'44a','を'=>'45a','ん'=>'46a','ー'=>'47a','ゔ'=>'03c03','ヴ'=>'03c03','ァ'=>'01a','ア'=>'01b','ィ'=>'02a','イ'=>'02b','ゥ'=>'03a','ウ'=>'03b','ェ'=>'04a','エ'=>'04b','ォ'=>'05a','オ'=>'05b','カ'=>'06a','ガ'=>'06b','キ'=>'07a','ギ':'07b','ク'=>'08a','グ'=>'08b','ケ'=>'09a','ゲ'=>'09b','コ'=>'10a','ゴ'=>'10b','サ'=>'11a','ザ'=>'11b','シ'=>'12a','ジ'=>'12b','ス'=>'13a','ズ'=>'13b','セ'=>'14a','ゼ'=>'14b','ソ'=>'15a','ゾ'=>'15b','タ'=>'16a','ダ'=>'16b','チ'=>'17a','ヂ'=>'17b','ッ'=>'18a','ツ'=>'18b','ヅ'=>'18b','テ'=>'19a','デ'=>'19b','ト'=>'20a','ド'=>'20b','ナ'=>'21a','ニ'=>'22a','ヌ'=>'23a','ネ'=>'24a','ノ'=>'25a','ハ'=>'26a','バ'=>'26b','パ'=>'26c','ヒ'=>'27a','ビ'=>'27b','ピ'=>'27c','フ'=>'28a','ブ'=>'28b','プ'=>'28c','ヘ'=>'29a','ベ'=>'29b','ペ'=>'29c','ホ'=>'30a','ボ'=>'30b','ポ'=>'30c','マ'=>'31a','ミ'=>'32a','ム'=>'33a','メ'=>'34a','モ'=>'35a','ャ':'36a','ヤ'=>'36b','ュ'=>'37a','ユ'=>'37b','ョ'=>'38a','ヨ'=>'38b','ラ'=>'39a','リ'=>'40a','ル'=>'41a','レ'=>'42a','ロ'=>'43a','ワ'=>'44a','ヲ'=>'45a','ン':'46a',
         ];
     }
     $readingA_sortable = strtr($a['reading'], $charMap);
@@ -41,8 +41,9 @@ $selected_char_id = isset($_GET['characteristics_id']) ? intval($_GET['character
 $selected_cardtype_id = isset($_GET['cardtype_id']) ? intval($_GET['cardtype_id']) : 0; 
 $selected_race_ids = isset($_GET['race_ids']) && is_array($_GET['race_ids']) ? array_map('intval', $_GET['race_ids']) : [];
 $race_search_mode = isset($_GET['race_search_mode']) && $_GET['race_search_mode'] === 'OR' ? 'OR' : 'AND';
+$selected_ability_ids = isset($_GET['ability_ids']) && is_array($_GET['ability_ids']) ? array_map('intval', $_GET['ability_ids']) : [];
+$ability_search_mode = isset($_GET['ability_search_mode']) && $_GET['ability_search_mode'] === 'OR' ? 'OR' : 'AND';
 $selected_rarity_id = isset($_GET['rarity_id']) ? intval($_GET['rarity_id']) : 0;
-$selected_ability_id = isset($_GET['ability_id']) ? intval($_GET['ability_id']) : 0;
 $selected_twinpact = isset($_GET['twinpact_filter']) ? $_GET['twinpact_filter'] : '0';
 $selected_treasure_id = isset($_GET['treasure_id_filter']) ? $_GET['treasure_id_filter'] : '0';
 $selected_regulation = isset($_GET['regulation_filter']) ? $_GET['regulation_filter'] : '0';
@@ -137,8 +138,19 @@ if ($selected_soul_id != 0) {
     if ($selected_soul_id == -1) { $conditions[] = "card_race.soul_id IS NULL"; } else { $conditions[] = "card_race.soul_id = :soul_id"; $params[':soul_id'] = $selected_soul_id; }
 }
 if ($selected_frame_id > 0) { $conditions[] = "cd.frame_id = :frame_id"; $params[':frame_id'] = $selected_frame_id; }
-if ($selected_ability_id != 0) {
-    if ($selected_ability_id == -1) { $conditions[] = "(card.text IS NULL OR card.text = '')"; } else { $joins['card_ability_ability'] = 'LEFT JOIN card_ability ON card.card_id = card_ability.card_id'; $conditions[] = "card_ability.ability_id = :ability_id"; $params[':ability_id'] = $selected_ability_id; }
+if (!empty($selected_ability_ids)) {
+    $joins['card_ability'] = 'LEFT JOIN card_ability ON card.card_id = card_ability.card_id';
+    $ability_placeholders = [];
+    foreach ($selected_ability_ids as $index => $ability_id) {
+        $placeholder = ':ability_id_' . $index;
+        $ability_placeholders[] = $placeholder;
+        $params[$placeholder] = $ability_id;
+    }
+    if ($ability_search_mode === 'AND') {
+        $conditions[] = "(SELECT COUNT(DISTINCT ability_id) FROM card_ability WHERE card_id = card.card_id AND ability_id IN (" . implode(',', $ability_placeholders) . ")) = " . count($selected_ability_ids);
+    } else {
+        $conditions[] = "card_ability.ability_id IN (" . implode(',', $ability_placeholders) . ")";
+    }
 }
 if ($selected_illus_id > 0) { $joins['card_illus_illus'] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id'; $conditions[] = "card_illus.illus_id = :illus_id"; $params[':illus_id'] = $selected_illus_id; }
 if ($selected_twinpact !== '0') { $conditions[] = "cd.twinpact = :twinpact"; $params[':twinpact'] = ($selected_twinpact === '1') ? 1 : 0; }
