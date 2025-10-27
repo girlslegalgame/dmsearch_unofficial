@@ -30,7 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const paginationContainer = document.querySelector('.pagination');
     const resultsSummary = document.querySelector('.search-results-summary p');
     
-    // --- ② メインの制御関数 ---
+    // --- ② メインの制御関数と、共有される変数 ---
+    let selectedRaces = new Map();
+    let updateSelectedRacesDisplay = () => {};
+
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
         const isMultiOn = !multiColorBtn.classList.contains('is-off');
@@ -137,28 +140,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(input2) input2.value = '';
             }
         };
-
         if(check1) {
             check1.addEventListener('change', () => {
-                // もしcheck1がONになったら、check2をOFFにする
-                if (check1.checked && check2) {
-                    check2.checked = false;
-                }
+                if (check1.checked && check2) check2.checked = false;
                 toggleInputs();
             });
         }
-
         if (check2) {
             check2.addEventListener('change', () => {
-                // もしcheck2がONになったら、check1をOFFにする
-                if (check2.checked && check1) {
-                    check1.checked = false;
-                }
+                if (check2.checked && check1) check1.checked = false;
                 toggleInputs();
             });
         }
-
-        toggleInputs(); // 初期表示時にも実行
+        toggleInputs();
     };
     if (costZeroCheck && costInfinityCheck && costMinInput && costMaxInput) {
         setupCheckboxToggle(costZeroCheck, costInfinityCheck, costMinInput, costMaxInput);
@@ -192,19 +186,84 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (toggleBtn) toggleBtn.addEventListener('click', toggleCheckboxes);
     searchCheckboxes.forEach(cb => cb.addEventListener('change', updateToggleButtonLabel));
+
+    // --- ④ グローバルなクリックイベントの司令塔 ---
+    document.body.addEventListener('click', (e) => {
+        const paginationLink = e.target.closest('.pagination a');
+        if (paginationLink && !paginationLink.classList.contains('current-page')) {
+            e.preventDefault();
+            performSearch(paginationLink.href);
+            return;
+        }
+        const cardImage = e.target.closest('.card-image-item');
+        if (cardImage) {
+            openCardDetailModal(cardImage.dataset.cardId);
+            return;
+        }
+    });
+
+    // --- ⑤ リセットボタンのイベントリスナー ---
+    function resetSearch() {
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) searchInput.value = "";
+        if (costMinInput) { costMinInput.value = ""; costMinInput.disabled = false; }
+        if (costMaxInput) { costMaxInput.value = ""; costMaxInput.disabled = false; }
+        if (costZeroCheck) costZeroCheck.checked = false;
+        if (costInfinityCheck) costInfinityCheck.checked = false;
+        if (powMinInput) { powMinInput.value = ""; powMinInput.disabled = false; }
+        if (powMaxInput) { powMaxInput.value = ""; powMaxInput.disabled = false; }
+        if (powInfinityCheck) powInfinityCheck.checked = false;
+        const yearMinInput = document.querySelector('input[name="year_min"]');
+        const yearMaxInput = document.querySelector('input[name="year_max"]');
+        if (yearMinInput) yearMinInput.value = "";
+        if (yearMaxInput) yearMaxInput.value = "";
+        document.querySelectorAll('select.styled-select, .select01 select').forEach(select => {
+             if (select.id !== 'sort-order') {
+                 if (select.name === 'mana_filter') { select.value = 'all'; } 
+                 else { select.value = '0'; }
+             }
+        });
+        const searchName = document.querySelector('input[name="search_name"]');
+        const searchReading = document.querySelector('input[name="search_reading"]');
+        const searchText = document.querySelector('input[name="search_text"]');
+        if(searchName) searchName.checked = true;
+        if(searchReading) searchReading.checked = true;
+        if(searchText) searchText.checked = true;
+        document.querySelectorAll('input[name="search_race"], input[name="search_flavortext"], input[name="search_illus"]').forEach(cb => { if(cb) cb.checked = false; });
+        document.querySelectorAll('.civ-btn').forEach(button => {
+            const targetInput = document.getElementById(button.dataset.targetInput);
+            const buttonId = button.dataset.targetInput;
+            if (buttonId === 'mono_color' || buttonId === 'multi_color') {
+                button.classList.remove('is-off');
+                if (targetInput) targetInput.value = '1';
+            } else {
+                button.classList.add('is-off');
+                if (targetInput) targetInput.value = '0';
+            }
+        });
+        if (typeof selectedRaces !== 'undefined' && selectedRaces.clear) {
+            selectedRaces.clear();
+        }
+        if (typeof updateSelectedRacesDisplay !== 'undefined') {
+            updateSelectedRacesDisplay();
+        }
+        updateToggleButtonLabel();
+        updateCivilizationControls();
+        if (goodsTypeSelect) {
+            goodsTypeSelect.dispatchEvent(new Event('change'));
+        }
+    }
+    if (resetButtons.length > 0) {
+        resetButtons.forEach(button => {
+            button.addEventListener('click', resetSearch);
+        });
+    }
     
-    // --- ⑤ 初期化処理 ---
+    // --- ⑥ 初期化処理 ---
     updateToggleButtonLabel();
     updateCivilizationControls();
 
-    // ★★★ ここからが、構造を再設計した部分 ★★★
-    // --- ⑥ 2種類のモーダルと、リセット機能のセットアップ ---
-    
-    // まず、すべてのモーダルとリセット機能で共有される変数を定義
-    let selectedRaces = new Map();
-    let allRaces = [];
-
-    // --- 種族モーダルのロジックをセットアップ ---
+    // --- ⑦ 種族選択モーダルのロジック ---
     const raceSelectBox = document.getElementById('race-select-box');
     const raceModal = document.getElementById('race-modal');
     if (raceSelectBox && raceModal) {
@@ -216,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const raceModalConfirmBtn = document.getElementById('race-modal-confirm-btn');
         const selectedRacesDisplay = document.querySelector('.selected-races-display');
         const racePlaceholder = document.querySelector('.race-select-group .placeholder');
-        
+        let allRaces = [];
         const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ':'03b','ェ':'04a','エ':'04b','ォ':'05a','オ':'05b','カ':'06a','ガ':'06b','キ':'07a','ギ':'07b','ク':'08a','グ':'08b','ケ':'09a','ゲ':'09b','コ':'10a','ゴ':'10b','サ':'11a','ザ':'11b','シ':'12a','ジ':'12b','ス':'13a','ズ':'13b','セ':'14a','ゼ':'14b','ソ':'15a','ゾ':'15b','タ':'16a','ダ':'16b','チ':'17a','ヂ':'17b','ッ':'18a','ツ':'18b','ヅ':'18b','テ':'19a','デ':'19b','ト':'20a','ド':'20b','ナ':'21a','ニ':'22a','ヌ':'23a','ネ':'24a','ノ':'25a','ハ':'26a','バ':'26b','パ':'26c','ヒ':'27a','ビ':'27b','ピ':'27c','フ':'28a','ブ':'28b','プ':'28c','ヘ':'29a','ベ':'29b','ペ':'29c','ホ':'30a','ボ':'30b','ポ':'30c','マ':'31a','ミ':'32a','ム':'33a','メ':'34a','モ':'35a','ャ':'36a','ヤ':'36b','ュ':'37a','ユ':'37b','ョ':'38a','ヨ':'38b','ラ':'39a','リ':'40a','ル':'41a','レ':'42a','ロ':'43a','ワ':'44a','ヲ':'45a','ン':'46a'};
         function getSortableString(str) { if (!str) return ''; return str.split('').map(char => sortMap[char] || char).join(''); }
         function customRaceSortJS(a, b) {
@@ -229,7 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
         function renderRaceList(races) {
             if (!raceModalList) return;
             raceModalList.innerHTML = '';
-            races.sort(customRaceSortJS);
             races.forEach(race => {
                 const isChecked = selectedRaces.has(String(race.id));
                 const item = document.createElement('div');
@@ -238,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 raceModalList.appendChild(item);
             });
         }
-        function updateSelectedRacesDisplay() {
+        updateSelectedRacesDisplay = function() {
             const raceNames = Array.from(selectedRaces.values());
             if (raceNames.length > 0) {
                 if(selectedRacesDisplay) selectedRacesDisplay.textContent = raceNames.join('、');
@@ -257,39 +315,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchForm.appendChild(hiddenInput);
             });
         }
-    // ★★★ サジェスト検索「専用」の関数 ★★★
         function performRaceSuggestSearch() {
             const query = raceModalSearchInput ? raceModalSearchInput.value.toLowerCase() : '';
-            
-            // queryが空の場合は、キャッシュされた全件リストを表示
             if (query.length === 0) {
                 const sortedRaces = [...allRaces].sort(customRaceSortJS);
                 renderRaceList(sortedRaces);
                 return;
             }
-
-            // queryがある場合は、キャッシュをフィルタリング
             const filteredRaces = allRaces.filter(r => {
                 const nameMatch = r.name.toLowerCase().includes(query);
                 const readingMatch = r.reading ? r.reading.toLowerCase().includes(query) : false;
                 return nameMatch || readingMatch;
             });
             renderRaceList(filteredRaces);
-            
+        }
         raceSelectBox.addEventListener('click', () => {
             raceModal.style.display = 'flex';
             if (allRaces.length === 0) {
-                // 初回のみ、APIから全件取得
                 fetch('api.php?type=race&query=')
                     .then(response => response.json())
                     .then(data => {
                         allRaces = data;
-                        // ★★★ 取得後、即座にソートして表示 ★★★
                         const sortedRaces = [...allRaces].sort(customRaceSortJS);
                         renderRaceList(sortedRaces);
                     });
             } else {
-                // ★★★ 2回目以降は、キャッシュを即座にソートして表示 ★★★
                 const sortedRaces = [...allRaces].sort(customRaceSortJS);
                 renderRaceList(sortedRaces);
             }
@@ -306,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (raceModalClearBtn) {
             raceModalClearBtn.addEventListener('click', () => {
                 selectedRaces.clear();
-                updateRaceList();
+                performRaceSuggestSearch();
             });
         }
         if (raceModalConfirmBtn) {
@@ -332,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (raceModalSearchInput) {
             raceModalSearchInput.addEventListener('input', () => {
                 clearTimeout(debounceTimeout);
-                debounceTimeout = setTimeout(updateRaceList, 250);
+                debounceTimeout = setTimeout(performRaceSuggestSearch, 250);
             });
             raceModalSearchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -360,65 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             updateSelectedRacesDisplay();
         }
-        
-        // --- リセットボタンのイベントリスナーを、このスコープの中に移動 ---
-        function resetSearch() {
-            const searchInput = document.querySelector('input[name="search"]');
-            if (searchInput) searchInput.value = "";
-            if (costMinInput) { costMinInput.value = ""; costMinInput.disabled = false; }
-            if (costMaxInput) { costMaxInput.value = ""; costMaxInput.disabled = false; }
-            if (costZeroCheck) costZeroCheck.checked = false;
-            if (costInfinityCheck) costInfinityCheck.checked = false;
-            if (powMinInput) { powMinInput.value = ""; powMinInput.disabled = false; }
-            if (powMaxInput) { powMaxInput.value = ""; powMaxInput.disabled = false; }
-            if (powInfinityCheck) powInfinityCheck.checked = false;
-            const yearMinInput = document.querySelector('input[name="year_min"]');
-            const yearMaxInput = document.querySelector('input[name="year_max"]');
-            if (yearMinInput) yearMinInput.value = "";
-            if (yearMaxInput) yearMaxInput.value = "";
-            document.querySelectorAll('select.styled-select, .select01 select').forEach(select => {
-                 if (select.id !== 'sort-order') {
-                     if (select.name === 'mana_filter') { select.value = 'all'; } 
-                     else { select.value = '0'; }
-                 }
-            });
-            const searchName = document.querySelector('input[name="search_name"]');
-            const searchReading = document.querySelector('input[name="search_reading"]');
-            const searchText = document.querySelector('input[name="search_text"]');
-            if(searchName) searchName.checked = true;
-            if(searchReading) searchReading.checked = true;
-            if(searchText) searchText.checked = true;
-            document.querySelectorAll('input[name="search_race"], input[name="search_flavortext"], input[name="search_illus"]').forEach(cb => cb.checked = false);
-            document.querySelectorAll('.civ-btn').forEach(button => {
-                const targetInput = document.getElementById(button.dataset.targetInput);
-                const buttonId = button.dataset.targetInput;
-                if (buttonId === 'mono_color' || buttonId === 'multi_color') {
-                    button.classList.remove('is-off');
-                    if (targetInput) targetInput.value = '1';
-                } else {
-                    button.classList.add('is-off');
-                    if (targetInput) targetInput.value = '0';
-                }
-            });
-            
-            selectedRaces.clear();
-            updateSelectedRacesDisplay();
-            
-            updateToggleButtonLabel();
-            updateCivilizationControls();
-            if (goodsTypeSelect) {
-                goodsTypeSelect.dispatchEvent(new Event('change'));
-            }
-        }
-        if (resetButtons.length > 0) {
-            resetButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    resetSearch();
-                });
-            });
-        }
-
     }
+
     // --- ⑧ カード詳細モーダルのロジック ---
     const cardDetailModal = document.getElementById('card-modal');
     function openCardDetailModal(cardId) {
