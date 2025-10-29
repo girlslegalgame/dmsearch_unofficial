@@ -536,6 +536,11 @@ h2 {
         flex-wrap: wrap; 
         gap: 15px 10px;
     }
+    .race-select-group,
+    .ability-select-group {
+        flex-basis: 100%;
+    }
+	
     .civ-buttons {
         justify-content: flex-start;
         width: 100%;
