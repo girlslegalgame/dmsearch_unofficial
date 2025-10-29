@@ -398,11 +398,13 @@ h2 {
     border-top: 1px solid #eee;
     margin-top: 10px;
 }
-.race-select-group {
+.race-select-group,
+.ability-select-group {
     flex-grow: 1;
     flex-basis: calc(50% - 10px);
 }
-.race-search-header {
+.race-search-header,
+.ability-search-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
