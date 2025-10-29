@@ -74,6 +74,7 @@ button {
 }
 .search-group {
     display: flex;
+    flex-wrap: wrap; /* スマホ表示のために wrap を最初から指定しておくと安全 */
     align-items: center;
     margin-bottom: 8px;
     gap: 20px;
@@ -198,7 +199,7 @@ button {
     border: 1px solid #ccc;
     border-radius: 4px;
     background-color: white;
-    min-width:  0.9em;
+    min-width: 180px; /* 元の値に戻しました。0.9emは小さすぎる可能性があります */
     cursor: pointer;
 }
 .select-group {
@@ -446,7 +447,8 @@ h2 {
 .race-select-box .placeholder {
     color: #888;
 }
-.selected-races-display {
+.selected-races-display,
+.selected-abilities-display {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -533,7 +535,6 @@ h2 {
         margin-left: auto;
     }
     .search-group {
-        flex-wrap: wrap; 
         gap: 15px 10px;
     }
     .race-select-group,
@@ -558,8 +559,7 @@ h2 {
     .rangenum-input {
         width: calc(50% - 20px);
     }
-    .select-group,
-    .ability-select-group {
+    .select-group {
         flex-grow: 1; 
         flex-basis: calc(50% - 10px);
         display: flex;
