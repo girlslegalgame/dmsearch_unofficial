@@ -200,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- ⑤ リセットボタンのイベントリスナー ---
-    // この関数はモーダルリセットのためにグローバルスコープに近い場所に置いておく
     let resetModalStates = []; 
     function resetSearch() {
         const searchInput = document.querySelector('input[name="search"]');
@@ -241,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // モーダル選択状態のリセット
         resetModalStates.forEach(resetFunc => resetFunc());
 
         updateToggleButtonLabel();
@@ -261,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCivilizationControls();
 
     // --- ⑦ 汎用ソート関数 と 検索モーダル設定のロジック ---
-    const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ':'03b','ェ':'04a','エ':'04b','ォ':'05a','オ':'05b','カ':'06a','ガ':'06b','キ':'07a','ギ':'07b','ク':'08a','グ':'08b','ケ':'09a','ゲ':'09b','コ':'10a','ゴ':'10b','サ':'11a','ザ':'11b','シ':'12a','ジ':'12b','ス':'13a','ズ':'13b','セ':'14a','ゼ':'14b','ソ':'15a','ゾ':'15b','タ':'16a','ダ':'16b','チ':'17a','ヂ':'17b','ッ':'18a','ツ':'18b','ヅ':'18b','テ':'19a','デ':'19b','ト':'20a','ド':'20b','ナ':'21a','ニ':'22a','ヌ':'23a','ネ':'24a','ノ':'25a','ハ':'26a','バ':'26b','パ':'26c','ヒ':'27a','ビ':'27b','ピ':'27c','フ':'28a','ブ':'28b','プ':'28c','ヘ':'29a','ベ':'29b','ペ':'29c','ホ':'30a','ボ':'30b','ポ':'30c','マ':'31a','ミ':'32a','ム':'33a','メ':'34a','モ':'35a','ャ':'36a','ヤ':'36b','ュ':'37a','ユ':'37b','ョ':'38a','ヨ':'38b','ラ':'39a','リ':'40a','ル':'41a','レ':'42a','ロ':'43a','ワ':'44a','ヲ':'45a','ン':'46a'};
+    const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が'=>'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ'=>'11b','し':'12a','じ'=>'12b','す':'13a','ず'=>'13b','せ':'14a','ぜ'=>'14b','そ':'15a','ぞ'=>'15b','た':'16a','だ'=>'16b','ち':'17a','ぢ'=>'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で'=>'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば'=>'26b','ぱ'=>'26c','ひ':'27a','び':'27b','ぴ'=>'27c','ふ':'28a','ぶ'=>'28b','ぷ'=>'28c','へ':'29a','べ'=>'29b','ぺ'=>'29c','ほ':'30a','ぼ'=>'30b','ぽ'=>'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り'=>'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ':'03b','ェ':'04a','エ':'04b','ォ':'05a','オ':'05b','カ':'06a','ガ'=>'06b','キ':'07a','ギ':'07b','ク':'08a','グ':'08b','ケ':'09a','ゲ':'09b','コ':'10a','ゴ':'10b','サ':'11a','ザ'=>'11b','シ':'12a','ジ'=>'12b','ス':'13a','ズ':'13b','セ':'14a','ゼ'=>'14b','ソ':'15a','ゾ':'15b','タ':'16a','ダ'=>'16b','チ':'17a','ヂ':'17b','ッ':'18a','ツ':'18b','ヅ':'18b','テ':'19a','デ'=>'19b','ト':'20a','ド':'20b','ナ':'21a','ニ':'22a','ヌ':'23a','ネ':'24a','ノ':'25a','ハ':'26a','バ'=>'26b','パ'=>'26c','ヒ':'27a','ビ':'27b','ピ':'27c','フ':'28a','ブ':'28b','プ':'28c','ヘ':'29a','ベ'=>'29b','ペ'=>'29c','ホ':'30a','ボ':'30b','ポ':'30c','マ':'31a','ミ':'32a','ム':'33a','メ':'34a','モ':'35a','ャ':'36a','ヤ':'36b','ュ':'37a','ユ':'37b','ョ':'38a','ヨ':'38b','ラ':'39a','リ':'40a','ル':'41a','レ':'42a','ロ':'43a','ワ':'44a','ヲ':'45a','ン':'46a'};
     function getSortableString(str) { if (!str) return ''; return str.split('').map(char => sortMap[char] || char).join(''); }
     function customSortJS(a, b) {
         const readingA = a.reading || '';
@@ -271,12 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return sortA.localeCompare(sortB);
     }
 
-    /**
-     * 種族や特殊能力などの検索モーダルをセットアップする汎用関数
-     * @param {object} config - モーダルの設定オブジェクト
-     */
     function setupSearchModal(config) {
-        const { modalType, hiddenInputName } = config;
+        const { modalType, hiddenInputName, displayClassName } = config; // displayClassName を受け取る
         const selectBox = document.getElementById(`${modalType}-select-box`);
         const modal = document.getElementById(`${modalType}-modal`);
         if (!selectBox || !modal) return;
@@ -286,7 +280,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const modalList = document.getElementById(`${modalType}-modal-list`);
         const modalCancelBtn = document.getElementById(`${modalType}-modal-cancel-btn`);
         const modalConfirmBtn = document.getElementById(`${modalType}-modal-confirm-btn`);
-        const selectedDisplay = document.querySelector(`.selected-${modalType}s-display`);
+        // ▼▼▼ ここを修正 ▼▼▼
+        const selectedDisplay = document.querySelector(`.${displayClassName}`); // 受け取ったクラス名で要素を取得
+        // ▲▲▲ ここを修正 ▲▲▲
         const placeholder = selectBox.querySelector('.placeholder');
 
         let allItems = [];
@@ -298,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             items.forEach(item => {
                 const isChecked = selectedItems.has(String(item.id));
                 const listItem = document.createElement('div');
-                listItem.className = 'race-list-item'; // CSSクラスは共通で使う
+                listItem.className = 'race-list-item';
                 listItem.innerHTML = `<label for="${modalType}-${item.id}" style="flex-grow: 1; cursor: pointer; padding: 5px;">${item.name}</label><input type="checkbox" id="${modalType}-${item.id}" data-id="${item.id}" data-name="${item.name}" ${isChecked ? 'checked' : ''}>`;
                 modalList.appendChild(listItem);
             });
@@ -420,7 +416,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSelectedDisplay();
         }
 
-        // リセットボタン用の関数を登録
         const resetState = () => {
             selectedItems.clear();
             updateSelectedDisplay();
@@ -429,16 +424,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- ⑦-1: 種族モーダルの初期化 ---
+    // ▼▼▼ ここを修正 ▼▼▼
     setupSearchModal({
         modalType: 'race',
-        hiddenInputName: 'race_ids[]'
+        hiddenInputName: 'race_ids[]',
+        displayClassName: 'selected-races-display' // 正しいクラス名を追加
     });
+    // ▲▲▲ ここを修正 ▲▲▲
 
     // --- ⑦-2: 特殊能力モーダルの初期化 ---
+    // ▼▼▼ ここを修正 ▼▼▼
     setupSearchModal({
         modalType: 'ability',
-        hiddenInputName: 'ability_ids[]'
+        hiddenInputName: 'ability_ids[]',
+        displayClassName: 'selected-abilities-display' // 正しいクラス名を追加
     });
+    // ▲▲▲ ここを修正 ▲▲▲
 
 
     // --- ⑧ カード詳細モーダルのロジック ---
