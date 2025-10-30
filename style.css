@@ -452,6 +452,7 @@ h2 {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+	width: 100%;
 }
 .race-modal-content {
     max-width: 400px;
