@@ -450,10 +450,19 @@ h2 {
 }
 .selected-races-display,
 .selected-abilities-display {
+    /* テキストを親ボックス内で浮かせる設定 */
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    
+    /* 親ボックスのpaddingに合わせて左右に配置 */
+    left: 12px;
+    right: 12px;
+
+    /* はみ出したテキストを「...」で表示する設定 */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-	width: 100%;
 }
 .race-modal-content {
     max-width: 400px;
