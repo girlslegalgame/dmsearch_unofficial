@@ -475,6 +475,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-mana').textContent = cardInfo.mana ?? '---';
                     templateClone.querySelector('.modal-race').textContent = cardInfo.race;
                     templateClone.querySelector('.modal-illustrator').textContent = cardInfo.illustrator;
+                    // ===== デバッグ用ここから (不要になったらこのブロックごと削除) =====
+                    const abilityIdsDebugEl = templateClone.querySelector('.modal-debug-ability-ids');
+                    if (abilityIdsDebugEl) {
+                        if (cardInfo.ability_ids && cardInfo.ability_ids.length > 0) {
+                            abilityIdsDebugEl.textContent = cardInfo.ability_ids.join(', ');
+                        } else {
+                            abilityIdsDebugEl.textContent = '（なし）';
+                        }
+                    }
+                    // ===== デバッグ用ここまで =====                    
                     let imageUrl = 'path/to/placeholder.webp';
                     if (cardInfo.modelnum) {
                         const parts = cardInfo.modelnum.split('-');
