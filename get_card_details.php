@@ -159,10 +159,16 @@ foreach ($response['cards'] as &$card) {
     $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
     if (!$response['is_set']) {
-        // 【デバッグ用】Ability IDリストを取得 (本番で不要な場合はこのブロックごと削除)
-        $stmt_debug_ability = $pdo->prepare("SELECT ability_id FROM card_ability WHERE card_id = ? ORDER BY ability_id ASC");
+        // 【デバッグ用】Ability Nameリストを取得 (本番で不要な場合はこのブロックごと削除)
+        $stmt_debug_ability = $pdo->prepare("
+            SELECT a.ability_name
+            FROM card_ability ca
+            JOIN ability a ON ca.ability_id = a.ability_id
+            WHERE ca.card_id = ?
+            ORDER BY a.reading COLLATE utf8mb4_unicode_ci ASC
+        ");
         $stmt_debug_ability->execute([$current_card_id]);
-        $card['ability_ids'] = $stmt_debug_ability->fetchAll(PDO::FETCH_COLUMN);
+        $card['ability_names_debug'] = $stmt_debug_ability->fetchAll(PDO::FETCH_COLUMN);
         // 【デバッグ用】Ability IDリストを取得 (本番で不要な場合はこのブロックごと削除)
         $text_from_file = null;
         $single_text_file = ($modelnum && $series_folder) ? "text/" . $series_folder . "/" . $modelnum . ".txt" : null;
