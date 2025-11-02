@@ -361,11 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
    	 }
 	};        
 	if(modalCancelBtn) modalCancelBtn.addEventListener('click', closeModal);
-        const modalOverlay = modal.closest('.modal-overlay');
-        if(modalOverlay) {
-            modalOverlay.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
-        }
-        
+     
         if (modalClearBtn) {
             modalClearBtn.addEventListener('click', () => {
                 selectedItems.clear();
@@ -536,19 +532,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 modalCardsContainer.innerHTML = '<p style="text-align:center;">通信エラーが発生しました。</p>';
             });
     }
-    if (cardDetailModal) {
-        const modalCloseBtn = cardDetailModal.querySelector('.modal-header .close-btn');
-        const modalOverlay = cardDetailModal.closest('.modal-overlay');
-        const closeModal = () => {
-            if (cardDetailModal) cardDetailModal.style.display = 'none';
-        };
-        if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && cardDetailModal && cardDetailModal.style.display !== 'none') {
-                closeModal();
-            }
-        });
-    }
+	if (cardDetailModal) {
+		const modalCloseBtn = cardDetailModal.querySelector('.modal-header .close-btn');
+		const modalOverlay = cardDetailModal.closest('.modal-overlay');
+		const closeModal = () => {
+			if (cardDetailModal) cardDetailModal.style.display = 'none';
+		};
+		if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+		if (modalOverlay) modalOverlay.addEventListener('click', (e) => {
+			if (e.target === modalOverlay) closeModal();
+		});
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && cardDetailModal && cardDetailModal.style.display !== 'none') {
+				closeModal();
+			}
+		});
+	}
     function formatAbilityText(rawText) {
         if (!rawText || rawText.trim() === '') return '（テキスト情報なし）';
         const iconMap = {
