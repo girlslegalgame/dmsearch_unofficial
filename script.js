@@ -351,8 +351,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const closeModal = () => { if(modal) modal.style.display = 'none'; };
-        if(modalCancelBtn) modalCancelBtn.addEventListener('click', closeModal);
+	const closeModal = () => {
+	    if (modal) {
+        	modal.style.display = 'none';
+        	// テキストボックスの入力内容をクリアする処理を追加
+        	if (modalSearchInput) {
+                    modalSearchInput.value = '';
+        	}
+   	 }
+	};        
+	if(modalCancelBtn) modalCancelBtn.addEventListener('click', closeModal);
         const modalOverlay = modal.closest('.modal-overlay');
         if(modalOverlay) {
             modalOverlay.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
@@ -535,9 +543,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cardDetailModal) cardDetailModal.style.display = 'none';
         };
         if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
-        if (modalOverlay) modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) closeModal();
-        });
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && cardDetailModal && cardDetailModal.style.display !== 'none') {
                 closeModal();
