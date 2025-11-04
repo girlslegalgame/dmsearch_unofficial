@@ -14,11 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // 設定関連
     const q5Radio = document.getElementById('q5');
     const textQRadio = document.getElementById('text-q');
-    const imageQRadio = document.getElementById('image-q');
     const textQuestionSetup = document.getElementById('text-question-setup');
     const imageQuestionSetup = document.getElementById('image-question-setup');
     const questionTextInput = document.getElementById('question-text-input');
     const imageUploadArea = document.getElementById('image-upload-area');
+
+    // トリミングモーダル関連
+    const cropModal = document.getElementById('crop-modal');
+    const imageToCrop = document.getElementById('image-to-crop');
+    const cropConfirmBtn = document.getElementById('crop-confirm-btn');
+    let cropper;
+    let currentCropIndex;
 
     // 音声
     const correctAudio = new Audio('./assets/audio/correct.mp3');
@@ -28,12 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let gameState = {
         totalQuestions: 5,
         timeLimit: 30,
-        questionType: 'text', // 'text' or 'image'
+        questionType: 'text',
         questionText: '',
         imageFiles: [],
         timer: null,
         timeLeft: 30,
-        currentPlayer: 0, // 0: start, 1-5: players
+        currentPlayer: 0,
         correctCount: 0,
         isReversed: false,
         imageCorrectStatus: []
@@ -50,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupQuestionCount() {
         gameState.totalQuestions = q5Radio.checked ? 5 : 10;
         gameState.timeLimit = q5Radio.checked ? 30 : 60;
-        updateImageUploader();
+        if (gameState.questionType === 'image') updateImageUploader();
     }
 
     function setupQuestionFormat() {
@@ -71,18 +77,46 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < gameState.totalQuestions; i++) {
             const uploader = document.createElement('div');
             uploader.className = 'image-uploader';
-            uploader.innerHTML = `<label for="img-upload-${i+1}">画像 ${i+1}: </label>
-                                <input type="file" id="img-upload-${i+1}" accept="image/*">`;
+            uploader.innerHTML = `<label for="img-upload-${i + 1}">画像 ${i + 1}: </label>
+                                <input type="file" id="img-upload-${i + 1}" accept="image/*">
+                                <img class="thumbnail-preview" id="thumb-${i + 1}" src="">`;
             imageUploadArea.appendChild(uploader);
-            
-            document.getElementById(`img-upload-${i+1}`).addEventListener('change', (e) => {
-                if(e.target.files[0]) {
-                    gameState.imageFiles[i] = URL.createObjectURL(e.target.files[0]);
+
+            document.getElementById(`img-upload-${i + 1}`).addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    currentCropIndex = i;
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        imageToCrop.src = event.target.result;
+                        cropModal.classList.add('show');
+                        if (cropper) {
+                            cropper.destroy();
+                        }
+                        cropper = new Cropper(imageToCrop, {
+                            aspectRatio: 4 / 3, // アスペクト比を4:3に固定
+                            viewMode: 1,
+                        });
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
                 }
             });
         }
     }
     
+    // トリミング決定ボタンの処理
+    cropConfirmBtn.addEventListener('click', () => {
+        if (cropper) {
+            const croppedCanvas = cropper.getCroppedCanvas();
+            const dataUrl = croppedCanvas.toDataURL();
+            gameState.imageFiles[currentCropIndex] = dataUrl;
+            document.getElementById(`thumb-${currentCropIndex + 1}`).src = dataUrl;
+            
+            cropper.destroy();
+            cropper = null;
+            cropModal.classList.remove('show');
+        }
+    });
+
     // 初期設定
     setupQuestionCount();
     setupQuestionFormat();
@@ -100,12 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ゲーム初期化 ---
     function initializeGame() {
+        // (中略: この部分は変更なし)
         gameState.timeLeft = gameState.timeLimit;
         gameState.currentPlayer = 0;
         gameState.correctCount = 0;
         gameState.isReversed = false;
         
-        // プレイヤーの位置を計算
         calculatePlayerPositions();
         moveBomb(0, false);
         bomb.style.transform = `translateX(${playerPositions[0]}px) scaleX(1)`;
@@ -126,15 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
         startTimer();
         document.addEventListener('keydown', handleKeyPress);
     }
-    
-    // 画像グリッドのセットアップ
+
     function setupImageGrid() {
         imageGrid.innerHTML = '';
         imageGrid.className = `image-grid q${gameState.totalQuestions}`;
-
-        if(gameState.totalQuestions === 10) {
-            imageGrid.style.gridTemplateRows = '1fr 1fr 1fr';
-        }
 
         gameState.imageFiles.forEach((file, index) => {
             const item = document.createElement('div');
@@ -142,17 +171,14 @@ document.addEventListener('DOMContentLoaded', () => {
             item.innerHTML = `
                 <img src="${file}" class="question-image">
                 <div class="number-tag">${index + 1}</div>
-                <div class="correct-mark" id="mark-${index+1}"></div>
+                <div class="correct-mark" id="mark-${index + 1}"></div>
             `;
-            // 10問の最後の行のレイアウト調整
-            if (gameState.totalQuestions === 10 && index >= 8) {
-                item.style.gridColumn = `span 2`;
-            }
             imageGrid.appendChild(item);
         });
     }
 
     // --- タイマー ---
+    // (中略: この部分は変更なし)
     function startTimer() {
         gameState.timer = setInterval(() => {
             gameState.timeLeft--;
@@ -173,36 +199,35 @@ document.addEventListener('DOMContentLoaded', () => {
         timerDisplay.textContent = `${minutes}:${seconds}`;
     }
 
-    // --- キー入力処理 ---
+    // --- キー入力処理 (不正解処理を修正) ---
     function handleKeyPress(e) {
         if (gameState.questionType === 'text') {
-            // 正解: 右矢印 or Dキー
             if ((e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') && !gameState.isReversed) {
                 handleCorrect();
             }
-            // 正解 (折り返し): 左矢印 or Aキー
             if ((e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') && gameState.isReversed) {
                 handleCorrect();
             }
-        } else { // 画像問題
-             const keyNum = e.key === '0' ? 10 : parseInt(e.key);
-             if (!isNaN(keyNum) && keyNum >= 1 && keyNum <= gameState.totalQuestions) {
-                 handleImageCorrect(keyNum);
-             }
+        } else {
+            const keyNum = e.key === '0' ? 10 : parseInt(e.key);
+            if (!isNaN(keyNum) && keyNum >= 1 && keyNum <= gameState.totalQuestions) {
+                handleImageCorrect(keyNum);
+            }
         }
         
-        // 不正解: スペースキー
+        // ★修正点: 不正解の場合は音を鳴らすだけにする
         if (e.key === ' ') {
             e.preventDefault();
-            gameOver(true); // 即時ゲームオーバー
+            incorrectAudio.play();
         }
     }
 
     // --- 正解・不正解処理 ---
+    // (中略: この部分は変更なし)
     let playerPositions = [];
 
     function calculatePlayerPositions() {
-        playerPositions = [0]; // 初期位置
+        playerPositions = [0];
         const playerBoxes = document.querySelectorAll('.player-box');
         const trackRect = playerTrack.getBoundingClientRect();
         const bombWidth = bomb.getBoundingClientRect().width;
@@ -215,12 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function moveBomb(playerIndex, animate = true) {
-        if (!animate) {
-            bomb.style.transition = 'none';
-        }
+        if (!animate) bomb.style.transition = 'none';
         bomb.style.transform = `translateX(${playerPositions[playerIndex]}px) ${gameState.isReversed ? 'scaleX(-1)' : 'scaleX(1)'}`;
         if (!animate) {
-            // DOMの再描画を強制して即時反映
             bomb.offsetHeight; 
             bomb.style.transition = 'transform 0.5s ease-in-out';
         }
@@ -234,49 +256,39 @@ document.addEventListener('DOMContentLoaded', () => {
             if (gameState.currentPlayer >= 5) return;
             gameState.currentPlayer++;
         }
-        
         correctAudio.play();
         moveBomb(gameState.currentPlayer);
         gameState.correctCount++;
-
         checkGameStatus();
     }
 
     function handleImageCorrect(num) {
-        if (gameState.imageCorrectStatus[num - 1]) return; // 既に正解済み
-
+        if (gameState.imageCorrectStatus[num - 1]) return;
         gameState.imageCorrectStatus[num - 1] = true;
         correctAudio.play();
         document.getElementById(`mark-${num}`).classList.add('show');
         gameState.correctCount++;
-        
         checkGameStatus();
     }
 
     function checkGameStatus() {
-        // 10問モードの折り返し処理
         if (gameState.totalQuestions === 10 && gameState.correctCount === 5) {
-            stopTimer(); // タイマーを一時停止
-            bomb.style.transition = 'none'; // 移動アニメーションをなくす
-            
-            // 爆弾を5人目の位置に固定し、向きを反転
+            stopTimer();
+            bomb.style.transition = 'none';
             moveBomb(5, false);
             gameState.isReversed = true;
             bomb.style.transform = `translateX(${playerPositions[5]}px) scaleX(-1)`;
-
-            setTimeout(() => { // 少し間を置いてから再開
+            setTimeout(() => {
                 bomb.style.transition = 'transform 0.5s ease-in-out';
                 startTimer();
-            }, 1500); // 1.5秒待つ
+            }, 1500);
         }
-
-        // クリア判定
         if (gameState.correctCount === gameState.totalQuestions) {
             gameClear();
         }
     }
 
-    // --- ゲーム終了処理 ---
+    // --- ゲーム終了処理 (引数を削除) ---
     function gameClear() {
         stopTimer();
         document.removeEventListener('keydown', handleKeyPress);
@@ -285,15 +297,15 @@ document.addEventListener('DOMContentLoaded', () => {
         resultOverlay.classList.add('show');
     }
 
-    function gameOver(isMistake = false) {
+    // ★修正点: isMistake引数を削除
+    function gameOver() {
         stopTimer();
         document.removeEventListener('keydown', handleKeyPress);
-        incorrectAudio.play();
+        incorrectAudio.play(); // タイマー切れの時の音
         resultText.textContent = "GAME OVER";
         explosionImg.style.display = 'block';
         resultOverlay.classList.add('show');
     }
 
-    // ウィンドウリサイズ時にプレイヤー位置を再計算
     window.addEventListener('resize', calculatePlayerPositions);
 });
