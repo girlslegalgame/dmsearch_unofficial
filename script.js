@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM要素
+    // DOM要素 (変更なし)
     const settingsModal = document.getElementById('settings-modal');
     const startGameBtn = document.getElementById('start-game-btn');
     const questionDisplay = document.getElementById('question-display');
@@ -17,11 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const questionTextInput = document.getElementById('question-text-input');
     const imageUploadArea = document.getElementById('image-upload-area');
 
-    // 音声
+    // 音声 (変更なし)
     const correctAudio = new Audio('./assets/audio/correct.mp3');
     const incorrectAudio = new Audio('./assets/audio/incorrect.mp3');
     
-    // ゲーム状態
+    // =================================================================
+    // ★★★ ここからが修正箇所です ★★★
+    // =================================================================
     let gameState = {
         totalQuestions: 5,
         timeLimit: 30,
@@ -30,13 +32,17 @@ document.addEventListener('DOMContentLoaded', () => {
         imageFiles: [],
         timer: null,
         timeLeft: 30,
-        currentPlayer: 0,
+        currentPlayer: 1, // ★変更: 初期プレイヤーを1に設定
         correctCount: 0,
         isReversed: false,
         imageCorrectStatus: []
     };
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
 
-    // --- 設定画面 ---
+
+    // --- 設定画面 (変更なし) ---
     document.querySelectorAll('input[name="question-type"]').forEach(radio => radio.addEventListener('change', setupQuestionCount));
     document.querySelectorAll('input[name="format-type"]').forEach(radio => radio.addEventListener('change', setupQuestionFormat));
 
@@ -55,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- 画像アップロード処理 ---
+    // --- 画像アップロード処理 (変更なし) ---
     function updateImageUploader() {
         imageUploadArea.innerHTML = '';
         gameState.imageFiles = Array(gameState.totalQuestions).fill(null);
@@ -97,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-
     // --- ゲーム開始から終了までのロジック ---
     setupQuestionCount();
     setupQuestionFormat();
@@ -112,14 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeGame();
     });
 
+
+    // =================================================================
+    // ★★★ ここからが修正箇所です ★★★
+    // =================================================================
     function initializeGame() {
         gameState.timeLeft = gameState.timeLimit;
-        gameState.currentPlayer = 0;
+        gameState.currentPlayer = 1; // ★変更: 初期プレイヤーを1に設定
         gameState.correctCount = 0;
         gameState.isReversed = false;
         
         calculatePlayerPositions();
-        moveBomb(0, false);
+        moveBomb(1, false); // ★変更: 爆弾の初期位置をプレイヤー1に設定
 
         if (gameState.questionType === 'text') {
             questionDisplay.textContent = gameState.questionText;
@@ -137,6 +146,10 @@ document.addEventListener('DOMContentLoaded', () => {
         startTimer();
         document.addEventListener('keydown', handleKeyPress);
     }
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
+
 
     function setupImageGrid() {
         imageGrid.innerHTML = '';
@@ -187,7 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let playerPositions = [];
     function calculatePlayerPositions() {
-        playerPositions = [0];
+        // playerPositions[0]は使わないが、インデックスをプレイヤー番号と合わせるために空けておく
+        playerPositions = [null]; 
         const playerBoxes = document.querySelectorAll('.player-box');
         if (playerBoxes.length === 0) return;
         const trackRect = playerTrack.getBoundingClientRect();
@@ -208,26 +222,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
     // =================================================================
     // ★★★ ここからが修正箇所です ★★★
     // =================================================================
     function handleCorrect() {
+        // 正解数を先に加算
+        gameState.correctCount++;
+
         if (gameState.isReversed) {
-            // ★★★ バグの原因だった行を削除 ★★★
-            // if (gameState.currentPlayer <= 1) return; 
-            gameState.currentPlayer--;
+            // 逆走中（currentPlayerが5, 4, 3, 2の時に正解した場合）
+            if (gameState.currentPlayer > 1) {
+                gameState.currentPlayer--;
+            }
         } else {
-            if (gameState.currentPlayer >= 5) return;
-            gameState.currentPlayer++;
+            // 順走中（currentPlayerが1, 2, 3, 4の時に正解した場合）
+            if (gameState.currentPlayer < 5) {
+                gameState.currentPlayer++;
+            }
         }
         correctAudio.play();
         moveBomb(gameState.currentPlayer);
-        gameState.correctCount++;
         checkGameStatus();
     }
     // =================================================================
     // ★★★ 修正箇所はここまでです ★★★
     // =================================================================
+
 
     function handleImageCorrect(num) {
         if (gameState.imageCorrectStatus[num - 1]) return;
@@ -239,17 +260,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkGameStatus() {
+        // 10問モードの折り返し処理
         if (gameState.totalQuestions === 10 && gameState.correctCount === 5) {
             stopTimer();
             bomb.style.transition = 'none';
-            moveBomb(5, false);
+            // currentPlayerは既に5になっているのでそのまま使う
+            moveBomb(gameState.currentPlayer, false);
             gameState.isReversed = true;
-            bomb.style.transform = `translateX(${playerPositions[5]}px) scaleX(-1)`;
+            bomb.style.transform = `translateX(${playerPositions[gameState.currentPlayer]}px) scaleX(-1)`;
             setTimeout(() => {
                 bomb.style.transition = 'transform 0.5s ease-in-out';
                 startTimer();
             }, 1500);
         }
+        // クリア判定
         if (gameState.correctCount === gameState.totalQuestions) gameClear();
     }
 
