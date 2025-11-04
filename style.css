@@ -160,8 +160,7 @@ body {
 .image-item img.question-image {
     width: 100%;
     height: 100%;
-    /* ★★★ ここを変更 ★★★ */
-    object-fit: contain; /* 画像全体が表示されるようにする */
+    object-fit: contain;
     display: block;
 }
 .image-item .number-tag {
@@ -225,9 +224,20 @@ body {
     transition: transform 0.5s ease-in-out;
     z-index: 10;
 }
+
+/* ================================================================= */
+/* ★★★ ここからが修正箇所です ★★★ */
+/* ================================================================= */
+
 .result-content {
+    /* 親要素を基準に、子要素の位置を決める */
     position: relative;
-    text-align: center;
+    /* 親要素自体も中央に配置する */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
 }
 #explosion-img {
     display: none;
@@ -235,13 +245,20 @@ body {
     max-height: 80vh;
 }
 #result-text {
-    font-size: 8em;
-    font-weight: bold;
-    color: #ffc107;
-    text-shadow: 4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000;
+    /* 絶対配置で親要素(.result-content)の中央に配置する */
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+
+    font-size: 8em;
+    font-weight: bold;
+    color: #ffc107;
+    text-shadow: 4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000;
     width: 100%;
+    text-align: center; /* 文字自体も中央寄せに */
 }
+
+/* ================================================================= */
+/* ★★★ 修正箇所はここまでです ★★★ */
+/* ================================================================= */
