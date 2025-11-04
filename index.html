@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ファイブボンバーゲーム</title>
-    <!-- Cropper.jsのCSSを削除 -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -27,7 +26,7 @@
             <input type="radio" id="text-q" name="format-type" value="text" checked>
             <label for="text-q">文章題</label>
             <input type="radio" id="image-q" name="format-type" value="image">
-            <label for="image-q">画像問題</label>
+            <label for="image-q">複合問題（画像/テキスト）</label>
         </div>
         
         <div id="text-question-setup" class="setup-area">
@@ -36,15 +35,13 @@
         </div>
 
         <div id="image-question-setup" class="setup-area" style="display: none;">
-            <p>問題に使用する画像をアップロードしてください。</p>
+            <p>各問題の形式（画像/テキスト）と内容を設定してください。</p>
             <div id="image-upload-area"></div>
         </div>
 
         <button id="start-game-btn">ゲーム開始</button>
     </div>
 </div>
-
-<!-- ★★★ トリミング用モーダルを削除 ★★★ -->
 
 <!-- ゲーム本体 -->
 <div class="game-container">
@@ -74,7 +71,6 @@
     </div>
 </div>
 
-<!-- ★★★ Cropperとjpeg-cmykのJSを削除 ★★★ -->
 <script src="script.js"></script>
 </body>
 </html>
