@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM要素
+    // DOM要素 (変更なし)
     const settingsModal = document.getElementById('settings-modal');
     const startGameBtn = document.getElementById('start-game-btn');
     const questionDisplay = document.getElementById('question-display');
@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageToCrop = document.getElementById('image-to-crop');
     const cropConfirmBtn = document.getElementById('crop-confirm-btn');
 
-    // 音声
+    // 音声 (変更なし)
     const correctAudio = new Audio('./assets/audio/correct.mp3');
     const incorrectAudio = new Audio('./assets/audio/incorrect.mp3');
 
-    // グローバル変数
+    // グローバル変数 (変更なし)
     let cropper;
     let currentCropIndex;
     let gameState = {
@@ -41,14 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
         imageCorrectStatus: []
     };
 
-    // --- 設定画面 ---
-
-    document.querySelectorAll('input[name="question-type"]').forEach(radio => {
-        radio.addEventListener('change', setupQuestionCount);
-    });
-    document.querySelectorAll('input[name="format-type"]').forEach(radio => {
-        radio.addEventListener('change', setupQuestionFormat);
-    });
+    // --- 設定画面 (変更なし) ---
+    document.querySelectorAll('input[name="question-type"]').forEach(radio => radio.addEventListener('change', setupQuestionCount));
+    document.querySelectorAll('input[name="format-type"]').forEach(radio => radio.addEventListener('change', setupQuestionFormat));
 
     function setupQuestionCount() {
         gameState.totalQuestions = q5Radio.checked ? 5 : 10;
@@ -60,95 +55,97 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.questionType = textQRadio.checked ? 'text' : 'image';
         textQuestionSetup.style.display = (gameState.questionType === 'text') ? 'block' : 'none';
         imageQuestionSetup.style.display = (gameState.questionType === 'image') ? 'block' : 'none';
-        if (gameState.questionType === 'image') {
-            updateImageUploader();
-        }
+        if (gameState.questionType === 'image') updateImageUploader();
     }
     
-    // --- 画像アップロードとトリミング処理 (★全面的に修正) ---
+    // =================================================================
+    // ★★★ ここからが修正箇所です ★★★
+    // =================================================================
 
     function updateImageUploader() {
         imageUploadArea.innerHTML = '';
         gameState.imageFiles = Array(gameState.totalQuestions).fill(null);
         for (let i = 0; i < gameState.totalQuestions; i++) {
-            const uploader = document.createElement('div');
-            uploader.className = 'image-uploader';
-            // 各要素に data-index を付与
-            uploader.innerHTML = `
-                <label>画像 ${i + 1}: </label>
-                <input type="file" class="image-input" data-index="${i}" accept="image/*" style="display:none;">
-                <button type="button" class="select-btn" data-index="${i}">ファイルを選択</button>
-                <img class="thumbnail-preview" id="thumb-${i}" src="">
-            `;
-            imageUploadArea.appendChild(uploader);
+            imageUploadArea.insertAdjacentHTML('beforeend', `
+                <div class="image-uploader">
+                    <label>画像 ${i + 1}: </label>
+                    <input type="file" class="image-input" data-index="${i}" accept="image/*" style="display:none;">
+                    <button type="button" class="select-btn" data-index="${i}">ファイルを選択</button>
+                    <img class="thumbnail-preview" id="thumb-${i}" src="">
+                </div>
+            `);
         }
     }
 
-    // イベントデリゲーション：親要素でイベントを待ち受ける
+    // イベントデリゲーションで親要素にイベントリスナーを設置
     imageUploadArea.addEventListener('click', (e) => {
-        // 「ファイルを選択」ボタンが押された場合
         if (e.target.classList.contains('select-btn')) {
             const index = e.target.dataset.index;
-            // 対応するinput要素をクリックさせる
             imageUploadArea.querySelector(`.image-input[data-index="${index}"]`).click();
         }
     });
 
-    imageUploadArea.addEventListener('change', async (e) => {
-        // input要素でファイルが選択された場合
+    imageUploadArea.addEventListener('change', (e) => {
         if (e.target.classList.contains('image-input')) {
             const index = e.target.dataset.index;
             const file = e.target.files[0];
             if (!file) return;
 
-            try {
-                // ファイルを読み込んでDataURLに変換 (Promiseで処理の完了を待つ)
-                const dataUrl = await readFileAsDataURL(file);
-                // トリミングモーダルを表示
-                showCropper(dataUrl, index);
-            } catch (error) {
-                console.error("File reading failed:", error);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                // トリミングモーダルを表示し、Cropperを準備する
+                prepareCropper(event.target.result, index);
+            };
+            reader.onerror = () => {
                 alert("ファイルの読み込みに失敗しました。");
-            }
+            };
+            reader.readAsDataURL(file);
         }
     });
 
-    // ファイルリーダーをPromiseでラップするヘルパー関数
-    function readFileAsDataURL(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (err) => reject(err);
-            reader.readAsDataURL(file);
-        });
-    }
-
-    // トリミングモーダルを表示し、Cropperを初期化する関数
-    function showCropper(dataUrl, index) {
+    // Cropperの準備と初期化を行う関数
+    function prepareCropper(dataUrl, index) {
         currentCropIndex = index;
         imageToCrop.src = dataUrl;
         cropModal.classList.add('show');
-    
+        
         // 既存のCropperインスタンスがあれば破棄
         if (cropper) {
             cropper.destroy();
         }
 
-        // Cropper.jsを初期化 (画像の読み込み完了を待つため、readyイベントを使用)
-        cropper = new Cropper(imageToCrop, {
-            aspectRatio: 4 / 3,
-            viewMode: 1,
-            background: false,
-            autoCropArea: 1,
-            ready() {
-                // 準備完了でトリミング可能になる
+        // ★重要：画像の読み込みが完了してからCropperを初期化する
+        imageToCrop.onload = () => {
+            try {
+                cropper = new Cropper(imageToCrop, {
+                    aspectRatio: 4 / 3,
+                    viewMode: 1,
+                    background: false,
+                    autoCropArea: 1,
+                });
+            } catch (error) {
+                console.error("Cropper initialization failed:", error);
+                alert("トリミング機能の初期化に失敗しました。別の画像でお試しください。");
+                cropModal.classList.remove('show');
             }
-        });
+            // onloadイベントは一度きりで良いので削除
+            imageToCrop.onload = null;
+        };
+        
+        // 画像の読み込み自体に失敗した場合のエラーハンドリング
+        imageToCrop.onerror = () => {
+            alert("画像の表示に失敗しました。ファイルが破損している可能性があります。");
+            cropModal.classList.remove('show');
+            imageToCrop.onerror = null;
+        };
     }
 
-    // トリミング決定ボタンの処理 (一度だけ登録)
+    // トリミング決定ボタンの処理
     cropConfirmBtn.addEventListener('click', () => {
-        if (!cropper) return;
+        if (!cropper || !cropper.cropped) {
+             // cropperが準備できていない、またはトリミングエリアがない場合は何もしない
+            return;
+        }
 
         const croppedCanvas = cropper.getCroppedCanvas({
             width: 400, height: 300, imageSmoothingQuality: 'high',
@@ -162,6 +159,11 @@ document.addEventListener('DOMContentLoaded', () => {
         cropper = null;
         cropModal.classList.remove('show');
     });
+
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
+
 
     // --- ゲーム開始から終了までのロジック (変更なし) ---
     
