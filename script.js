@@ -21,9 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const correctAudio = new Audio('./assets/audio/correct.mp3');
     const incorrectAudio = new Audio('./assets/audio/incorrect.mp3');
     
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
+    // ゲーム状態 (変更なし)
     let gameState = {
         totalQuestions: 5,
         timeLimit: 30,
@@ -32,17 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
         imageFiles: [],
         timer: null,
         timeLeft: 30,
-        currentPlayer: 1, // ★変更: 初期プレイヤーを1に設定
+        currentPlayer: 1,
         correctCount: 0,
         isReversed: false,
         imageCorrectStatus: []
     };
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
 
-
-    // --- 設定画面 (変更なし) ---
+    // --- 設定画面 ---
     document.querySelectorAll('input[name="question-type"]').forEach(radio => radio.addEventListener('change', setupQuestionCount));
     document.querySelectorAll('input[name="format-type"]').forEach(radio => radio.addEventListener('change', setupQuestionFormat));
 
@@ -52,14 +46,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameState.questionType === 'image') updateImageUploader();
     }
 
+    // =================================================================
+    // ★★★ ここからが修正箇所です ★★★
+    // =================================================================
     function setupQuestionFormat() {
         gameState.questionType = textQRadio.checked ? 'text' : 'image';
-        textQuestionSetup.style.display = (gameState.questionType === 'text') ? 'block' : 'none';
-        imageQuestionSetup.style.display = (gameState.questionType === 'image') ? 'block' : 'none';
+        
+        // 問題文入力欄は常に表示
+        textQuestionSetup.style.display = 'block';
+
+        // 画像アップロード欄だけ表示を切り替える
         if (gameState.questionType === 'image') {
+            imageQuestionSetup.style.display = 'block';
             updateImageUploader();
+        } else {
+            imageQuestionSetup.style.display = 'none';
         }
     }
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
+
     
     // --- 画像アップロード処理 (変更なし) ---
     function updateImageUploader() {
@@ -123,19 +130,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // =================================================================
     function initializeGame() {
         gameState.timeLeft = gameState.timeLimit;
-        gameState.currentPlayer = 1; // ★変更: 初期プレイヤーを1に設定
+        gameState.currentPlayer = 1;
         gameState.correctCount = 0;
         gameState.isReversed = false;
         
         calculatePlayerPositions();
-        moveBomb(1, false); // ★変更: 爆弾の初期位置をプレイヤー1に設定
+        moveBomb(1, false);
+
+        // ★常に問題文を表示するように変更
+        questionDisplay.textContent = gameState.questionText;
 
         if (gameState.questionType === 'text') {
-            questionDisplay.textContent = gameState.questionText;
             playerTrack.style.display = 'flex';
             imageGrid.style.display = 'none';
-        } else {
-            questionDisplay.textContent = '';
+        } else { // 画像問題
             playerTrack.style.display = 'none';
             imageGrid.style.display = 'grid';
             setupImageGrid();
@@ -200,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let playerPositions = [];
     function calculatePlayerPositions() {
-        // playerPositions[0]は使わないが、インデックスをプレイヤー番号と合わせるために空けておく
         playerPositions = [null]; 
         const playerBoxes = document.querySelectorAll('.player-box');
         if (playerBoxes.length === 0) return;
@@ -222,21 +229,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
     function handleCorrect() {
-        // 正解数を先に加算
         gameState.correctCount++;
 
         if (gameState.isReversed) {
-            // 逆走中（currentPlayerが5, 4, 3, 2の時に正解した場合）
             if (gameState.currentPlayer > 1) {
                 gameState.currentPlayer--;
             }
         } else {
-            // 順走中（currentPlayerが1, 2, 3, 4の時に正解した場合）
             if (gameState.currentPlayer < 5) {
                 gameState.currentPlayer++;
             }
@@ -245,10 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
         moveBomb(gameState.currentPlayer);
         checkGameStatus();
     }
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
-
 
     function handleImageCorrect(num) {
         if (gameState.imageCorrectStatus[num - 1]) return;
@@ -260,11 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkGameStatus() {
-        // 10問モードの折り返し処理
         if (gameState.totalQuestions === 10 && gameState.correctCount === 5) {
             stopTimer();
             bomb.style.transition = 'none';
-            // currentPlayerは既に5になっているのでそのまま使う
             moveBomb(gameState.currentPlayer, false);
             gameState.isReversed = true;
             bomb.style.transform = `translateX(${playerPositions[gameState.currentPlayer]}px) scaleX(-1)`;
@@ -273,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 startTimer();
             }, 1500);
         }
-        // クリア判定
         if (gameState.correctCount === gameState.totalQuestions) gameClear();
     }
 
