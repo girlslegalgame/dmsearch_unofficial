@@ -52,13 +52,18 @@ body {
 }
 #image-upload-area {
     display: grid;
-    gap: 10px;
+    gap: 15px;
 }
-.image-uploader {
-    display: flex;
-    align-items: center;
-    padding: 5px;
+.image-uploader { /* uploaderからslot-configuratorに名前変更の意図 */
+    padding: 10px;
     border: 1px dashed #6c82d3;
+    border-radius: 5px;
+}
+.slot-type-selector label {
+    margin-right: 10px;
+}
+.slot-input-area {
+    margin-top: 8px;
 }
 .thumbnail-preview {
     width: 80px;
@@ -67,6 +72,11 @@ body {
     background-color: #000;
     border-radius: 4px;
     object-fit: cover;
+    vertical-align: middle;
+}
+.text-input-slot {
+    width: 95%;
+    padding: 8px;
 }
 #start-game-btn {
     display: block;
@@ -173,6 +183,7 @@ body {
     font-weight: bold;
     padding: 2px 8px;
     border-radius: 50%;
+    z-index: 5; /* 番号がテキストより手前に来るように */
 }
 .image-item .correct-mark {
     position: absolute;
@@ -186,22 +197,41 @@ body {
     background-position: center;
     opacity: 0;
     transition: opacity 0.3s;
+    z-index: 6; /* 丸が一番手前に来るように */
 }
 .image-item .correct-mark.show {
     opacity: 1;
 }
 
 /* ================================================================= */
-/* ★★★ ここからが修正箇所です ★★★ */
+/* ★★★ ここからが追加箇所です ★★★ */
+/* ================================================================= */
+.text-item-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    color: black;
+    font-weight: bold;
+    font-size: 1.8em; /* 文字サイズを調整 */
+    text-align: center;
+    padding: 10px;
+    box-sizing: border-box; /* paddingがサイズに影響しないように */
+    line-height: 1.2; /* 行間を調整 */
+}
+/* ================================================================= */
+/* ★★★ 追加箇所はここまでです ★★★ */
 /* ================================================================= */
 
 #player-track {
     width: 100%;
     display: flex;
     justify-content: space-around;
-    align-items: center; /* ★追加：プレイヤーボックスを垂直方向に中央揃え */
+    align-items: center;
     position: relative;
-    height: 120px; /* ボックスの高さに合わせる */
+    height: 120px;
     margin-top: 50px;
 }
 .player-box {
@@ -225,7 +255,7 @@ body {
     background-size: contain;
     background-repeat: no-repeat;
     position: absolute;
-    bottom: 40px; /* ★変更：爆弾の位置を上げる (20px -> 40px) */
+    bottom: 40px;
     left: 0;
     transition: transform 0.5s ease-in-out;
     z-index: 10;
@@ -255,7 +285,3 @@ body {
     width: 100%;
     text-align: center;
 }
-
-/* ================================================================= */
-/* ★★★ 修正箇所はここまでです ★★★ */
-/* ================================================================= */
