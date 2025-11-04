@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ファイブボンバーゲーム</title>
-    <!-- Cropper.jsのCSSを追加 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" integrity="sha512-hvNR0F/e2Jb1hbGI9JCf1OAfqRErcbeTu9HQGtBOAkomOLFxOKbbDxSRrWxCpNASIEYHZ+KwbkAtHOYbMOiC0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -38,6 +37,7 @@
 
         <div id="image-question-setup" class="setup-area" style="display: none;">
             <p>問題に使用する画像をアップロードしてください。</p>
+            <!-- イベント管理はJSに集約 -->
             <div id="image-upload-area"></div>
         </div>
 
@@ -45,7 +45,7 @@
     </div>
 </div>
 
-<!-- 画像トリミング用モーダルを追加 -->
+<!-- 画像トリミング用モーダル -->
 <div id="crop-modal" class="modal-overlay">
     <div class="modal-content crop-modal-content">
         <h2>画像をトリミング</h2>
@@ -85,7 +85,6 @@
     </div>
 </div>
 
-<!-- Cropper.jsのJSを追加 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" integrity="sha512-9KkIqdfN7ipEW6B6k+Aq20PV31bjODg4AA52W+tYtAE0jE0kMx49bjJ3FgvS56wzmyfMUHbQ4x4didaat4acNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="script.js"></script>
 </body>
