@@ -32,6 +32,8 @@ body {
     border-radius: 10px;
     border: 2px solid #6c82d3;
     width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 .setting-group {
     margin-bottom: 20px;
@@ -53,8 +55,18 @@ body {
     gap: 10px;
 }
 .image-uploader {
+    display: flex;
+    align-items: center;
     padding: 5px;
     border: 1px dashed #6c82d3;
+}
+.thumbnail-preview {
+    width: 80px;
+    height: 60px;
+    margin-left: 10px;
+    background-color: #000;
+    border-radius: 4px;
+    object-fit: cover;
 }
 #start-game-btn {
     display: block;
@@ -70,6 +82,26 @@ body {
     margin-top: 20px;
 }
 
+/* --- トリミングモーダルのスタイル --- */
+.crop-modal-content {
+    width: 80vw;
+    max-width: 800px;
+}
+.crop-container {
+    margin-bottom: 20px;
+    height: 60vh;
+}
+#image-to-crop {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+}
+#crop-confirm-btn {
+    padding: 10px 20px;
+    font-size: 1.1em;
+    cursor: pointer;
+}
+
 /* --- ゲーム画面 --- */
 .game-container {
     width: 95%;
@@ -78,7 +110,6 @@ body {
     display: flex;
     flex-direction: column;
 }
-
 .game-header {
     display: flex;
     justify-content: space-between;
@@ -102,7 +133,6 @@ body {
     border-radius: 5px;
     border: 3px solid #6c82d3;
 }
-
 #game-main {
     flex-grow: 1;
     display: flex;
@@ -111,20 +141,20 @@ body {
     align-items: center;
     position: relative;
 }
-
-/* 画像問題グリッド */
 .image-grid {
     display: grid;
     gap: 15px;
     margin-bottom: 30px;
+    width: 80%;
 }
 .image-grid.q5 {
     grid-template-columns: repeat(3, 1fr);
-    width: 60%;
+    /* 2行目のレイアウト調整用 */
+    grid-template-rows: auto auto;
 }
 .image-grid.q10 {
     grid-template-columns: repeat(4, 1fr);
-    width: 80%;
+    grid-template-rows: auto auto auto;
 }
 .image-item {
     position: relative;
@@ -132,7 +162,23 @@ body {
     border-radius: 8px;
     overflow: hidden;
     background-color: #000;
+    /* アスペクト比を固定してレイアウトを安定させる */
+    aspect-ratio: 4 / 3;
 }
+/* 5問問題のレイアウト調整 */
+.image-grid.q5 .image-item:nth-child(4) {
+    grid-column: 1 / 2;
+}
+.image-grid.q5 .image-item:nth-child(5) {
+    grid-column: 2 / 3;
+}
+
+/* 10問問題のレイアウト調整 */
+.image-grid.q10 .image-item:nth-child(9),
+.image-grid.q10 .image-item:nth-child(10) {
+    grid-column: span 2;
+}
+
 .image-item img.question-image {
     width: 100%;
     height: 100%;
@@ -166,14 +212,12 @@ body {
 .image-item .correct-mark.show {
     opacity: 1;
 }
-
-/* プレイヤーと爆弾 */
 #player-track {
     width: 100%;
     display: flex;
     justify-content: space-around;
     position: relative;
-    height: 100px; /* 爆弾の高さに合わせる */
+    height: 100px;
     margin-top: 50px;
 }
 .player-box {
@@ -202,8 +246,6 @@ body {
     transition: transform 0.5s ease-in-out;
     z-index: 10;
 }
-
-/* 結果オーバーレイ */
 .result-content {
     position: relative;
     text-align: center;
