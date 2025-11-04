@@ -20,8 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 音声
     const correctAudio = new Audio('./assets/audio/correct.mp3');
     const incorrectAudio = new Audio('./assets/audio/incorrect.mp3');
-
-    // ★★★ トリミング関連の変数を削除 ★★★
     
     // ゲーム状態
     let gameState = {
@@ -57,10 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // =================================================================
-    // ★★★ 画像処理を大幅に簡略化 ★★★
-    // =================================================================
-
+    // --- 画像アップロード処理 ---
     function updateImageUploader() {
         imageUploadArea.innerHTML = '';
         gameState.imageFiles = Array(gameState.totalQuestions).fill(null);
@@ -89,13 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = e.target.files[0];
             if (!file) return;
 
-            // ファイルを読み込んでDataURLに変換する
             const reader = new FileReader();
             reader.onload = (event) => {
                 const dataUrl = event.target.result;
-                // ゲーム状態に保存
                 gameState.imageFiles[index] = dataUrl;
-                // サムネイルを更新
                 document.getElementById(`thumb-${index}`).src = dataUrl;
             };
             reader.onerror = () => {
@@ -105,12 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // =================================================================
-    // ★★★ 簡略化ここまで ★★★
-    // =================================================================
 
-
-    // --- ゲーム開始から終了までのロジック (変更なし) ---
+    // --- ゲーム開始から終了までのロジック ---
     setupQuestionCount();
     setupQuestionFormat();
 
@@ -220,9 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // =================================================================
+    // ★★★ ここからが修正箇所です ★★★
+    // =================================================================
     function handleCorrect() {
         if (gameState.isReversed) {
-            if (gameState.currentPlayer <= 1) return;
+            // ★★★ バグの原因だった行を削除 ★★★
+            // if (gameState.currentPlayer <= 1) return; 
             gameState.currentPlayer--;
         } else {
             if (gameState.currentPlayer >= 5) return;
@@ -233,6 +225,9 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.correctCount++;
         checkGameStatus();
     }
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
 
     function handleImageCorrect(num) {
         if (gameState.imageCorrectStatus[num - 1]) return;
