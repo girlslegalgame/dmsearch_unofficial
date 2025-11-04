@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM要素 (変更なし)
+    // DOM要素
     const settingsModal = document.getElementById('settings-modal');
     const startGameBtn = document.getElementById('start-game-btn');
     const questionDisplay = document.getElementById('question-display');
@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageToCrop = document.getElementById('image-to-crop');
     const cropConfirmBtn = document.getElementById('crop-confirm-btn');
 
-    // 音声 (変更なし)
+    // 音声
     const correctAudio = new Audio('./assets/audio/correct.mp3');
     const incorrectAudio = new Audio('./assets/audio/incorrect.mp3');
 
-    // グローバル変数 (変更なし)
+    // グローバル変数
     let cropper;
     let currentCropIndex;
     let gameState = {
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         imageCorrectStatus: []
     };
 
-    // --- 設定画面 (変更なし) ---
+    // --- 設定画面 ---
     document.querySelectorAll('input[name="question-type"]').forEach(radio => radio.addEventListener('change', setupQuestionCount));
     document.querySelectorAll('input[name="format-type"]').forEach(radio => radio.addEventListener('change', setupQuestionFormat));
 
@@ -55,12 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.questionType = textQRadio.checked ? 'text' : 'image';
         textQuestionSetup.style.display = (gameState.questionType === 'text') ? 'block' : 'none';
         imageQuestionSetup.style.display = (gameState.questionType === 'image') ? 'block' : 'none';
-        if (gameState.questionType === 'image') updateImageUploader();
+        if (gameState.questionType === 'image') {
+            updateImageUploader();
+        }
     }
     
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
+    // --- 画像アップロードとトリミング処理 (CMYK対応版) ---
 
     function updateImageUploader() {
         imageUploadArea.innerHTML = '';
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             imageUploadArea.insertAdjacentHTML('beforeend', `
                 <div class="image-uploader">
                     <label>画像 ${i + 1}: </label>
-                    <input type="file" class="image-input" data-index="${i}" accept="image/*" style="display:none;">
+                    <input type="file" class="image-input" data-index="${i}" accept="image/*,.jpg,.jpeg,.png" style="display:none;">
                     <button type="button" class="select-btn" data-index="${i}">ファイルを選択</button>
                     <img class="thumbnail-preview" id="thumb-${i}" src="">
                 </div>
@@ -77,7 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // イベントデリゲーションで親要素にイベントリスナーを設置
     imageUploadArea.addEventListener('click', (e) => {
         if (e.target.classList.contains('select-btn')) {
             const index = e.target.dataset.index;
@@ -85,89 +84,87 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    imageUploadArea.addEventListener('change', (e) => {
+    imageUploadArea.addEventListener('change', async (e) => {
         if (e.target.classList.contains('image-input')) {
             const index = e.target.dataset.index;
             const file = e.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                // トリミングモーダルを表示し、Cropperを準備する
-                prepareCropper(event.target.result, index);
-            };
-            reader.onerror = () => {
-                alert("ファイルの読み込みに失敗しました。");
-            };
-            reader.readAsDataURL(file);
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                let imageDataUrl;
+                const isCmyk = jpegCmyk.isCmyk(arrayBuffer);
+
+                if (isCmyk) {
+                    console.log("CMYK画像を検出しました。RGBに変換します。");
+                    const rgbData = jpegCmyk.decode(arrayBuffer);
+                    imageDataUrl = await createDataUrlFromRgb(rgbData);
+                } else {
+                    console.log("RGB画像です。");
+                    imageDataUrl = await readFileAsDataURL(file);
+                }
+                prepareCropper(imageDataUrl, index);
+            } catch (error) {
+                console.error("画像処理中にエラーが発生しました:", error);
+                alert("画像の処理に失敗しました。ファイルが破損しているか、非対応の形式の可能性があります。");
+            }
         }
     });
 
-    // Cropperの準備と初期化を行う関数
+    function createDataUrlFromRgb({ width, height, data }) {
+        return new Promise(resolve => {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(width, height);
+            imageData.data.set(data);
+            ctx.putImageData(imageData, 0, 0);
+            resolve(canvas.toDataURL('image/jpeg'));
+        });
+    }
+
+    function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
+        });
+    }
+
     function prepareCropper(dataUrl, index) {
         currentCropIndex = index;
         imageToCrop.src = dataUrl;
         cropModal.classList.add('show');
-        
-        // 既存のCropperインスタンスがあれば破棄
-        if (cropper) {
-            cropper.destroy();
-        }
-
-        // ★重要：画像の読み込みが完了してからCropperを初期化する
+        if (cropper) cropper.destroy();
         imageToCrop.onload = () => {
-            try {
-                cropper = new Cropper(imageToCrop, {
-                    aspectRatio: 4 / 3,
-                    viewMode: 1,
-                    background: false,
-                    autoCropArea: 1,
-                });
-            } catch (error) {
-                console.error("Cropper initialization failed:", error);
-                alert("トリミング機能の初期化に失敗しました。別の画像でお試しください。");
-                cropModal.classList.remove('show');
-            }
-            // onloadイベントは一度きりで良いので削除
+            cropper = new Cropper(imageToCrop, {
+                aspectRatio: 4 / 3, viewMode: 1, background: false, autoCropArea: 1,
+            });
             imageToCrop.onload = null;
         };
-        
-        // 画像の読み込み自体に失敗した場合のエラーハンドリング
         imageToCrop.onerror = () => {
-            alert("画像の表示に失敗しました。ファイルが破損している可能性があります。");
+            alert("画像の表示に失敗しました。");
             cropModal.classList.remove('show');
             imageToCrop.onerror = null;
         };
     }
-
-    // トリミング決定ボタンの処理
+    
     cropConfirmBtn.addEventListener('click', () => {
-        if (!cropper || !cropper.cropped) {
-             // cropperが準備できていない、またはトリミングエリアがない場合は何もしない
-            return;
-        }
-
+        if (!cropper || !cropper.cropped) return;
         const croppedCanvas = cropper.getCroppedCanvas({
             width: 400, height: 300, imageSmoothingQuality: 'high',
         });
         const dataUrl = croppedCanvas.toDataURL();
-
         gameState.imageFiles[currentCropIndex] = dataUrl;
         document.getElementById(`thumb-${currentCropIndex}`).src = dataUrl;
-        
         cropper.destroy();
         cropper = null;
         cropModal.classList.remove('show');
     });
 
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
-
-
-    // --- ゲーム開始から終了までのロジック (変更なし) ---
-    
-    // 初期設定
+    // --- ゲーム開始から終了までのロジック ---
     setupQuestionCount();
     setupQuestionFormat();
 
@@ -290,6 +287,8 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.correctCount++;
         checkGameStatus();
     }
+
+
 
     function handleImageCorrect(num) {
         if (gameState.imageCorrectStatus[num - 1]) return;
