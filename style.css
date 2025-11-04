@@ -190,12 +190,18 @@ body {
 .image-item .correct-mark.show {
     opacity: 1;
 }
+
+/* ================================================================= */
+/* ★★★ ここからが修正箇所です ★★★ */
+/* ================================================================= */
+
 #player-track {
     width: 100%;
     display: flex;
     justify-content: space-around;
+    align-items: center; /* ★追加：プレイヤーボックスを垂直方向に中央揃え */
     position: relative;
-    height: 100px;
+    height: 120px; /* ボックスの高さに合わせる */
     margin-top: 50px;
 }
 .player-box {
@@ -219,20 +225,13 @@ body {
     background-size: contain;
     background-repeat: no-repeat;
     position: absolute;
-    bottom: 20px;
+    bottom: 40px; /* ★変更：爆弾の位置を上げる (20px -> 40px) */
     left: 0;
     transition: transform 0.5s ease-in-out;
     z-index: 10;
 }
-
-/* ================================================================= */
-/* ★★★ ここからが修正箇所です ★★★ */
-/* ================================================================= */
-
 .result-content {
-    /* 親要素を基準に、子要素の位置を決める */
     position: relative;
-    /* 親要素自体も中央に配置する */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -245,18 +244,16 @@ body {
     max-height: 80vh;
 }
 #result-text {
-    /* 絶対配置で親要素(.result-content)の中央に配置する */
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-
     font-size: 8em;
     font-weight: bold;
     color: #ffc107;
     text-shadow: 4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000;
     width: 100%;
-    text-align: center; /* 文字自体も中央寄せに */
+    text-align: center;
 }
 
 /* ================================================================= */
