@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM要素
+    // DOM要素 (変更なし)
     const settingsModal = document.getElementById('settings-modal');
     const startGameBtn = document.getElementById('start-game-btn');
     const questionDisplay = document.getElementById('question-display');
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const explosionImg = document.getElementById('explosion-img');
     const imageGrid = document.getElementById('image-grid');
 
-    // 設定関連
+    // 設定関連 (変更なし)
     const q5Radio = document.getElementById('q5');
     const textQRadio = document.getElementById('text-q');
     const textQuestionSetup = document.getElementById('text-question-setup');
@@ -19,18 +19,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const questionTextInput = document.getElementById('question-text-input');
     const imageUploadArea = document.getElementById('image-upload-area');
 
-    // トリミングモーダル関連
+    // トリミングモーダル関連 (変更なし)
     const cropModal = document.getElementById('crop-modal');
     const imageToCrop = document.getElementById('image-to-crop');
     const cropConfirmBtn = document.getElementById('crop-confirm-btn');
     let cropper;
     let currentCropIndex;
 
-    // 音声
+    // 音声 (変更なし)
     const correctAudio = new Audio('./assets/audio/correct.mp3');
     const incorrectAudio = new Audio('./assets/audio/incorrect.mp3');
 
-    // ゲーム状態
+    // ゲーム状態 (変更なし)
     let gameState = {
         totalQuestions: 5,
         timeLimit: 30,
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         imageCorrectStatus: []
     };
 
-    // --- 設定画面のロジック ---
+    // --- 設定画面のロジック --- (変更なし)
     document.querySelectorAll('input[name="question-type"]').forEach(radio => {
         radio.addEventListener('change', setupQuestionCount);
     });
@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ★★★ここから修正★★★
     function updateImageUploader() {
         imageUploadArea.innerHTML = '';
         gameState.imageFiles = Array(gameState.totalQuestions).fill(null);
@@ -78,25 +79,41 @@ document.addEventListener('DOMContentLoaded', () => {
             const uploader = document.createElement('div');
             uploader.className = 'image-uploader';
             uploader.innerHTML = `<label for="img-upload-${i + 1}">画像 ${i + 1}: </label>
-                                <input type="file" id="img-upload-${i + 1}" accept="image/*">
+                                <input type="file" id="img-upload-${i + 1}" accept="image/*" style="display:none;">
+                                <button type="button" onclick="document.getElementById('img-upload-${i + 1}').click()">ファイルを選択</button>
                                 <img class="thumbnail-preview" id="thumb-${i + 1}" src="">`;
             imageUploadArea.appendChild(uploader);
 
             document.getElementById(`img-upload-${i + 1}`).addEventListener('change', (e) => {
                 if (e.target.files && e.target.files[0]) {
-                    currentCropIndex = i;
+                    currentCropIndex = i; // 現在編集中の画像のインデックスを保存
                     const reader = new FileReader();
+                    
                     reader.onload = (event) => {
+                        // <img>要素のsrcに画像データをセット
                         imageToCrop.src = event.target.result;
-                        cropModal.classList.add('show');
-                        if (cropper) {
-                            cropper.destroy();
-                        }
-                        cropper = new Cropper(imageToCrop, {
-                            aspectRatio: 4 / 3, // アスペクト比を4:3に固定
-                            viewMode: 1,
-                        });
+                        
+                        // 画像が完全に読み込まれてからCropperを初期化するためのイベントリスナー
+                        imageToCrop.onload = () => {
+                            cropModal.classList.add('show');
+                            
+                            // 既存のCropperインスタンスがあれば破棄する
+                            if (cropper) {
+                                cropper.destroy();
+                            }
+                            
+                            // Cropper.jsを初期化
+                            cropper = new Cropper(imageToCrop, {
+                                aspectRatio: 4 / 3, // アスペクト比を4:3に固定
+                                viewMode: 1, // 切り抜きボックスを画像内に制限
+                                background: false,
+                            });
+                            
+                            // onloadイベントは一度きりで良いので削除
+                            imageToCrop.onload = null;
+                        };
                     };
+                    
                     reader.readAsDataURL(e.target.files[0]);
                 }
             });
@@ -106,22 +123,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // トリミング決定ボタンの処理
     cropConfirmBtn.addEventListener('click', () => {
         if (cropper) {
-            const croppedCanvas = cropper.getCroppedCanvas();
+            // トリミングされた画像をCanvasとして取得
+            const croppedCanvas = cropper.getCroppedCanvas({
+                width: 400, // 出力画像の幅
+                height: 300 // 出力画像の高さ
+            });
+            // CanvasをデータURL(base64)に変換
             const dataUrl = croppedCanvas.toDataURL();
+            // ゲーム状態で保持する画像データを更新
             gameState.imageFiles[currentCropIndex] = dataUrl;
+            // 設定画面のサムネイルも更新
             document.getElementById(`thumb-${currentCropIndex + 1}`).src = dataUrl;
             
+            // Cropperインスタンスを破棄
             cropper.destroy();
             cropper = null;
+            // モーダルを閉じる
             cropModal.classList.remove('show');
         }
     });
+    // ★★★ここまで修正★★★
 
-    // 初期設定
+    // 初期設定 (変更なし)
     setupQuestionCount();
     setupQuestionFormat();
 
-    // --- ゲーム開始 ---
+    // --- ゲーム開始 --- (変更なし)
     startGameBtn.addEventListener('click', () => {
         gameState.questionText = questionTextInput.value;
         if (gameState.questionType === 'image' && gameState.imageFiles.some(f => f === null)) {
@@ -132,9 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeGame();
     });
 
-    // --- ゲーム初期化 ---
+    // --- 以降のコードは変更ありません ---
+    // (initializeGame, setupImageGrid, startTimer, stopTimer, updateTimerDisplay, handleKeyPress,
+    // calculatePlayerPositions, moveBomb, handleCorrect, handleImageCorrect, checkGameStatus,
+    // gameClear, gameOver, resize listener)
+    
     function initializeGame() {
-        // (中略: この部分は変更なし)
         gameState.timeLeft = gameState.timeLimit;
         gameState.currentPlayer = 0;
         gameState.correctCount = 0;
@@ -177,8 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- タイマー ---
-    // (中略: この部分は変更なし)
     function startTimer() {
         gameState.timer = setInterval(() => {
             gameState.timeLeft--;
@@ -199,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         timerDisplay.textContent = `${minutes}:${seconds}`;
     }
 
-    // --- キー入力処理 (不正解処理を修正) ---
     function handleKeyPress(e) {
         if (gameState.questionType === 'text') {
             if ((e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') && !gameState.isReversed) {
@@ -215,20 +242,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // ★修正点: 不正解の場合は音を鳴らすだけにする
         if (e.key === ' ') {
             e.preventDefault();
             incorrectAudio.play();
         }
     }
 
-    // --- 正解・不正解処理 ---
-    // (中略: この部分は変更なし)
     let playerPositions = [];
 
     function calculatePlayerPositions() {
         playerPositions = [0];
         const playerBoxes = document.querySelectorAll('.player-box');
+        if (playerBoxes.length === 0) return;
         const trackRect = playerTrack.getBoundingClientRect();
         const bombWidth = bomb.getBoundingClientRect().width;
 
@@ -288,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- ゲーム終了処理 (引数を削除) ---
     function gameClear() {
         stopTimer();
         document.removeEventListener('keydown', handleKeyPress);
@@ -297,11 +321,10 @@ document.addEventListener('DOMContentLoaded', () => {
         resultOverlay.classList.add('show');
     }
 
-    // ★修正点: isMistake引数を削除
     function gameOver() {
         stopTimer();
         document.removeEventListener('keydown', handleKeyPress);
-        incorrectAudio.play(); // タイマー切れの時の音
+        incorrectAudio.play();
         resultText.textContent = "GAME OVER";
         explosionImg.style.display = 'block';
         resultOverlay.classList.add('show');
