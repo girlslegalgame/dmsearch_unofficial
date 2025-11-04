@@ -21,13 +21,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const correctAudio = new Audio('./assets/audio/correct.mp3');
     const incorrectAudio = new Audio('./assets/audio/incorrect.mp3');
     
-    // ゲーム状態 (変更なし)
+    // =================================================================
+    // ★★★ ゲーム状態の管理方法を変更 ★★★
+    // =================================================================
     let gameState = {
         totalQuestions: 5,
         timeLimit: 30,
         questionType: 'text',
         questionText: '',
-        imageFiles: [],
+        // imageFilesからquestionSlotsに変更
+        questionSlots: [], // { type: 'image' | 'text', data: 'url' | 'string' }
         timer: null,
         timeLeft: 30,
         currentPlayer: 1,
@@ -35,6 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isReversed: false,
         imageCorrectStatus: []
     };
+    // =================================================================
+    // ★★★ 変更ここまで ★★★
+    // =================================================================
 
     // --- 設定画面 ---
     document.querySelectorAll('input[name="question-type"]').forEach(radio => radio.addEventListener('change', setupQuestionCount));
@@ -46,16 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameState.questionType === 'image') updateImageUploader();
     }
 
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
     function setupQuestionFormat() {
         gameState.questionType = textQRadio.checked ? 'text' : 'image';
-        
-        // 問題文入力欄は常に表示
         textQuestionSetup.style.display = 'block';
-
-        // 画像アップロード欄だけ表示を切り替える
         if (gameState.questionType === 'image') {
             imageQuestionSetup.style.display = 'block';
             updateImageUploader();
@@ -63,71 +62,115 @@ document.addEventListener('DOMContentLoaded', () => {
             imageQuestionSetup.style.display = 'none';
         }
     }
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
-
     
-    // --- 画像アップロード処理 (変更なし) ---
+    // --- 画像/テキストアップロード処理 (全面的に書き換え) ---
+
     function updateImageUploader() {
         imageUploadArea.innerHTML = '';
-        gameState.imageFiles = Array(gameState.totalQuestions).fill(null);
+        gameState.questionSlots = [];
         for (let i = 0; i < gameState.totalQuestions; i++) {
-            imageUploadArea.insertAdjacentHTML('beforeend', `
-                <div class="image-uploader">
-                    <label>画像 ${i + 1}: </label>
-                    <input type="file" class="image-input" data-index="${i}" accept="image/*" style="display:none;">
-                    <button type="button" class="select-btn" data-index="${i}">ファイルを選択</button>
-                    <img class="thumbnail-preview" id="thumb-${i}" src="">
+            // 各スロットの初期状態を設定
+            gameState.questionSlots[i] = { type: 'image', data: null };
+
+            const slotContainer = document.createElement('div');
+            slotContainer.className = 'image-uploader';
+            slotContainer.innerHTML = `
+                <div class="slot-config" data-index="${i}">
+                    <strong>問題 ${i + 1}:</strong>
+                    <div class="slot-type-selector">
+                        <input type="radio" id="type-img-${i}" name="q-type-${i}" value="image" checked> <label for="type-img-${i}">画像</label>
+                        <input type="radio" id="type-txt-${i}" name="q-type-${i}" value="text"> <label for="type-txt-${i}">テキスト</label>
+                    </div>
+                    <div class="slot-input-area">
+                        <div class="image-input-area">
+                            <input type="file" class="image-input" accept="image/*" style="display:none;">
+                            <button type="button" class="select-btn">ファイルを選択</button>
+                            <img class="thumbnail-preview" src="">
+                        </div>
+                        <div class="text-input-area" style="display:none;">
+                            <input type="text" class="text-input-slot" maxlength="15" placeholder="15文字以内で入力">
+                        </div>
+                    </div>
                 </div>
-            `);
+            `;
+            imageUploadArea.appendChild(slotContainer);
         }
     }
 
-    imageUploadArea.addEventListener('click', (e) => {
-        if (e.target.classList.contains('select-btn')) {
-            const index = e.target.dataset.index;
-            imageUploadArea.querySelector(`.image-input[data-index="${index}"]`).click();
+    // イベントデリゲーションで設定画面のイベントを管理
+    imageUploadArea.addEventListener('change', (e) => {
+        const target = e.target;
+        const slotConfig = target.closest('.slot-config');
+        if (!slotConfig) return;
+        const index = parseInt(slotConfig.dataset.index, 10);
+
+        // ラジオボタン（画像/テキスト切り替え）
+        if (target.matches('input[type="radio"]')) {
+            const type = target.value;
+            gameState.questionSlots[index].type = type;
+            gameState.questionSlots[index].data = null; // タイプ変更でデータをリセット
+
+            const imageArea = slotConfig.querySelector('.image-input-area');
+            const textArea = slotConfig.querySelector('.text-input-area');
+            
+            imageArea.style.display = (type === 'image') ? 'block' : 'none';
+            textArea.style.display = (type === 'text') ? 'block' : 'none';
+
+            // 表示リセット
+            slotConfig.querySelector('.thumbnail-preview').src = '';
+            slotConfig.querySelector('.text-input-slot').value = '';
         }
-    });
-
-    imageUploadArea.addEventListener('change', async (e) => {
-        if (e.target.classList.contains('image-input')) {
-            const index = e.target.dataset.index;
-            const file = e.target.files[0];
+        // ファイル入力
+        else if (target.matches('.image-input')) {
+            const file = target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = (event) => {
-                const dataUrl = event.target.result;
-                gameState.imageFiles[index] = dataUrl;
-                document.getElementById(`thumb-${index}`).src = dataUrl;
-            };
-            reader.onerror = () => {
-                alert("ファイルの読み込みに失敗しました。");
+                gameState.questionSlots[index].data = event.target.result;
+                slotConfig.querySelector('.thumbnail-preview').src = event.target.result;
             };
             reader.readAsDataURL(file);
         }
     });
+    
+    imageUploadArea.addEventListener('input', (e) => {
+        // テキスト入力
+        if (e.target.matches('.text-input-slot')) {
+            const slotConfig = e.target.closest('.slot-config');
+            const index = parseInt(slotConfig.dataset.index, 10);
+            gameState.questionSlots[index].data = e.target.value;
+        }
+    });
+
+    imageUploadArea.addEventListener('click', (e) => {
+        // 「ファイル選択」ボタン
+        if (e.target.matches('.select-btn')) {
+            e.target.closest('.image-input-area').querySelector('.image-input').click();
+        }
+    });
+
 
     // --- ゲーム開始から終了までのロジック ---
     setupQuestionCount();
     setupQuestionFormat();
 
+    // スタートボタンのバリデーションを修正
     startGameBtn.addEventListener('click', () => {
         gameState.questionText = questionTextInput.value;
-        if (gameState.questionType === 'image' && gameState.imageFiles.some(f => f === null)) {
-            alert('すべての画像を設定してください。');
-            return;
+        
+        // 複合問題のチェック
+        if (gameState.questionType === 'image') {
+            const allSlotsFilled = gameState.questionSlots.every(slot => slot.data);
+            if (!allSlotsFilled) {
+                alert('すべての問題の内容（画像またはテキスト）を設定してください。');
+                return;
+            }
         }
         settingsModal.classList.remove('show');
         initializeGame();
     });
-
-
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
+    
+    // initializeGameを修正
     function initializeGame() {
         gameState.timeLeft = gameState.timeLimit;
         gameState.currentPlayer = 1;
@@ -137,16 +180,15 @@ document.addEventListener('DOMContentLoaded', () => {
         calculatePlayerPositions();
         moveBomb(1, false);
 
-        // ★常に問題文を表示するように変更
         questionDisplay.textContent = gameState.questionText;
 
         if (gameState.questionType === 'text') {
             playerTrack.style.display = 'flex';
             imageGrid.style.display = 'none';
-        } else { // 画像問題
+        } else {
             playerTrack.style.display = 'none';
             imageGrid.style.display = 'grid';
-            setupImageGrid();
+            setupImageGrid(); // この中で画像とテキストを出し分ける
             gameState.imageCorrectStatus = Array(gameState.totalQuestions).fill(false);
         }
 
@@ -154,25 +196,35 @@ document.addEventListener('DOMContentLoaded', () => {
         startTimer();
         document.addEventListener('keydown', handleKeyPress);
     }
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
 
-
+    // setupImageGridを全面的に書き換え
     function setupImageGrid() {
         imageGrid.innerHTML = '';
         imageGrid.className = `image-grid q${gameState.totalQuestions}`;
-        gameState.imageFiles.forEach((file, index) => {
+        
+        gameState.questionSlots.forEach((slot, index) => {
             const item = document.createElement('div');
             item.className = 'image-item';
+
+            let contentHtml = '';
+            if (slot.type === 'image') {
+                contentHtml = `<img src="${slot.data}" class="question-image">`;
+            } else {
+                // 5文字ごとに改行(<br>)を挿入する
+                const formattedText = (slot.data || '').match(/.{1,5}/g)?.join('<br>') || '';
+                contentHtml = `<div class="text-item-content">${formattedText}</div>`;
+            }
+
             item.innerHTML = `
-                <img src="${file}" class="question-image">
+                ${contentHtml}
                 <div class="number-tag">${index + 1}</div>
                 <div class="correct-mark" id="mark-${index + 1}"></div>
             `;
             imageGrid.appendChild(item);
         });
     }
+
+    // --- 以降の関数は変更なし ---
 
     function startTimer() {
         gameState.timer = setInterval(() => {
@@ -231,15 +283,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleCorrect() {
         gameState.correctCount++;
-
         if (gameState.isReversed) {
-            if (gameState.currentPlayer > 1) {
-                gameState.currentPlayer--;
-            }
+            if (gameState.currentPlayer > 1) gameState.currentPlayer--;
         } else {
-            if (gameState.currentPlayer < 5) {
-                gameState.currentPlayer++;
-            }
+            if (gameState.currentPlayer < 5) gameState.currentPlayer++;
         }
         correctAudio.play();
         moveBomb(gameState.currentPlayer);
