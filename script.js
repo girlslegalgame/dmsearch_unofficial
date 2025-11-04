@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM要素 (変更なし)
+    // DOM要素
     const settingsModal = document.getElementById('settings-modal');
     const startGameBtn = document.getElementById('start-game-btn');
     const questionDisplay = document.getElementById('question-display');
@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageToCrop = document.getElementById('image-to-crop');
     const cropConfirmBtn = document.getElementById('crop-confirm-btn');
 
-    // 音声 (変更なし)
+    // 音声
     const correctAudio = new Audio('./assets/audio/correct.mp3');
     const incorrectAudio = new Audio('./assets/audio/incorrect.mp3');
 
-    // グローバル変数 (変更なし)
+    // グローバル変数
     let cropper;
     let currentCropIndex;
     let gameState = {
@@ -41,7 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
         imageCorrectStatus: []
     };
 
-    // --- 設定画面のロジック (変更なし) ---
+    // --- 設定画面 ---
+
     document.querySelectorAll('input[name="question-type"]').forEach(radio => {
         radio.addEventListener('change', setupQuestionCount);
     });
@@ -63,10 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
             updateImageUploader();
         }
     }
-
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
+    
+    // --- 画像アップロードとトリミング処理 (★全面的に修正) ---
 
     function updateImageUploader() {
         imageUploadArea.innerHTML = '';
@@ -74,87 +73,102 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < gameState.totalQuestions; i++) {
             const uploader = document.createElement('div');
             uploader.className = 'image-uploader';
+            // 各要素に data-index を付与
             uploader.innerHTML = `
-                <label for="img-upload-${i}">画像 ${i + 1}: </label>
-                <input type="file" id="img-upload-${i}" accept="image/*" style="display:none;">
-                <button type="button" class="select-btn">ファイルを選択</button>
+                <label>画像 ${i + 1}: </label>
+                <input type="file" class="image-input" data-index="${i}" accept="image/*" style="display:none;">
+                <button type="button" class="select-btn" data-index="${i}">ファイルを選択</button>
                 <img class="thumbnail-preview" id="thumb-${i}" src="">
             `;
             imageUploadArea.appendChild(uploader);
-
-            // ボタンクリックでinputを発火させる
-            uploader.querySelector('.select-btn').addEventListener('click', () => {
-                document.getElementById(`img-upload-${i}`).click();
-            });
-
-            // ファイルが選択されたときの処理
-            document.getElementById(`img-upload-${i}`).addEventListener('change', (e) => {
-                handleFileSelect(e, i);
-            });
         }
     }
 
-    // ファイル選択後の処理を独立した関数に
-    function handleFileSelect(event, index) {
-        const file = event.target.files[0];
-        if (!file) return;
+    // イベントデリゲーション：親要素でイベントを待ち受ける
+    imageUploadArea.addEventListener('click', (e) => {
+        // 「ファイルを選択」ボタンが押された場合
+        if (e.target.classList.contains('select-btn')) {
+            const index = e.target.dataset.index;
+            // 対応するinput要素をクリックさせる
+            imageUploadArea.querySelector(`.image-input[data-index="${index}"]`).click();
+        }
+    });
 
-        currentCropIndex = index;
-        const reader = new FileReader();
+    imageUploadArea.addEventListener('change', async (e) => {
+        // input要素でファイルが選択された場合
+        if (e.target.classList.contains('image-input')) {
+            const index = e.target.dataset.index;
+            const file = e.target.files[0];
+            if (!file) return;
 
-        reader.onload = (e) => {
-            // 既存のCropperインスタンスがあれば破棄
-            if (cropper) {
-                cropper.destroy();
+            try {
+                // ファイルを読み込んでDataURLに変換 (Promiseで処理の完了を待つ)
+                const dataUrl = await readFileAsDataURL(file);
+                // トリミングモーダルを表示
+                showCropper(dataUrl, index);
+            } catch (error) {
+                console.error("File reading failed:", error);
+                alert("ファイルの読み込みに失敗しました。");
             }
-            // 画像をセットしてモーダル表示
-            imageToCrop.src = e.target.result;
-            cropModal.classList.add('show');
+        }
+    });
 
-            // Cropper.jsを初期化
-            cropper = new Cropper(imageToCrop, {
-                aspectRatio: 4 / 3,
-                viewMode: 1,
-                background: false,
-                autoCropArea: 1,
-            });
-        };
-
-        reader.readAsDataURL(file);
+    // ファイルリーダーをPromiseでラップするヘルパー関数
+    function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
+        });
     }
 
-    // トリミング決定ボタンの処理
+    // トリミングモーダルを表示し、Cropperを初期化する関数
+    function showCropper(dataUrl, index) {
+        currentCropIndex = index;
+        imageToCrop.src = dataUrl;
+        cropModal.classList.add('show');
+    
+        // 既存のCropperインスタンスがあれば破棄
+        if (cropper) {
+            cropper.destroy();
+        }
+
+        // Cropper.jsを初期化 (画像の読み込み完了を待つため、readyイベントを使用)
+        cropper = new Cropper(imageToCrop, {
+            aspectRatio: 4 / 3,
+            viewMode: 1,
+            background: false,
+            autoCropArea: 1,
+            ready() {
+                // 準備完了でトリミング可能になる
+            }
+        });
+    }
+
+    // トリミング決定ボタンの処理 (一度だけ登録)
     cropConfirmBtn.addEventListener('click', () => {
         if (!cropper) return;
 
-        // トリミング後のCanvasを取得
         const croppedCanvas = cropper.getCroppedCanvas({
-            width: 400,
-            height: 300,
-            imageSmoothingQuality: 'high',
+            width: 400, height: 300, imageSmoothingQuality: 'high',
         });
-
-        // データURLに変換して保存
         const dataUrl = croppedCanvas.toDataURL();
+
         gameState.imageFiles[currentCropIndex] = dataUrl;
         document.getElementById(`thumb-${currentCropIndex}`).src = dataUrl;
-
-        // Cropperインスタンスを破棄し、モーダルを閉じる
+        
         cropper.destroy();
         cropper = null;
         cropModal.classList.remove('show');
     });
 
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
-
-
+    // --- ゲーム開始から終了までのロジック (変更なし) ---
+    
     // 初期設定
     setupQuestionCount();
     setupQuestionFormat();
 
-    // --- ゲーム開始 --- (変更なし)
     startGameBtn.addEventListener('click', () => {
         gameState.questionText = questionTextInput.value;
         if (gameState.questionType === 'image' && gameState.imageFiles.some(f => f === null)) {
@@ -164,9 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsModal.classList.remove('show');
         initializeGame();
     });
-    
-    // --- 以降のゲームロジック (変更なし) ---
-    
+
     function initializeGame() {
         gameState.timeLeft = gameState.timeLimit;
         gameState.currentPlayer = 0;
@@ -175,7 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         calculatePlayerPositions();
         moveBomb(0, false);
-        bomb.style.transform = `translateX(${playerPositions[0]}px) scaleX(1)`;
 
         if (gameState.questionType === 'text') {
             questionDisplay.textContent = gameState.questionText;
@@ -197,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupImageGrid() {
         imageGrid.innerHTML = '';
         imageGrid.className = `image-grid q${gameState.totalQuestions}`;
-
         gameState.imageFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'image-item';
@@ -214,9 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.timer = setInterval(() => {
             gameState.timeLeft--;
             updateTimerDisplay();
-            if (gameState.timeLeft <= 0) {
-                gameOver();
-            }
+            if (gameState.timeLeft <= 0) gameOver();
         }, 1000);
     }
 
@@ -232,19 +240,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleKeyPress(e) {
         if (gameState.questionType === 'text') {
-            if ((e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') && !gameState.isReversed) {
-                handleCorrect();
-            }
-            if ((e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') && gameState.isReversed) {
-                handleCorrect();
-            }
+            if ((e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') && !gameState.isReversed) handleCorrect();
+            if ((e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') && gameState.isReversed) handleCorrect();
         } else {
-            const keyNum = e.key === '0' ? 10 : parseInt(e.key);
-            if (!isNaN(keyNum) && keyNum >= 1 && keyNum <= gameState.totalQuestions) {
-                handleImageCorrect(keyNum);
-            }
+            const keyNum = e.key === '0' ? 10 : parseInt(e.key, 10);
+            if (!isNaN(keyNum) && keyNum >= 1 && keyNum <= gameState.totalQuestions) handleImageCorrect(keyNum);
         }
-        
         if (e.key === ' ') {
             e.preventDefault();
             incorrectAudio.play();
@@ -252,14 +253,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let playerPositions = [];
-
     function calculatePlayerPositions() {
         playerPositions = [0];
         const playerBoxes = document.querySelectorAll('.player-box');
         if (playerBoxes.length === 0) return;
         const trackRect = playerTrack.getBoundingClientRect();
         const bombWidth = bomb.getBoundingClientRect().width;
-
         playerBoxes.forEach(box => {
             const boxRect = box.getBoundingClientRect();
             const centerPos = (boxRect.left - trackRect.left) + (boxRect.width / 2) - (bombWidth / 2);
@@ -311,9 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 startTimer();
             }, 1500);
         }
-        if (gameState.correctCount === gameState.totalQuestions) {
-            gameClear();
-        }
+        if (gameState.correctCount === gameState.totalQuestions) gameClear();
     }
 
     function gameClear() {
