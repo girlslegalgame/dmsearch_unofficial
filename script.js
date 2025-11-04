@@ -60,7 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- 画像アップロードとトリミング処理 (CMYK対応版) ---
+    // =================================================================
+    // ★★★ ここからが修正箇所です ★★★
+    // =================================================================
 
     function updateImageUploader() {
         imageUploadArea.innerHTML = '';
@@ -69,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
             imageUploadArea.insertAdjacentHTML('beforeend', `
                 <div class="image-uploader">
                     <label>画像 ${i + 1}: </label>
-                    <input type="file" class="image-input" data-index="${i}" accept="image/*,.jpg,.jpeg,.png" style="display:none;">
+                    <input type="file" class="image-input" data-index="${i}" accept="image/*" style="display:none;">
                     <button type="button" class="select-btn" data-index="${i}">ファイルを選択</button>
                     <img class="thumbnail-preview" id="thumb-${i}" src="">
                 </div>
@@ -84,29 +86,52 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ファイル選択時の処理を、ファイル形式に応じて分岐させる
     imageUploadArea.addEventListener('change', async (e) => {
         if (e.target.classList.contains('image-input')) {
             const index = e.target.dataset.index;
             const file = e.target.files[0];
             if (!file) return;
 
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                let imageDataUrl;
-                const isCmyk = jpegCmyk.isCmyk(arrayBuffer);
+            const fileType = file.type;
+            const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
 
-                if (isCmyk) {
-                    console.log("CMYK画像を検出しました。RGBに変換します。");
-                    const rgbData = jpegCmyk.decode(arrayBuffer);
-                    imageDataUrl = await createDataUrlFromRgb(rgbData);
-                } else {
-                    console.log("RGB画像です。");
-                    imageDataUrl = await readFileAsDataURL(file);
+            // JPEGの場合：CMYKを判定して変換
+            if (fileType === 'image/jpeg') {
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    let imageDataUrl;
+                    const isCmyk = jpegCmyk.isCmyk(arrayBuffer);
+
+                    if (isCmyk) {
+                        console.log("CMYK JPEGを検出。RGBに変換します。");
+                        const rgbData = jpegCmyk.decode(arrayBuffer);
+                        imageDataUrl = await createDataUrlFromRgb(rgbData);
+                    } else {
+                        console.log("RGB JPEGです。");
+                        imageDataUrl = await readFileAsDataURL(file);
+                    }
+                    prepareCropper(imageDataUrl, index);
+                } catch (error) {
+                    console.error("JPEGの処理中にエラー:", error);
+                    alert("JPEG画像の処理に失敗しました。ファイルが破損している可能性があります。");
                 }
-                prepareCropper(imageDataUrl, index);
-            } catch (error) {
-                console.error("画像処理中にエラーが発生しました:", error);
-                alert("画像の処理に失敗しました。ファイルが破損しているか、非対応の形式の可能性があります。");
+            }
+            // PNG, GIF, BMP, WebPの場合：そのまま読み込む
+            else if (supportedTypes.includes(fileType)) {
+                 try {
+                    console.log(`${fileType} 形式の画像を検出。`);
+                    const imageDataUrl = await readFileAsDataURL(file);
+                    prepareCropper(imageDataUrl, index);
+                } catch (error) {
+                    console.error("画像の読み込み中にエラー:", error);
+                    alert("画像の読み込みに失敗しました。");
+                }
+            }
+            // 対応していない形式の場合
+            else {
+                alert('対応している画像形式は、JPEG, PNG, GIF, BMP, WebPです。');
+                e.target.value = ''; // 同じファイルを選択し直せるように値をリセット
             }
         }
     });
@@ -164,7 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
         cropModal.classList.remove('show');
     });
 
-    // --- ゲーム開始から終了までのロジック ---
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
+
+
+    // --- ゲーム開始から終了までのロジック (変更なし) ---
     setupQuestionCount();
     setupQuestionFormat();
 
@@ -287,8 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.correctCount++;
         checkGameStatus();
     }
-
-
 
     function handleImageCorrect(num) {
         if (gameState.imageCorrectStatus[num - 1]) return;
