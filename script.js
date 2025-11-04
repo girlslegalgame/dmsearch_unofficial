@@ -86,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ファイル選択時の処理を、ファイル形式に応じて分岐させる
     imageUploadArea.addEventListener('change', async (e) => {
         if (e.target.classList.contains('image-input')) {
             const index = e.target.dataset.index;
@@ -96,57 +95,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const fileType = file.type;
             const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
 
-            // JPEGの場合：CMYKを判定して変換
-            if (fileType === 'image/jpeg') {
-                try {
-                    const arrayBuffer = await file.arrayBuffer();
-                    let imageDataUrl;
-                    const isCmyk = jpegCmyk.isCmyk(arrayBuffer);
+            let imageDataUrl;
 
-                    if (isCmyk) {
+            try {
+                if (fileType === 'image/jpeg') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    if (jpegCmyk.isCmyk(arrayBuffer)) {
                         console.log("CMYK JPEGを検出。RGBに変換します。");
                         const rgbData = jpegCmyk.decode(arrayBuffer);
                         imageDataUrl = await createDataUrlFromRgb(rgbData);
                     } else {
-                        console.log("RGB JPEGです。");
                         imageDataUrl = await readFileAsDataURL(file);
                     }
-                    prepareCropper(imageDataUrl, index);
-                } catch (error) {
-                    console.error("JPEGの処理中にエラー:", error);
-                    alert("JPEG画像の処理に失敗しました。ファイルが破損している可能性があります。");
+                } else if (supportedTypes.includes(fileType)) {
+                    imageDataUrl = await readFileAsDataURL(file);
+                } else {
+                    alert('対応している画像形式は、JPEG, PNG, GIF, BMP, WebPです。');
+                    e.target.value = '';
+                    return;
                 }
-            }
-            // PNG, GIF, BMP, WebPの場合：そのまま読み込む
-            else if (supportedTypes.includes(fileType)) {
-                 try {
-                    console.log(`${fileType} 形式の画像を検出。`);
-                    const imageDataUrl = await readFileAsDataURL(file);
-                    prepareCropper(imageDataUrl, index);
-                } catch (error) {
-                    console.error("画像の読み込み中にエラー:", error);
-                    alert("画像の読み込みに失敗しました。");
-                }
-            }
-            // 対応していない形式の場合
-            else {
-                alert('対応している画像形式は、JPEG, PNG, GIF, BMP, WebPです。');
-                e.target.value = ''; // 同じファイルを選択し直せるように値をリセット
+                prepareCropper(imageDataUrl, index);
+            } catch (error) {
+                console.error("画像処理中にエラー:", error);
+                alert("画像の処理に失敗しました。ファイルが破損しているか、非対応の形式の可能性があります。");
             }
         }
     });
 
     function createDataUrlFromRgb({ width, height, data }) {
-        return new Promise(resolve => {
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.createImageData(width, height);
-            imageData.data.set(data);
-            ctx.putImageData(imageData, 0, 0);
-            resolve(canvas.toDataURL('image/jpeg'));
-        });
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.createImageData(width, height);
+        imageData.data.set(data);
+        ctx.putImageData(imageData, 0, 0);
+        return canvas.toDataURL('image/jpeg');
     }
 
     function readFileAsDataURL(file) {
@@ -158,35 +142,65 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Cropperの準備と初期化を行う関数（ロジックを修正）
     function prepareCropper(dataUrl, index) {
         currentCropIndex = index;
-        imageToCrop.src = dataUrl;
-        cropModal.classList.add('show');
-        if (cropper) cropper.destroy();
+        
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+
+        // ハンドラを先に設定
         imageToCrop.onload = () => {
-            cropper = new Cropper(imageToCrop, {
-                aspectRatio: 4 / 3, viewMode: 1, background: false, autoCropArea: 1,
-            });
-            imageToCrop.onload = null;
+            imageToCrop.onerror = null; // 成功したのでエラーハンドラは不要
+            try {
+                cropper = new Cropper(imageToCrop, {
+                    aspectRatio: 4 / 3,
+                    viewMode: 1,
+                    background: false,
+                    autoCropArea: 1,
+                });
+            } catch (error) {
+                console.error("Cropperの初期化に失敗しました:", error);
+                alert("トリミング機能の初期化に失敗しました。別の画像をお試しください。");
+                cropModal.classList.remove('show');
+            }
         };
         imageToCrop.onerror = () => {
-            alert("画像の表示に失敗しました。");
+            imageToCrop.onload = null; // 失敗したのでロードハンドラは不要
+            alert("画像の表示に失敗しました。ファイルが破損している可能性があります。");
             cropModal.classList.remove('show');
-            imageToCrop.onerror = null;
         };
+
+        // srcを代入して読み込みを開始
+        imageToCrop.src = dataUrl;
+        cropModal.classList.add('show');
     }
     
+    // 決定ボタンの処理（ロジックを修正）
     cropConfirmBtn.addEventListener('click', () => {
-        if (!cropper || !cropper.cropped) return;
-        const croppedCanvas = cropper.getCroppedCanvas({
-            width: 400, height: 300, imageSmoothingQuality: 'high',
-        });
-        const dataUrl = croppedCanvas.toDataURL();
-        gameState.imageFiles[currentCropIndex] = dataUrl;
-        document.getElementById(`thumb-${currentCropIndex}`).src = dataUrl;
-        cropper.destroy();
-        cropper = null;
-        cropModal.classList.remove('show');
+        if (typeof cropper === 'undefined' || cropper === null) {
+            return;
+        }
+        try {
+            const croppedCanvas = cropper.getCroppedCanvas({
+                width: 400, height: 300, imageSmoothingQuality: 'high',
+            });
+            if (!croppedCanvas) throw new Error("Canvasの取得に失敗");
+            
+            const dataUrl = croppedCanvas.toDataURL();
+
+            gameState.imageFiles[currentCropIndex] = dataUrl;
+            document.getElementById(`thumb-${currentCropIndex}`).src = dataUrl;
+            
+            cropModal.classList.remove('show');
+            cropper.destroy();
+            cropper = null;
+        } catch (error) {
+            console.error("トリミング処理中にエラーが発生しました:", error);
+            alert("トリミング処理に失敗しました。もう一度お試しください。");
+        }
     });
 
     // =================================================================
