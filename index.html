@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファイブボンバーゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head><body>
+
+<!-- ゲーム設定モーダル -->
+<div id="settings-modal" class="modal-overlay show">
+    <div class="modal-content">
+        <h2>ゲーム設定</h2>
+        
+        <div class="setting-group">
+            <label>問題数:</label>
+            <input type="radio" id="q5" name="question-type" value="5" checked>
+            <label for="q5">5問 (30秒)</label>
+            <input type="radio" id="q10" name="question-type" value="10">
+            <label for="q10">10問 (60秒)</label>
+        </div>
+
+        <div class="setting-group">
+            <label>問題形式:</label>
+            <input type="radio" id="text-q" name="format-type" value="text" checked>
+            <label for="text-q">文章題</label>
+            <input type="radio" id="image-q" name="format-type" value="image">
+            <label for="image-q">画像問題</label>
+        </div>
+        
+        <div id="text-question-setup" class="setup-area">
+            <label for="question-text-input">問題文:</label>
+            <input type="text" id="question-text-input" placeholder="例: ○○を5つ答えよ">
+        </div>
+
+        <div id="image-question-setup" class="setup-area" style="display: none;">
+            <p>問題に使用する画像をアップロードしてください。</p>
+            <div id="image-upload-area"></div>
+        </div>
+
+        <button id="start-game-btn">ゲーム開始</button>
+    </div>
+</div>
+
+<!-- ゲーム本体 -->
+<div class="game-container">
+    <header class="game-header">
+        <div id="question-display" class="question-text"></div>
+        <div id="timer" class="timer">00:00</div>
+    </header>
+
+    <main id="game-main">
+        <div id="image-grid" class="image-grid"></div>
+        <div id="player-track">
+            <div class="player-box" id="player-1"><span>1</span></div>
+            <div class="player-box" id="player-2"><span>2</span></div>
+            <div class="player-box" id="player-3"><span>3</span></div>
+            <div class="player-box" id="player-4"><span>4</span></div>
+            <div class="player-box" id="player-5"><span>5</span></div>
+            <div id="bomb"></div>
+        </div>
+    </main>
+</div>
+
+<!-- 結果表示オーバーレイ -->
+<div id="result-overlay" class="modal-overlay">
+    <div class="result-content">
+        <img id="explosion-img" src="./assets/images/explosion.png" alt="爆発">
+        <h1 id="result-text"></h1>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
