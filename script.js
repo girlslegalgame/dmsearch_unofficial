@@ -152,27 +152,43 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeGame();
     });
     
+    // =================================================================
+    // ★★★ ここからが修正箇所です (処理順序の変更) ★★★
+    // =================================================================
     function initializeGame() {
+        // 1. ゲーム状態をリセット
         gameState.timeLeft = gameState.timeLimit;
         gameState.currentPlayer = 1;
         gameState.correctCount = 0;
         gameState.isReversed = false;
-        calculatePlayerPositions();
-        moveBomb(1, false);
+        
+        // 2. 問題文と画面レイアウトを先に設定する
         questionDisplay.textContent = gameState.questionText;
         if (gameState.questionType === 'text') {
-            playerTrack.style.display = 'flex';
+            playerTrack.style.display = 'flex'; // ★先に表示する
             imageGrid.style.display = 'none';
         } else {
             playerTrack.style.display = 'none';
-            imageGrid.style.display = 'grid';
+            imageGrid.style.display = 'grid'; // ★先に表示する
             setupImageGrid();
             gameState.imageCorrectStatus = Array(gameState.totalQuestions).fill(false);
         }
+
+        // 3. 画面が表示されてから、位置を計算する
+        calculatePlayerPositions();
+
+        // 4. 爆弾を初期位置に配置
+        moveBomb(1, false);
+
+        // 5. ゲームを開始
         updateTimerDisplay();
         startTimer();
         document.addEventListener('keydown', handleKeyPress);
     }
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
+
 
     function setupImageGrid() {
         imageGrid.innerHTML = '';
@@ -243,6 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function moveBomb(playerIndex, animate = true) {
+        // playerIndexが不正な値(nullやundefined)の場合、動かさない
+        if(!playerPositions[playerIndex]) return;
+        
         if (!animate) bomb.style.transition = 'none';
         bomb.style.transform = `translateX(${playerPositions[playerIndex]}px) ${gameState.isReversed ? 'scaleX(-1)' : 'scaleX(1)'}`;
         if (!animate) {
@@ -306,32 +325,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('resize', calculatePlayerPositions);
 
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
     function resetGame() {
-        // 1. 画面を切り替える
         resultOverlay.classList.remove('show');
         settingsModal.classList.add('show');
-
-        // 2. ゲーム状態を初期化する
         gameState = { ...defaultGameState };
-
-        // 3. 設定画面のUIを初期状態に戻す
         q5Radio.checked = true;
         textQRadio.checked = true;
         questionTextInput.value = '';
-
-        // 4. 設定画面の表示を更新する
         setupQuestionFormat();
-        
-        // 5. ゲーム画面の表示をリセットする（←★バグ修正のために追加）
         playerTrack.style.display = 'none';
         imageGrid.style.display = 'none';
     }
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
-
     restartBtn.addEventListener('click', resetGame);
 });
