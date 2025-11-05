@@ -16,28 +16,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageQuestionSetup = document.getElementById('image-question-setup');
     const questionTextInput = document.getElementById('question-text-input');
     const imageUploadArea = document.getElementById('image-upload-area');
+    const restartBtn = document.getElementById('restart-btn');
 
+    // 音声 (変更なし)
+    const CORRECT_SOUND_SRC = './assets/audio/correct.mp3';
+    const INCORRECT_SOUND_SRC = './assets/audio/incorrect.mp3';
+    function playSound(src) {
+        new Audio(src).play();
+    }
+    
     // =================================================================
     // ★★★ ここからが修正箇所です ★★★
     // =================================================================
 
-    // Audioオブジェクトを削除し、ファイルのパスを定数として保持
-    const CORRECT_SOUND_SRC = './assets/audio/correct.mp3';
-    const INCORRECT_SOUND_SRC = './assets/audio/incorrect.mp3';
-
-    // 音を再生するための専用関数
-    // この関数を呼び出すたびに、新しいAudioオブジェクトが生成され、音が再生される
-    function playSound(src) {
-        new Audio(src).play();
-    }
-
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
-
-    
-    // ゲーム状態 (変更なし)
-    let gameState = {
+    // ゲームの初期状態を定数として定義
+    const defaultGameState = {
         totalQuestions: 5,
         timeLimit: 30,
         questionType: 'text',
@@ -50,6 +43,13 @@ document.addEventListener('DOMContentLoaded', () => {
         isReversed: false,
         imageCorrectStatus: []
     };
+
+    // ゲーム状態変数。最初は初期状態をコピーして作成
+    let gameState = { ...defaultGameState };
+
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
 
     // --- 設定画面 (変更なし) ---
     document.querySelectorAll('input[name="question-type"]').forEach(radio => radio.addEventListener('change', setupQuestionCount));
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- ゲーム開始から終了までのロジック ---
+    // --- ゲーム開始から終了までのロジック (変更なし) ---
     setupQuestionCount();
     setupQuestionFormat();
 
@@ -224,9 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         timerDisplay.textContent = `${minutes}:${seconds}`;
     }
 
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
     function handleKeyPress(e) {
         if (gameState.questionType === 'text') {
             if ((e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') && !gameState.isReversed) handleCorrect();
@@ -237,12 +234,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (e.key === ' ') {
             e.preventDefault();
-            playSound(INCORRECT_SOUND_SRC); // ★playSound関数を使用
+            playSound(INCORRECT_SOUND_SRC);
         }
     }
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
 
     let playerPositions = [];
     function calculatePlayerPositions() {
@@ -267,9 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
     function handleCorrect() {
         gameState.correctCount++;
         if (gameState.isReversed) {
@@ -277,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (gameState.currentPlayer < 5) gameState.currentPlayer++;
         }
-        playSound(CORRECT_SOUND_SRC); // ★playSound関数を使用
+        playSound(CORRECT_SOUND_SRC);
         moveBomb(gameState.currentPlayer);
         checkGameStatus();
     }
@@ -285,15 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleImageCorrect(num) {
         if (gameState.imageCorrectStatus[num - 1]) return;
         gameState.imageCorrectStatus[num - 1] = true;
-        playSound(CORRECT_SOUND_SRC); // ★playSound関数を使用
+        playSound(CORRECT_SOUND_SRC);
         document.getElementById(`mark-${num}`).classList.add('show');
         gameState.correctCount++;
         checkGameStatus();
     }
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
-
 
     function checkGameStatus() {
         if (gameState.totalQuestions === 10 && gameState.correctCount === 5) {
@@ -318,20 +305,43 @@ document.addEventListener('DOMContentLoaded', () => {
         resultOverlay.classList.add('show');
     }
 
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
     function gameOver() {
         stopTimer();
         document.removeEventListener('keydown', handleKeyPress);
-        playSound(INCORRECT_SOUND_SRC); // ★playSound関数を使用
+        playSound(INCORRECT_SOUND_SRC);
         resultText.textContent = "GAME OVER";
         explosionImg.style.display = 'block';
         resultOverlay.classList.add('show');
     }
+
+    window.addEventListener('resize', calculatePlayerPositions);
+
+    // =================================================================
+    // ★★★ ここからが修正箇所です ★★★
+    // =================================================================
+
+    // ゲームをリセットして設定画面に戻す関数
+    function resetGame() {
+        // 1. 画面を切り替える
+        resultOverlay.classList.remove('show');
+        settingsModal.classList.add('show');
+
+        // 2. ゲーム状態を初期化する
+        gameState = { ...defaultGameState };
+
+        // 3. 設定画面のUIを初期状態に戻す
+        q5Radio.checked = true;
+        textQRadio.checked = true;
+        questionTextInput.value = '';
+
+        // 4. 設定画面の表示を更新する
+        setupQuestionFormat();
+    }
+
+    // 再スタートボタンのイベントリスナー
+    restartBtn.addEventListener('click', resetGame);
+
     // =================================================================
     // ★★★ 修正箇所はここまでです ★★★
     // =================================================================
-
-    window.addEventListener('resize', calculatePlayerPositions);
 });
