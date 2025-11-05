@@ -77,6 +77,14 @@ body {
 .text-input-slot {
     width: 95%;
     padding: 8px;
+    /* textareaのスタイルをinputと合わせる */
+    border: 1px solid #6c82d3;
+    border-radius: 4px;
+    background-color: white;
+    color: black;
+    font-family: sans-serif; /* フォントを統一 */
+    font-size: 1em; /* フォントサイズを統一 */
+    resize: vertical; /* 縦方向のみリサイズ可能に */
 }
 #start-game-btn {
     display: block;
