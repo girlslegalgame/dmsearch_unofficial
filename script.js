@@ -25,11 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         new Audio(src).play();
     }
     
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
-
-    // ゲームの初期状態を定数として定義
+    // ゲームの初期状態を定数として定義 (変更なし)
     const defaultGameState = {
         totalQuestions: 5,
         timeLimit: 30,
@@ -43,13 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isReversed: false,
         imageCorrectStatus: []
     };
-
-    // ゲーム状態変数。最初は初期状態をコピーして作成
     let gameState = { ...defaultGameState };
-
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
 
     // --- 設定画面 (変更なし) ---
     document.querySelectorAll('input[name="question-type"]').forEach(radio => radio.addEventListener('change', setupQuestionCount));
@@ -72,7 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- 画像/テキストアップロード処理 (変更なし) ---
+    // --- 画像/テキストアップロード処理 ---
+
+    // =================================================================
+    // ★★★ ここからが修正箇所です (input -> textarea) ★★★
+    // =================================================================
     function updateImageUploader() {
         imageUploadArea.innerHTML = '';
         gameState.questionSlots = [];
@@ -94,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <img class="thumbnail-preview" src="">
                         </div>
                         <div class="text-input-area" style="display:none;">
-                            <input type="text" class="text-input-slot" maxlength="15" placeholder="15文字以内で入力">
+                            <textarea class="text-input-slot" rows="3" placeholder="テキストを入力（改行も可能です）"></textarea>
                         </div>
                     </div>
                 </div>
@@ -102,7 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
             imageUploadArea.appendChild(slotContainer);
         }
     }
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
 
+    // イベントリスナー (変更なし)
     imageUploadArea.addEventListener('change', (e) => {
         const target = e.target;
         const slotConfig = target.closest('.slot-config');
@@ -145,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- ゲーム開始から終了までのロジック (変更なし) ---
+    // --- ゲーム開始から終了までのロジック ---
     setupQuestionCount();
     setupQuestionFormat();
 
@@ -184,19 +182,27 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keydown', handleKeyPress);
     }
 
+
+    // =================================================================
+    // ★★★ ここからが修正箇所です (改行処理) ★★★
+    // =================================================================
     function setupImageGrid() {
         imageGrid.innerHTML = '';
         imageGrid.className = `image-grid q${gameState.totalQuestions}`;
+        
         gameState.questionSlots.forEach((slot, index) => {
             const item = document.createElement('div');
             item.className = 'image-item';
+
             let contentHtml = '';
             if (slot.type === 'image') {
                 contentHtml = `<img src="${slot.data}" class="question-image">`;
             } else {
-                const formattedText = (slot.data || '').match(/.{1,5}/g)?.join('<br>') || '';
+                // 入力された改行文字(\n)をHTMLの<br>タグに変換する
+                const formattedText = (slot.data || '').replace(/\n/g, '<br>');
                 contentHtml = `<div class="text-item-content">${formattedText}</div>`;
             }
+
             item.innerHTML = `
                 ${contentHtml}
                 <div class="number-tag">${index + 1}</div>
@@ -205,6 +211,10 @@ document.addEventListener('DOMContentLoaded', () => {
             imageGrid.appendChild(item);
         });
     }
+    // =================================================================
+    // ★★★ 修正箇所はここまでです ★★★
+    // =================================================================
+
 
     function startTimer() {
         gameState.timer = setInterval(() => {
@@ -316,32 +326,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('resize', calculatePlayerPositions);
 
-    // =================================================================
-    // ★★★ ここからが修正箇所です ★★★
-    // =================================================================
-
-    // ゲームをリセットして設定画面に戻す関数
     function resetGame() {
-        // 1. 画面を切り替える
         resultOverlay.classList.remove('show');
         settingsModal.classList.add('show');
-
-        // 2. ゲーム状態を初期化する
         gameState = { ...defaultGameState };
-
-        // 3. 設定画面のUIを初期状態に戻す
         q5Radio.checked = true;
         textQRadio.checked = true;
         questionTextInput.value = '';
-
-        // 4. 設定画面の表示を更新する
         setupQuestionFormat();
     }
-
-    // 再スタートボタンのイベントリスナー
     restartBtn.addEventListener('click', resetGame);
-
-    // =================================================================
-    // ★★★ 修正箇所はここまでです ★★★
-    // =================================================================
 });
