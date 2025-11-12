@@ -47,7 +47,7 @@ $selected_rarity_id = isset($_GET['rarity_id']) ? intval($_GET['rarity_id']) : 0
 $selected_twinpact = isset($_GET['twinpact_filter']) ? $_GET['twinpact_filter'] : '0';
 $selected_treasure_id = isset($_GET['treasure_id_filter']) ? $_GET['treasure_id_filter'] : '0';
 $selected_regulation = isset($_GET['regulation_filter']) ? $_GET['regulation_filter'] : '0';
-$selected_secret = isset($_GET['secret_filter']) ? $_GET['secret_filter'] : '0';
+$selected_others_id = isset($_GET['others_id_filter']) ? intval($_GET['others_id_filter']) : 0;
 $selected_soul_id = isset($_GET['soul_id_filter']) ? intval($_GET['soul_id_filter']) : 0;
 $selected_frame_id = isset($_GET['frame_id_filter']) ? intval($_GET['frame_id_filter']) : 0;
 $selected_goods_id = isset($_GET['goods_id_filter']) ? intval($_GET['goods_id_filter']) : 0;
@@ -162,7 +162,10 @@ if ($selected_regulation !== '0') {
     $regulation_map = ['1' => '制限なし', '2' => '殿堂', '3' => 'プレミアム殿堂'];
     if (array_key_exists($selected_regulation, $regulation_map)) { $conditions[] = "cd.regulation = :regulation"; $params[':regulation'] = $regulation_map[$selected_regulation]; }
 }
-if ($selected_secret !== '0') { $joins['card_rarity_secret'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.secret = :secret"; $params[':secret'] = ($selected_secret === '1') ? 1 : 0; }
+if ($selected_others_id > 0) {
+    $conditions[] = "cd.others_id = :others_id";
+    $params[':others_id'] = $selected_others_id;
+}
 if ($selected_goods_id > 0) { $conditions[] = "cd.goods_id = :goods_id"; $params[':goods_id'] = $selected_goods_id; }
 if ($selected_goodstype_id > 0) { $joins['goods_goodstype'] = 'LEFT JOIN goods ON cd.goods_id = goods.goods_id'; $conditions[] = "goods.goodstype_id = :goodstype_id"; $params[':goodstype_id'] = $selected_goodstype_id; }
 if ($selected_mana !== 'all') {
@@ -343,6 +346,8 @@ $goodstype_stmt = $pdo->query("SELECT goodstype_id, goodstype_name FROM goodstyp
 $goodstype_list = $goodstype_stmt->fetchAll(PDO::FETCH_ASSOC);
 $illustrator_stmt = $pdo->query("SELECT illus_id, illus_name FROM illus ORDER BY reading COLLATE utf8mb4_unicode_ci ASC");
 $illustrator_list = $illustrator_stmt->fetchAll(PDO::FETCH_ASSOC);
+$others_stmt = $pdo->query("SELECT others_id, others_name FROM others ORDER BY others_id ASC");
+$others_list = $others_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // === HTMLテンプレートの読み込み ===
 include 'template.html';
