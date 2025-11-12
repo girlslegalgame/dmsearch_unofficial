@@ -191,11 +191,12 @@
                         </select>
                     </div>
                     <div class="select-group">
-                        <label class="search-label">シークレット</label>
-                        <select name="secret_filter" class="styled-select">
-                            <option value="0" <?= ($selected_secret == '0') ? 'selected' : '' ?>>指定なし</option>
-                            <option value="1" <?= ($selected_secret == '1') ? 'selected' : '' ?>>シークレットのみ</option>
-                            <option value="2" <?= ($selected_secret == '2') ? 'selected' : '' ?>>シークレットを除く</option>
+                        <label class="search-label">その他</label>
+                        <select name="others_id_filter" class="styled-select">
+                            <option value="0" <?= ($selected_others_id == 0) ? 'selected' : '' ?>>指定なし</option>
+                            <?php foreach ($others_list as $other): ?>
+                                <option value="<?= $other['others_id'] ?>" <?= ($other['others_id'] == $selected_others_id) ? 'selected' : '' ?>><?= htmlspecialchars($other['others_name']) ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                 </div>
