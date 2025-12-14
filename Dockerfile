@@ -11,5 +11,8 @@ COPY . /var/www/html/
 
 # Apacheの書き換えモジュールを有効にする（.htaccessを使う場合に必要）
 RUN a2enmod rewrite
+# mpm_event を無効化して mpm_prefork を有効にする（PHPを使う場合の一般的な構成）
+RUN a2dismod mpm_event && a2enmod mpm_prefork
 
 # Force redeploy on Sep 09, 2025
+
