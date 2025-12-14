@@ -20,8 +20,11 @@ COPY . /var/www/html/
 RUN rm -f /etc/apache2/mods-enabled/mpm_event.load \
     && rm -f /etc/apache2/mods-enabled/mpm_event.conf \
     && a2enmod mpm_prefork
+# 必要なパッケージのインストール（MySQL用）
+RUN docker-php-ext-install pdo_mysql
 CMD /bin/bash -c "rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf && apache2-foreground"
 # Force redeploy on Sep 09, 2025
+
 
 
 
