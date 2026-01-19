@@ -190,19 +190,22 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="race-select-group" style="flex-grow: 1; flex-basis: calc(50% - 10px);">
-                        <div class="race-search-header">
-                            <label class="search-label">その他</label>
+                    <div class="select-group">
+                        <!-- ヘッダー：ラベルとAND/ORスイッチを横並びかつコンパクトに -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+                            <label class="search-label" style="min-width: auto;">その他</label>
                             <div class="and-or-toggle">
                                 <input type="radio" id="others-and" name="others_search_mode" value="AND" <?= $others_search_mode === 'AND' ? 'checked' : '' ?>>
-                                <label for="others-and">AND</label>
+                                <label for="others-and" style="padding: 2px 8px; font-size: 0.75em;">AND</label>
                                 <input type="radio" id="others-or" name="others_search_mode" value="OR" <?= $others_search_mode === 'OR' ? 'checked' : '' ?>>
-                                <label for="others-or">OR</label>
+                                <label for="others-or" style="padding: 2px 8px; font-size: 0.75em;">OR</label>
                             </div>
                         </div>
-                        <div id="others-select-box" class="race-select-box">
-                            <span class="placeholder">その他条件を選択</span>
-                            <div class="selected-others-display"></div>
+                        
+                        <!-- 選択ボックス：他のプルダウンと同じスタイル(styled-select)を適用 -->
+                        <div id="others-select-box" class="race-select-box styled-select" style="min-width: 180px; padding: 8px 12px; height: auto; display: flex; align-items: center; position: relative;">
+                            <span class="placeholder">指定なし</span>
+                            <div class="selected-others-display" style="position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
                         </div>
                     </div>
                 </div>
