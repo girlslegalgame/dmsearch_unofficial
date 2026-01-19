@@ -79,6 +79,18 @@ switch ($type) {
         $stmt->execute();
         $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
         break;
+    case 'others':
+        if (!empty($query)) {
+            $sql = "SELECT others_id AS id, others_name AS name FROM others WHERE others_name LIKE :query ORDER BY others_id ASC";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([':query' => '%' . $query . '%']);
+        } else {
+            $sql = "SELECT others_id AS id, others_name AS name FROM others ORDER BY others_id ASC";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute();
+        }
+        $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        break;
 }
 
 echo json_encode($response);
