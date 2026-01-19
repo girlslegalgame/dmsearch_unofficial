@@ -190,14 +190,20 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="select-group">
-                        <label class="search-label">その他</label>
-                        <select name="others_id_filter" class="styled-select">
-                            <option value="0" <?= ($selected_others_id == 0) ? 'selected' : '' ?>>指定なし</option>
-                            <?php foreach ($others_list as $other): ?>
-                                <option value="<?= $other['others_id'] ?>" <?= ($other['others_id'] == $selected_others_id) ? 'selected' : '' ?>><?= htmlspecialchars($other['others_name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                    <div class="race-select-group" style="flex-grow: 1; flex-basis: calc(50% - 10px);">
+                        <div class="race-search-header">
+                            <label class="search-label">その他</label>
+                            <div class="and-or-toggle">
+                                <input type="radio" id="others-and" name="others_search_mode" value="AND" <?= $others_search_mode === 'AND' ? 'checked' : '' ?>>
+                                <label for="others-and">AND</label>
+                                <input type="radio" id="others-or" name="others_search_mode" value="OR" <?= $others_search_mode === 'OR' ? 'checked' : '' ?>>
+                                <label for="others-or">OR</label>
+                            </div>
+                        </div>
+                        <div id="others-select-box" class="race-select-box">
+                            <span class="placeholder">その他条件を選択</span>
+                            <div class="selected-others-display"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="search-group">
@@ -500,6 +506,25 @@
         <div class="modal-footer">
             <button type="button" id="ability-modal-cancel-btn" class="btn-secondary">キャンセル</button>
             <button type="button" id="ability-modal-confirm-btn" class="btn-primary">決定</button>
+        </div>
+    </div>
+</div>
+
+<!-- その他選択モーダル -->
+<div id="others-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content race-modal-content">
+        <div class="modal-header">
+            <h3>その他条件 選択</h3>
+            <span id="others-modal-clear-btn" class="modal-clear-btn">クリア</span>
+        </div>
+        <div class="race-modal-body">
+            <div id="others-modal-list" class="race-modal-list">
+                <!-- JavaScriptでリストが挿入される -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="others-modal-cancel-btn" class="btn-secondary">キャンセル</button>
+            <button type="button" id="others-modal-confirm-btn" class="btn-primary">決定</button>
         </div>
     </div>
 </div>
