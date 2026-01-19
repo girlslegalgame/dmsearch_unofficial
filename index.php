@@ -47,7 +47,8 @@ $selected_rarity_id = isset($_GET['rarity_id']) ? intval($_GET['rarity_id']) : 0
 $selected_twinpact = isset($_GET['twinpact_filter']) ? $_GET['twinpact_filter'] : '0';
 $selected_treasure_id = isset($_GET['treasure_id_filter']) ? $_GET['treasure_id_filter'] : '0';
 $selected_regulation = isset($_GET['regulation_filter']) ? $_GET['regulation_filter'] : '0';
-$selected_others_id = isset($_GET['others_id_filter']) ? intval($_GET['others_id_filter']) : 0;
+$selected_others_ids = isset($_GET['others_ids']) && is_array($_GET['others_ids']) ? array_map('intval', $_GET['others_ids']) : [];
+$others_search_mode = isset($_GET['others_search_mode']) && $_GET['others_search_mode'] === 'OR' ? 'OR' : 'AND';
 $selected_soul_id = isset($_GET['soul_id_filter']) ? intval($_GET['soul_id_filter']) : 0;
 $selected_frame_id = isset($_GET['frame_id_filter']) ? intval($_GET['frame_id_filter']) : 0;
 $selected_goods_id = isset($_GET['goods_id_filter']) ? intval($_GET['goods_id_filter']) : 0;
@@ -162,9 +163,24 @@ if ($selected_regulation !== '0') {
     $regulation_map = ['1' => '制限なし', '2' => '殿堂', '3' => 'プレミアム殿堂'];
     if (array_key_exists($selected_regulation, $regulation_map)) { $conditions[] = "cd.regulation = :regulation"; $params[':regulation'] = $regulation_map[$selected_regulation]; }
 }
-if ($selected_others_id > 0) {
-    $conditions[] = "cd.others_id = :others_id";
-    $params[':others_id'] = $selected_others_id;
+if (!empty($selected_others_ids)) {
+    // card_others テーブルを結合 (テーブル名は card_others、カラムは card_id, others_id と仮定)
+    $joins['card_others'] = 'LEFT JOIN card_others ON card.card_id = card_others.card_id';
+    
+    $others_placeholders = [];
+    foreach ($selected_others_ids as $index => $o_id) {
+        $placeholder = ':others_id_' . $index;
+        $others_placeholders[] = $placeholder;
+        $params[$placeholder] = $o_id;
+    }
+
+    if ($others_search_mode === 'AND') {
+        // AND検索: 指定したIDすべてを持っているかカウントで判定
+        $conditions[] = "(SELECT COUNT(DISTINCT others_id) FROM card_others WHERE card_id = card.card_id AND others_id IN (" . implode(',', $others_placeholders) . ")) = " . count($selected_others_ids);
+    } else {
+        // OR検索: いずれかを持っていればOK
+        $conditions[] = "card_others.others_id IN (" . implode(',', $others_placeholders) . ")";
+    }
 }
 if ($selected_goods_id > 0) { $conditions[] = "cd.goods_id = :goods_id"; $params[':goods_id'] = $selected_goods_id; }
 if ($selected_goodstype_id > 0) { $joins['goods_goodstype'] = 'LEFT JOIN goods ON cd.goods_id = goods.goods_id'; $conditions[] = "goods.goodstype_id = :goodstype_id"; $params[':goodstype_id'] = $selected_goodstype_id; }
