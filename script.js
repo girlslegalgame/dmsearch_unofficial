@@ -227,6 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if(searchName) searchName.checked = true;
         if(searchReading) searchReading.checked = true;
         if(searchText) searchText.checked = true;
+		const othersAnd = document.getElementById('others-and');
+        if(othersAnd) othersAnd.checked = true;
+		
         document.querySelectorAll('input[name="search_race"], input[name="search_flavortext"], input[name="search_illus"]').forEach(cb => { if(cb) cb.checked = false; });
         document.querySelectorAll('.civ-btn').forEach(button => {
             const targetInput = document.getElementById(button.dataset.targetInput);
@@ -444,6 +447,12 @@ document.addEventListener('DOMContentLoaded', () => {
         displayClassName: 'selected-abilities-display' // 正しいクラス名を追加
     });
     // ▲▲▲ ここを修正 ▲▲▲
+	// --- ⑦-3: その他モーダルの初期化 ---
+    setupSearchModal({
+        modalType: 'others',
+        hiddenInputName: 'others_ids[]',
+        displayClassName: 'selected-others-display'
+    });
 
 
     // --- ⑧ カード詳細モーダルのロジック ---
