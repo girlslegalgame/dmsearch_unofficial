@@ -229,6 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(searchText) searchText.checked = true;
 		const othersAnd = document.getElementById('others-and');
         if(othersAnd) othersAnd.checked = true;
+        const soulAnd = document.getElementById('soul-and');
+        if(soulAnd) soulAnd.checked = true;
 		
         document.querySelectorAll('input[name="search_race"], input[name="search_flavortext"], input[name="search_illus"]').forEach(cb => { if(cb) cb.checked = false; });
         document.querySelectorAll('.civ-btn').forEach(button => {
@@ -452,6 +454,12 @@ document.addEventListener('DOMContentLoaded', () => {
         modalType: 'others',
         hiddenInputName: 'others_ids[]',
         displayClassName: 'selected-others-display'
+    });
+	// --- ⑦-4: ソウルモーダルの初期化 ---
+    setupSearchModal({
+        modalType: 'soul',
+        hiddenInputName: 'soul_ids[]',
+        displayClassName: 'selected-soul-display'
     });
 
 
