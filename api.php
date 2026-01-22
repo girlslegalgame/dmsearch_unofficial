@@ -91,6 +91,19 @@ switch ($type) {
         }
         $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
         break;
+    case 'soul':
+        // soulテーブルから一覧を取得
+        if (!empty($query)) {
+            $sql = "SELECT soul_id AS id, soul_name AS name FROM soul WHERE soul_name LIKE :query ORDER BY soul_id ASC";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([':query' => '%' . $query . '%']);
+        } else {
+            $sql = "SELECT soul_id AS id, soul_name AS name FROM soul ORDER BY soul_id ASC";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute();
+        }
+        $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        break;
 }
 
 echo json_encode($response);
