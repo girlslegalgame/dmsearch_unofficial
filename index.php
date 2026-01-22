@@ -49,7 +49,8 @@ $selected_treasure_id = isset($_GET['treasure_id_filter']) ? $_GET['treasure_id_
 $selected_regulation = isset($_GET['regulation_filter']) ? $_GET['regulation_filter'] : '0';
 $selected_others_ids = isset($_GET['others_ids']) && is_array($_GET['others_ids']) ? array_map('intval', $_GET['others_ids']) : [];
 $others_search_mode = isset($_GET['others_search_mode']) && $_GET['others_search_mode'] === 'OR' ? 'OR' : 'AND';
-$selected_soul_id = isset($_GET['soul_id_filter']) ? intval($_GET['soul_id_filter']) : 0;
+$selected_soul_ids = isset($_GET['soul_ids']) && is_array($_GET['soul_ids']) ? array_map('intval', $_GET['soul_ids']) : [];
+$soul_search_mode = isset($_GET['soul_search_mode']) && $_GET['soul_search_mode'] === 'OR' ? 'OR' : 'AND';
 $selected_frame_id = isset($_GET['frame_id_filter']) ? intval($_GET['frame_id_filter']) : 0;
 $selected_goods_id = isset($_GET['goods_id_filter']) ? intval($_GET['goods_id_filter']) : 0;
 $selected_goodstype_id = isset($_GET['goodstype_id_filter']) ? intval($_GET['goodstype_id_filter']) : 0;
@@ -134,9 +135,24 @@ if (!empty($selected_race_ids)) {
     }
 }
 if ($selected_rarity_id > 0) { $joins['card_rarity_rarity'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.rarity_id = :rarity_id"; $params[':rarity_id'] = $selected_rarity_id; }
-if ($selected_soul_id != 0) {
-    $joins['card_race_soul'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
-    if ($selected_soul_id == -1) { $conditions[] = "card_race.soul_id IS NULL"; } else { $conditions[] = "card_race.soul_id = :soul_id"; $params[':soul_id'] = $selected_soul_id; }
+if (!empty($selected_soul_ids)) {
+    // card_soul テーブルを結合
+    $joins['card_soul'] = 'LEFT JOIN card_soul ON card.card_id = card_soul.card_id';
+    
+    $soul_placeholders = [];
+    foreach ($selected_soul_ids as $index => $s_id) {
+        $placeholder = ':soul_id_' . $index;
+        $soul_placeholders[] = $placeholder;
+        $params[$placeholder] = $s_id;
+    }
+
+    if ($soul_search_mode === 'AND') {
+        // AND検索: 指定したIDすべてを持っているかカウントで判定
+        $conditions[] = "(SELECT COUNT(DISTINCT soul_id) FROM card_soul WHERE card_id = card.card_id AND soul_id IN (" . implode(',', $soul_placeholders) . ")) = " . count($selected_soul_ids);
+    } else {
+        // OR検索: いずれかを持っていればOK
+        $conditions[] = "card_soul.soul_id IN (" . implode(',', $soul_placeholders) . ")";
+    }
 }
 if ($selected_frame_id > 0) { $conditions[] = "cd.frame_id = :frame_id"; $params[':frame_id'] = $selected_frame_id; }
 if (!empty($selected_ability_ids)) {
