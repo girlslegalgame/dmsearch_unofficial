@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>カード一覧</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h2 style="text-align:center;">カード一覧</h2>
+
+<!-- ▼▼▼ 検索結果件数表示 ▼▼▼ -->
+<div class="search-results-summary">
+    <p><?= htmlspecialchars($total) ?>枚</p>
+</div>
+<!-- ▲▲▲ 検索結果件数表示 END ▲▲▲ -->
+
+<!-- ▼▼▼ FORM ▼▼▼ -->
+<form method="get" id="searchForm">
+
+    <!-- ▼▼▼ 中央揃えにしたい要素のコンテナ ▼▼▼ -->
+    <div class="main-form-container">
+        <input type="text" name="search" placeholder="検索ワード" value="<?= htmlspecialchars($search) ?>">
+        <input type="hidden" id="advanced-state" name="advanced_open" value="<?= $is_advanced_open ? '1' : '0' ?>">
+        <br>
+        
+        <div class="checkbox-container">
+            <span class="checkbox-label">検索対象</span>
+            <label><input type="checkbox" name="search_name" <?= $search_name ? 'checked' : '' ?>> 名前</label>
+            <label><input type="checkbox" name="search_reading" <?= $search_reading ? 'checked' : '' ?>> 読み</label>
+            <label><input type="checkbox" name="search_text" <?= $search_text ? 'checked' : '' ?>> テキスト</label>
+            <label><input type="checkbox" name="search_race" <?= $search_race ? 'checked' : '' ?>> 種族</label>
+            <label><input type="checkbox" name="search_flavortext" <?= $search_flavortext ? 'checked' : '' ?>> フレーバー</label>
+            <label><input type="checkbox" name="search_illus" <?= $search_illus ? 'checked' : '' ?>> イラストレーター</label>
+            <button type="button" id="toggleBtn">全解除</button>
+        </div>
+        
+        <br>
+        <button type="submit">検索</button>
+        <br>
+        <button type="button" class="reset-button">リセット</button>
+        <br>
+        <!-- ▼▼▼ 「さらに条件をしぼる」ボタン ▼▼▼ -->
+        <p class="detailBtn" id="toggle-advanced-btn">
+            <?= $is_advanced_open ? '条件を隠す' : 'さらに条件をしぼる' ?>
+        </p>
+        
+        <!-- ▼▼▼ 詳細検索エリアを、ボタンの直下に移動 ▼▼▼ -->
+        <div id="advanced-search-area" class="<?= $is_advanced_open ? 'is-open' : '' ?>">
+            <!-- (中略: 文明検索からイラストレーター検索までの .search-group-container は、この中にそのまま入ります) -->
+            <div class="search-group-container">
+                <label class="search-label left-align-label">文明</label><br>
+                <div class="search-group">
+                    <div class="civ-buttons">
+                        <input type="hidden" name="mono_color" id="mono_color" value="<?= $mono_color_status ?>">
+                        <button type="button" class="civ-btn <?= $mono_color_status == 1 ? '' : 'is-off' ?>" data-target-input="mono_color">
+                            <img src="parts/単色.webp" alt="単色">
+                        </button>
+                        <input type="hidden" name="multi_color" id="multi_color" value="<?= $multi_color_status ?>">
+                        <button type="button" class="civ-btn <?= $multi_color_status == 1 ? '' : 'is-off' ?>" data-target-input="multi_color">
+                            <img src="parts/多色.webp" alt="多色">
+                        </button>
+                    </div>
+                </div>
+                <div class="search-group">
+                    <div class="civ-buttons" id="main-civs-buttons">
+                        <?php foreach ($civilization_list as $civ): ?>
+                            <?php
+                                $civ_id = $civ['civilization_id'];
+                                $civ_name = $civ['civilization_name'];
+                                $is_selected = in_array($civ_id, $selected_main_civs);
+                                $value = $is_selected ? $civ_id : 0;
+                                $class = $is_selected ? '' : 'is-off';
+                            ?>
+                            <input type="hidden" name="main_civs[]" id="main_civ_<?= $civ_id ?>" value="<?= $value ?>">
+                            <button type="button" class="civ-btn <?= $class ?>" data-target-input="main_civ_<?= $civ_id ?>" data-civ-id="<?= $civ_id ?>">
+                                <img src="parts/<?= htmlspecialchars($civ_name) ?>.webp" alt="<?= htmlspecialchars($civ_name) ?>">
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div id="exclude-civs-section" style="display: none;">
+                    <label class="search-label left-align-label">多色に含めない文明</label>
+                    <div class="search-group">
+                        <div class="civ-buttons" id="exclude-civ-buttons">
+                            <?php foreach ($civilization_list as $civ): ?>
+                                <?php
+                                    $civ_id = $civ['civilization_id'];
+                                    $civ_name = $civ['civilization_name'];
+                                    if ($civ_id == 6) continue;
+                                    $is_selected = in_array($civ_id, $selected_exclude_civs);
+                                    $value = $is_selected ? $civ_id : 0;
+                                    $class = $is_selected ? '' : 'is-off';
+                                ?>
+                                <div class="exclude-civ-wrapper" id="exclude-wrapper-<?= $civ_id ?>" style="display: none;">
+                                    <input type="hidden" name="exclude_civs[]" id="exclude_civ_<?= $civ_id ?>" value="<?= $value ?>">
+                                    <button type="button" class="civ-btn <?= $class ?>" data-target-input="exclude_civ_<?= $civ_id ?>" data-civ-id="<?= $civ_id ?>">
+                                        <img src="parts/<?= htmlspecialchars($civ_name) ?>.webp" alt="<?= htmlspecialchars($civ_name) ?>">
+                                    </button>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="search-group-container">
+                <label class="search-label left-align-label">コスト</label>
+                <div class="search-group center-content">
+                    <div class="num-range-container">
+                        <input type="number" name="cost_min" id="cost_min_input" class="rangenum-input" placeholder="下限" value="<?= htmlspecialchars($cost_min) ?>">
+                        <span>～</span>
+                        <input type="number" name="cost_max" id="cost_max_input" class="rangenum-input" placeholder="上限" value="<?= htmlspecialchars($cost_max) ?>">
+                    </div>
+                </div>
+                <div class="search-group">
+                    <label class="checkbox-label-inline "><input type="checkbox" name="cost_zero" id="cost_zero_check" value="1" <?= $cost_zero ? 'checked' : '' ?>> コストなし</label>
+                    <label class="checkbox-label-inline "><input type="checkbox" name="cost_infinity" id="cost_infinity_check" value="1" <?= $cost_infinity ? 'checked' : '' ?>> コスト無限</label>
+                </div>
+            </div>
+            <div class="search-group-container">
+                <label class="search-label left-align-label">パワー</label>
+                <div class="search-group center-content">
+                    <div class="num-range-container">
+                        <input type="number" name="pow_min" id="pow_min_input" class="rangenum-input" placeholder="下限" value="<?= htmlspecialchars($pow_min) ?>">
+                        <span>～</span>
+                        <input type="number" name="pow_max" id="pow_max_input" class="rangenum-input" placeholder="上限" value="<?= htmlspecialchars($pow_max) ?>">
+                    </div>
+                </div>
+                <div class="search-group">
+                    <label class="checkbox-label-inline"><input type="checkbox" name="pow_infinity" id="pow_infinity_check" value="1" <?= $pow_infinity ? 'checked' : '' ?>> パワー無限</label>
+                </div>
+            </div>
+            <div class="search-group-container">
+                <label class="search-label left-align-label">発売年</label>
+                <div class="search-group center-content">
+                    <div class="cost-range-container">
+                        <input type="number" name="year_min" class="rangenum-input" placeholder="下限" value="<?= htmlspecialchars($year_min) ?>">
+                        <span>～</span>
+                        <input type="number" name="year_max" class="rangenum-input" placeholder="上限" value="<?= htmlspecialchars($year_max) ?>">
+                    </div>
+                </div>
+            </div>
+            <div class="search-group-container">
+                <div class="search-group">
+                    <div class="select-group">
+                        <label class="search-label">特殊タイプ</label>
+                        <select name="characteristics_id" class="styled-select">
+                            <option value="0" <?= ($selected_char_id == 0) ? 'selected' : '' ?>>指定なし</option>
+                            <?php foreach ($characteristics_list as $char): ?>
+                                <option value="<?= $char['characteristics_id'] ?>" <?= ($char['characteristics_id'] == $selected_char_id) ? 'selected' : '' ?>><?= htmlspecialchars($char['characteristics_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label class="search-label">カードタイプ</label>
+                        <select name="cardtype_id" class="styled-select">
+                            <option value="0" <?= ($selected_cardtype_id == 0) ? 'selected' : '' ?>>指定なし</option>
+                            <?php foreach ($cardtype_list as $type): ?>
+                                <option value="<?= $type['cardtype_id'] ?>" <?= ($type['cardtype_id'] == $selected_cardtype_id) ? 'selected' : '' ?>><?= htmlspecialchars($type['cardtype_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label class="search-label">ツインパクト</label>
+                        <select name="twinpact_filter" class="styled-select">
+                            <option value="0" <?= ($selected_twinpact == '0') ? 'selected' : '' ?>>指定なし</option>
+                            <option value="1" <?= ($selected_twinpact == '1') ? 'selected' : '' ?>>ツインパクトのみ</option>
+                            <option value="2" <?= ($selected_twinpact == '2') ? 'selected' : '' ?>>ツインパクトを除く</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="search-group">
+                    <div class="select-group">
+                        <label class="search-label">レアリティ</label>
+                        <select name="rarity_id" class="styled-select">
+                            <option value="0" <?= ($selected_rarity_id == 0) ? 'selected' : '' ?>>指定なし</option>
+                            <?php foreach ($rarity_list as $rarity): ?>
+                                <option value="<?= $rarity['rarity_id'] ?>" <?= ($rarity['rarity_id'] == $selected_rarity_id) ? 'selected' : '' ?>><?= htmlspecialchars($rarity['rarity_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label class="search-label">トレジャー</label>
+                        <select name="treasure_id_filter" class="styled-select">
+                            <option value="0" <?= ($selected_treasure_id == '0') ? 'selected' : '' ?>>指定なし</option>
+                            <option value="-1" <?= ($selected_treasure_id == '-1') ? 'selected' : '' ?>>トレジャーを除く</option>
+                            <?php foreach ($treasure_list as $treasure): ?>
+                                <option value="<?= $treasure['treasure_id'] ?>" <?= ($treasure['treasure_id'] == $selected_treasure_id) ? 'selected' : '' ?>><?= htmlspecialchars($treasure['treasure_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <!-- ヘッダー：ラベルとAND/ORスイッチを横並びかつコンパクトに -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+                            <label class="search-label" style="min-width: auto;">その他</label>
+                            <div class="and-or-toggle">
+                                <input type="radio" id="others-and" name="others_search_mode" value="AND" <?= $others_search_mode === 'AND' ? 'checked' : '' ?>>
+                                <label for="others-and" style="padding: 2px 8px; font-size: 0.75em;">AND</label>
+                                <input type="radio" id="others-or" name="others_search_mode" value="OR" <?= $others_search_mode === 'OR' ? 'checked' : '' ?>>
+                                <label for="others-or" style="padding: 2px 8px; font-size: 0.75em;">OR</label>
+                            </div>
+                        </div>
+                        
+                        <!-- 選択ボックス：他のプルダウンと同じスタイル(styled-select)を適用 -->
+                        <div id="others-select-box" class="race-select-box styled-select" style="min-width: 180px; padding: 8px 12px; height: auto; display: flex; align-items: center; position: relative;">
+                            <span class="placeholder">指定なし</span>
+                            <div class="selected-others-display" style="position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-group">
+                    <!-- 種族ブロック -->
+                    <div class="race-select-group">
+                        <div class="race-search-header">
+                            <label class="search-label">種族</label>
+                            <div class="and-or-toggle">
+                                <input type="radio" id="race-and" name="race_search_mode" value="AND" <?= $race_search_mode === 'AND' ? 'checked' : '' ?>>
+                                <label for="race-and">AND</label>
+                                <input type="radio" id="race-or" name="race_search_mode" value="OR" <?= $race_search_mode === 'OR' ? 'checked' : '' ?>>
+                                <label for="race-or">OR</label>
+                            </div>
+                        </div>
+                        <div id="race-select-box" class="race-select-box">
+                            <span class="placeholder">種族を選択</span>
+                            <div class="selected-races-display"></div>
+                        </div>
+                    </div>
+                
+                    <!-- 特殊能力ブロック -->
+                    <div class="ability-select-group">
+                        <div class="ability-search-header">
+                            <label class="search-label">特殊能力</label>
+                            <div class="and-or-toggle">
+                                <input type="radio" id="ability-and" name="ability_search_mode" value="AND" checked>
+                                <label for="ability-and">AND</label>
+                                <input type="radio" id="ability-or" name="ability_search_mode" value="OR">
+                                <label for="ability-or">OR</label>
+                            </div>
+                        </div>
+                        <div id="ability-select-box" class="race-select-box">
+                            <span class="placeholder">特殊能力を選択</span>
+                            <div class="selected-abilities-display"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-group">
+                    <div class="select-group">
+                        <label class="search-label">商品名</label>
+                        <select name="goods_id_filter" class="styled-select">
+                            <option value="0" <?= ($selected_goods_id == 0) ? 'selected' : '' ?>>指定なし</option>
+                            <?php foreach ($goods_list as $goods): ?>
+                                <option value="<?= $goods['goods_id'] ?>" <?= ($goods['goods_id'] == $selected_goods_id) ? 'selected' : '' ?>><?= htmlspecialchars($goods['goods_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label class="search-label">商品の種類</label>
+                        <select name="goodstype_id_filter" class="styled-select">
+                            <option value="0" <?= ($selected_goodstype_id == 0) ? 'selected' : '' ?>>指定なし</option>
+                            <?php foreach ($goodstype_list as $goodstype): ?>
+                                <option value="<?= $goodstype['goodstype_id'] ?>" <?= ($goodstype['goodstype_id'] == $selected_goodstype_id) ? 'selected' : '' ?>><?= htmlspecialchars($goodstype['goodstype_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="search-group">
+                    <div class="select-group">
+                        <label class="search-label">制限</label>
+                        <select name="regulation_filter" class="styled-select">
+                            <option value="0" <?= ($selected_regulation == '0') ? 'selected' : '' ?>>指定なし</option>
+                            <option value="1" <?= ($selected_regulation == '1') ? 'selected' : '' ?>>制限なし</option>
+                            <option value="2" <?= ($selected_regulation == '2') ? 'selected' : '' ?>>殿堂</option>
+                            <option value="3" <?= ($selected_regulation == '3') ? 'selected' : '' ?>>プレミアム殿堂</option>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <!-- ヘッダー：ラベルとAND/ORスイッチ -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+                            <label class="search-label" style="min-width: auto;">ソウル</label>
+                            <div class="and-or-toggle">
+                                <input type="radio" id="soul-and" name="soul_search_mode" value="AND" <?= $soul_search_mode === 'AND' ? 'checked' : '' ?>>
+                                <label for="soul-and" style="padding: 2px 8px; font-size: 0.75em;">AND</label>
+                                <input type="radio" id="soul-or" name="soul_search_mode" value="OR" <?= $soul_search_mode === 'OR' ? 'checked' : '' ?>>
+                                <label for="soul-or" style="padding: 2px 8px; font-size: 0.75em;">OR</label>
+                            </div>
+                        </div>
+                        
+                        <!-- 選択ボックス -->
+                        <div id="soul-select-box" class="race-select-box styled-select" style="min-width: 180px; padding: 8px 12px; height: auto; display: flex; align-items: center; position: relative;">
+                            <span class="placeholder">指定なし</span>
+                            <div class="selected-soul-display" style="position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                        </div>
+                    </div>
+                    <div class="select-group">
+                        <label class="search-label">枠</label>
+                        <select name="frame_id_filter" class="styled-select">
+                            <option value="0" <?= ($selected_frame_id == 0) ? 'selected' : '' ?>>指定なし</option>
+                            <?php foreach ($frame_list as $frame): ?>
+                                <option value="<?= $frame['frame_id'] ?>" <?= ($frame['frame_id'] == $selected_frame_id) ? 'selected' : '' ?>><?= htmlspecialchars($frame['frame_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label class="search-label">マナ</label>
+                        <select name="mana_filter" class="styled-select">
+                            <option value="all" <?= ($selected_mana == 'all') ? 'selected' : '' ?>>指定なし</option>
+                            <option value="1" <?= ($selected_mana == '1') ? 'selected' : '' ?>>1</option>
+                            <option value="0" <?= ($selected_mana == '0') ? 'selected' : '' ?>>0</option>
+                            <option value="-1" <?= ($selected_mana == '-1') ? 'selected' : '' ?>>なし</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="search-group">
+                    <div class="select-group">
+                        <label class="search-label">イラストレーター</label>
+                        <select name="illus_id_filter" class="styled-select">
+                            <option value="0" <?= ($selected_illus_id == 0) ? 'selected' : '' ?>>指定なし</option>
+                            <?php foreach ($illustrator_list as $illustrator): ?>
+                                <option value="<?= $illustrator['illus_id'] ?>" <?= ($illustrator['illus_id'] == $selected_illus_id) ? 'selected' : '' ?>><?= htmlspecialchars($illustrator['illus_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="advanced-buttons-bottom">
+                <button type="submit">検索</button>
+                <br>
+                <button type="button" class="reset-button">リセット</button>
+            </div>
+        </div>
+    </div>
+    
+    <input type="hidden" id="sort-order-hidden" name="sort_order" value="<?= htmlspecialchars($selected_sort) ?>">
+    <div id="sort-area">
+        <div class="sort-areaLeft">
+            <p>ならびかえ</p>
+            <div class="select01">
+                <select id="sort-order" class="is-empty2">
+                    <option value="release_new" <?= ($selected_sort == 'release_new') ? 'selected' : '' ?>>発売日の新しい順</option>
+                    <option value="release_old" <?= ($selected_sort == 'release_old') ? 'selected' : '' ?>>発売日の古い順</option>
+                    <option value="name_asc" <?= ($selected_sort == 'name_asc') ? 'selected' : '' ?>>カード名の昇順</option>
+                    <option value="name_desc" <?= ($selected_sort == 'name_desc') ? 'selected' : '' ?>>カード名の降順</option>
+                    <option value="cost_desc" <?= ($selected_sort == 'cost_desc') ? 'selected' : '' ?>>コストの大きい順</option>
+                    <option value="cost_asc" <?= ($selected_sort == 'cost_asc') ? 'selected' : '' ?>>コストの小さい順</option>
+                    <option value="power_desc" <?= ($selected_sort == 'power_desc') ? 'selected' : '' ?>>パワーの大きい順</option>
+                    <option value="power_asc" <?= ($selected_sort == 'power_asc') ? 'selected' : '' ?>>パワーの小さい順</option>
+                </select>
+            </div>
+        </div>
+        <div class="sort-areaRight">
+            <div class="check01">
+                <input id="show-same-name-check" class="checkbox1" type="checkbox" name="show_same_name" value="1" <?= $show_same_name ? 'checked' : '' ?>>
+                <label for="show-same-name-check">同名カードを表示する</label>
+            </div>
+        </div>
+    </div>
+</form>
+<!-- ▲▲▲ FORM END ▲▲▲ -->
+
+<!-- ▼▼▼ CARD LIST ▼▼▼ -->
+<div class="container">
+    <?php if ($total > 0): ?>
+        <div class="card-grid">
+            <?php foreach ($cards as $card): ?>
+                <div class="card">
+                    <img src="<?= htmlspecialchars($card['image_url']) ?>" alt="カード画像" class="card-image-item" data-card-id="<?= $card['card_id'] ?>">
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php else: ?>
+        <div class="no-results">
+            <p>検索条件に該当するカードがみつかりませんでした。</p>
+        </div>
+    <?php endif; ?>
+</div>
+<!-- ▲▲▲ CARD LIST END ▲▲▲ -->
+
+<!-- ▼▼▼ PAGINATION ▼▼▼ -->
+<?php if ($totalPages > 1): ?>
+<div class="pagination">
+    <?php
+    $range = 5;
+    $start = max(1, $page - floor($range / 2));
+    $end = min($totalPages, $start + $range - 1);
+    if ($end - $start < $range - 1) { $start = max(1, $end - $range + 1); }
+    $queryParams = $_GET;
+    if ($page > 1) {
+        $queryParams['page'] = 1;
+        echo '<a href="index.php?' . http_build_query($queryParams) . '">最初へ</a>';
+    }
+    if ($start > 1) { echo '<span class="ellipsis">...</span>'; }
+    for ($i = $start; $i <= $end; $i++) {
+        $queryParams['page'] = $i;
+        $url = 'index.php?' . http_build_query($queryParams);
+        if ($i == $page) {
+            echo '<a href="#" class="current-page" onclick="return false;">' . $i . '</a>';
+        } else {
+            echo '<a href="' . htmlspecialchars($url) . '">' . $i . '</a>';
+        }
+    }
+    if ($end < $totalPages) { echo '<span class="ellipsis">...</span>'; }
+    if ($page < $totalPages) {
+        $queryParams['page'] = $totalPages;
+        echo '<a href="index.php?' . http_build_query($queryParams) . '">最後へ</a>';
+    }
+    ?>
+</div>
+<?php endif; ?>
+<!-- ▲▲▲ PAGINATION END ▲▲▲ -->
+
+<div id="card-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-card-name">カード名</h3>
+            <span id="modal-close-btn" class="close-btn">×</span>
+        </div>
+        <div id="modal-cards-container" class="modal-body-scrollable">
+            <!-- JavaScriptでカード情報が挿入される -->
+        </div>
+    </div>
+</div>
+
+<template id="modal-card-template">
+    <div class="modal-card-instance">
+        <div class="modal-body">
+            <div class="modal-left">
+                <img class="modal-card-image" src="" alt="カード画像">
+            </div>
+            <div class="modal-right">
+                <table class="detail-table">
+                    <tbody>
+                        <tr>
+                            <th>カードの種類</th><td class="modal-card-type"></td>
+                            <th>文明</th><td class="modal-civilization"></td>
+                        </tr>
+                        <tr>
+                            <th>レアリティ</th><td class="modal-rarity"></td>
+                            <th>パワー</th><td class="modal-power"></td>
+                        </tr>
+                        <tr>
+                            <th>コスト</th><td class="modal-cost"></td>
+                            <th>マナ</th><td class="modal-mana"></td>
+                        </tr>
+                        <tr>
+                            <th>種族</th><td class="modal-race" colspan="3"></td>
+                        </tr>
+                    </tbody>
+                </table>                
+                <table class="detail-table">
+                    <tbody>
+                        <tr>
+                            <th>イラストレーター</th><td class="modal-illustrator"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <!-- ===== デバッグ用ここから (不要になったらこのテーブルごと削除) ===== -->
+                <table class="detail-table">
+                    <tbody>
+                        <tr>
+                            <th>設定特殊能力リスト</th><td class="modal-debug-ability-names"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <!-- ===== デバッグ用ここまで ===== -->
+                <div class="modal-ability-section ability-section" style="display: none;">
+                    <h4>特殊能力</h4>
+                    <div class="modal-text ability-text"></div>
+                </div>
+                <div class="modal-flavor-section ability-section" style="display: none;">
+                    <h4>フレーバーテキスト</h4>
+                    <div class="modal-flavortext ability-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script src="script.js"></script>
+
+<div id="race-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content race-modal-content">
+        <div class="modal-header">
+            <h3>種族選択</h3>
+            <span id="race-modal-clear-btn" class="modal-clear-btn">クリア</span>
+        </div>
+        <div class="race-modal-body">
+            <div class="race-modal-search-bar" style="display:none;"> 
+                <input type="text" id="others-modal-search-input" placeholder="検索">
+            </div>
+            <div class="race-modal-search-bar">
+                <input type="text" id="race-modal-search-input" placeholder="&#xF002; 種族名">
+            </div>
+            <div id="race-modal-list" class="race-modal-list">
+                <!-- ここにJavaScriptで種族リストが挿入される -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="race-modal-cancel-btn" class="btn-secondary">キャンセル</button>
+            <button type="button" id="race-modal-confirm-btn" class="btn-primary">決定</button>
+        </div>
+    </div>
+</div>
+
+<div id="ability-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content race-modal-content">
+        <div class="modal-header">
+            <h3>特殊能力選択</h3>
+            <span id="ability-modal-clear-btn" class="modal-clear-btn">クリア</span>
+        </div>
+        <div class="race-modal-body">
+            <div class="race-modal-search-bar">
+                <input type="text" id="ability-modal-search-input" placeholder="&#xF002; 特殊能力名">
+            </div>
+            <div id="ability-modal-list" class="race-modal-list">
+                <!-- ここにJavaScriptで特殊能力リストが挿入される -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="ability-modal-cancel-btn" class="btn-secondary">キャンセル</button>
+            <button type="button" id="ability-modal-confirm-btn" class="btn-primary">決定</button>
+        </div>
+    </div>
+</div>
+
+<!-- その他選択モーダル -->
+<div id="others-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content race-modal-content">
+        <div class="modal-header">
+            <h3>その他条件 選択</h3>
+            <span id="others-modal-clear-btn" class="modal-clear-btn">クリア</span>
+        </div>
+        <div class="race-modal-body">
+            <div id="others-modal-list" class="race-modal-list">
+                <!-- JavaScriptでリストが挿入される -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="others-modal-cancel-btn" class="btn-secondary">キャンセル</button>
+            <button type="button" id="others-modal-confirm-btn" class="btn-primary">決定</button>
+        </div>
+    </div>
+</div>
+<!-- ソウル選択モーダル -->
+<div id="soul-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content race-modal-content">
+        <div class="modal-header">
+            <h3>ソウル選択</h3>
+            <span id="soul-modal-clear-btn" class="modal-clear-btn">クリア</span>
+        </div>
+        <div class="race-modal-body">
+            <div class="race-modal-search-bar" style="display:none;">
+                <input type="text" id="soul-modal-search-input" placeholder="検索">
+            </div>
+            <div id="soul-modal-list" class="race-modal-list">
+                <!-- JavaScriptでリストが挿入される -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="soul-modal-cancel-btn" class="btn-secondary">キャンセル</button>
+            <button type="button" id="soul-modal-confirm-btn" class="btn-primary">決定</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

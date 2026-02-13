@@ -1,0 +1,632 @@
+@import url(https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css);
+
+.container {
+    display: flex;
+    justify-content: center;
+}
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+.card {
+    text-align: left;
+}
+img {
+    width: 174.72px;
+    height: 244.33px;
+}
+form {
+    margin-bottom: 10px;
+}
+.main-form-container {
+    text-align: center;
+}
+.pagination {
+    text-align: center;
+    margin-top: 20px;
+}
+.pagination a {
+    display: inline-block;
+    padding: 6px 12px;
+    margin: 0 4px;
+    text-decoration: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    color: #333;
+    background-color: #f8f8f8;
+}
+.pagination a:hover {
+    background-color: #e0e0e0;
+}
+input[type="text"] {
+    width: 960px;
+    height: 50px;
+    font-size: 18px;
+    padding: 8px 12px;
+    box-sizing: border-box;
+} 
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 15px;
+    max-width: 960px;
+    margin: 10px auto 0 auto;
+}
+.checkbox-label {
+    font-weight: bold;
+    min-width: 80px;
+}
+button {
+    font-size: 16px;
+    padding: 6px 15px;
+    margin-top: 8px;
+    margin-left: 5px;
+    cursor: pointer;
+}
+.search-group-container {
+    max-width: 960px;
+    margin: 10px auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+}
+.search-group {
+    display: flex;
+    flex-wrap: wrap; /* スマホ表示のために wrap を最初から指定しておくと安全 */
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 20px;
+}
+.search-label {
+    font-weight: bold;
+    min-width: 120px;
+    text-align: left;
+}
+.civ-buttons {
+    display: flex;
+    gap: 8px;
+}
+.civ-btn {
+    padding: 0;
+    border: 2px solid transparent;
+    background: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+}
+.civ-btn:not(.is-off) {
+    border-color: #007bff;
+}
+.civ-btn img {
+    display: block;
+    width: 75px;
+    height: auto;
+}
+.civ-btn.is-off {
+    opacity: 0.5;
+}
+.civ-btn.is-off:hover {
+    opacity: 0.8;
+}
+#toggle-advanced-btn.detailBtn {
+    display: inline-block; 
+    background-color: #6c757d;
+    color: white;
+    border: 1px solid #6c757d;
+    border-radius: 4px;
+    padding: 8px 16px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    text-align: center;
+}
+#advanced-search-area {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(0, 1, 0, 1);
+    margin-top: 15px;
+}
+#advanced-search-area.is-open {
+    max-height: 2000px; 
+    transition: max-height 1s ease-in-out;
+}
+.left-align-label {
+    display: block; 
+    text-align: left;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+.cost-range-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cost-input {
+    width: 100px;
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+.cost-range-container span {
+    font-size: 18px;
+    font-weight: bold;
+}
+.cost-input::-webkit-outer-spin-button,
+.cost-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.checkbox-label-inline {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+.num-range-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.rangenum-input {
+    width: 430px;
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+.num-range-container span {
+    font-size: 18px;
+    font-weight: bold;
+}
+.rangenum-input::-webkit-outer-spin-button,
+.rangenum-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.rangenum-input[type=number] {
+  -moz-appearance: textfield;
+}
+.styled-select {
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 180px; /* 元の値に戻しました。0.9emは小さすぎる可能性があります */
+    cursor: pointer;
+}
+.select-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+.select-group .search-label {
+    font-weight: bold;
+    min-width: auto;
+}
+.card-image-item {
+    cursor: pointer;
+}
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 2000;
+}
+.modal-content {
+    background-color: #fff; border-radius: 8px;
+    width: 90%; max-width: 850px; max-height: 90vh;
+    display: flex; flex-direction: column;
+}
+.modal-header {
+    background-color: #212529; color: white;
+    padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-radius: 8px 8px 0 0;
+}
+.modal-header h3 { margin: 0; font-size: 1.2em; }
+.close-btn { font-size: 2em; font-weight: bold; cursor: pointer; }
+.modal-body { display: flex; padding: 20px; gap: 20px; }
+.modal-left { flex-shrink: 0; }
+.modal-left img { width: 240px; height: auto; display: block; }
+.modal-right { flex-grow: 1; min-width: 0; }
+.detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    table-layout: fixed;
+}
+.detail-table th, .detail-table td { 
+    border: 1px solid #dee2e6; 
+    padding: 6px 8px; 
+    vertical-align: middle; 
+    text-align: center;
+}
+.detail-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    width: 25%;
+}
+.ability-section { margin-top: 15px; }
+.ability-section h4 {
+    margin: 0; padding: 6px 8px;
+    background-color: #f8f9fa; border: 1px solid #dee2e6;
+    font-size: 0.9em; text-align: center; font-weight: bold;
+}
+.ability-text {
+    border: 1px solid #dee2e6; border-top: none; padding: 10px;
+    font-size: 0.9em; line-height: 1.6;
+    text-align: left;
+}
+.text-icon {
+    height: 16px;
+    width: auto;
+    vertical-align: middle;
+    margin: 0 2px;
+}
+.pagination a.current-page {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    font-weight: bold;
+}
+.pagination span.ellipsis {
+    display: inline-block;
+    padding: 6px 12px;
+    margin: 0 4px;
+    color: #333;
+}
+.modal-body-scrollable {
+    overflow-y: auto;
+    padding: 20px;
+}
+.modal-card-instance {
+    border-bottom: 2px solid #eee;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+.modal-card-instance:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+h2 {
+    font-size: 2.5em;
+    margin-bottom: 0;
+}
+.search-results-summary {
+    text-align: center;
+    margin-top: 5px;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #333;
+}
+.search-results-summary p {
+    margin: 0;
+}
+.no-results {
+    width: 100%;
+    text-align: center;
+    padding: 50px 20px;
+    margin: 20px 0;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+}
+.no-results p {
+    margin: 0;
+    font-size: 1.2em;
+    color: #6c757d;
+}
+#sort-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 960px;
+    margin: 20px auto 10px auto;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+.sort-areaLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sort-areaLeft p {
+    margin: 0;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+.select01 select.is-empty2 {
+    color: #000;
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 200px;
+    cursor: pointer;
+}
+.check01 input[type="checkbox"] {
+    display: none;
+}
+.check01 input[type="checkbox"]+label {
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    padding-left: 25px;
+    user-select: none;
+}
+.check01 input[type="checkbox"]+label::before {
+    content: "";
+    position: absolute;
+    display: block;
+    box-sizing: border-box;
+    width: 17px;
+    height: 17px;
+    margin-top: -8px;
+    left: 0;
+    top: 50%;
+    border: 1px solid #000;
+    border-radius: 4px;
+    background: #fff;
+}
+.check01 input[type="checkbox"]:checked+label::after {
+    content: "";
+    position: absolute;
+    display: block;
+    box-sizing: border-box;
+    width: 13px;
+    height: 7px;
+    margin-top: -7px;
+    top: 50%;
+    left: 2px;
+    transform: rotate(-45deg);
+    border-bottom: 3px solid #000;
+    border-left: 3px solid #000;
+}
+.advanced-buttons-bottom {
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    margin-top: 10px;
+}
+.race-select-group,
+.ability-select-group {
+    flex-grow: 1;
+    flex-basis: calc(50% - 10px);
+}
+.race-search-header,
+.ability-search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.and-or-toggle {
+    display: flex;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    overflow: hidden;
+}
+.and-or-toggle input[type="radio"] {
+    display: none;
+}
+.and-or-toggle label {
+    padding: 4px 12px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+.and-or-toggle input[type="radio"]:checked + label {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+}
+.race-select-box {
+    position: relative;
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    min-height: 39px;
+    cursor: pointer;
+    text-align: left;
+    box-sizing: border-box;
+	overflow: hidden;
+}
+.race-select-box .placeholder {
+    color: #888;
+}
+.selected-races-display,
+.selected-abilities-display {
+    /* テキストを親ボックス内で浮かせる設定 */
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    
+    /* 親ボックスのpaddingに合わせて左右に配置 */
+    left: 12px;
+    right: 12px;
+
+    /* はみ出したテキストを「...」で表示する設定 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.race-modal-content {
+    max-width: 400px;
+    height: 70vh;
+}
+.modal-clear-btn {
+    font-size: 0.8em;
+    font-weight: normal;
+    cursor: pointer;
+    color: #007bff;
+}
+.race-modal-body {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-grow: 1;
+}
+.race-modal-search-bar input {
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-family: 'FontAwesome', sans-serif;
+}
+.race-modal-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-top: 15px;
+    border: 1px solid #eee;
+}
+.race-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+.race-list-item:last-child {
+    border-bottom: none;
+}
+.modal-footer {
+    padding: 15px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #eee;
+}
+.modal-footer button {
+    padding: 8px 20px;
+    border-radius: 5px;
+    border: 1px solid;
+    font-weight: bold;
+}
+.btn-primary { background-color: #007bff; color: white; border-color: #007bff; }
+.btn-secondary { background-color: white; color: #333; border-color: #ccc; }
+
+@media screen and (max-width: 640px) {
+    .card-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    input[type="text"],
+    .checkbox-container,
+    #sort-area,
+    .search-group-container {
+        width: 95%;
+        max-width: none;
+    }
+    input[type="text"] {
+        font-size: 16px;
+        height: 45px;
+    }
+    .checkbox-container {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .checkbox-container button {
+        margin-left: auto;
+    }
+    .search-group {
+        gap: 15px 10px;
+    }
+    .race-select-group,
+    .ability-select-group {
+        flex-basis: 100%;
+    }
+	
+    .civ-buttons {
+        justify-content: flex-start;
+        width: 100%;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+    .civ-btn img {
+        width: 65px;
+    }
+    .num-range-container,
+    .cost-range-container {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .rangenum-input {
+        width: calc(50% - 20px);
+    }
+    .select-group {
+        flex-grow: 1; 
+        flex-basis: calc(50% - 10px);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .styled-select,
+    .is-empty2 {
+        width: 100%;
+        min-width: 0;
+    }
+    .search-group .select-group:only-child {
+        flex-basis: 100%;
+    }
+    .select-group .search-label {
+         width: 100%;
+         text-align: left;
+    }
+    #sort-area {
+        flex-direction: column; 
+        align-items: flex-start;
+        gap: 15px; 
+    }
+    .sort-areaLeft {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .sort-areaLeft p {
+        white-space: nowrap;
+    }
+    .sort-areaRight {
+        width: 100%;
+    }
+    .modal-body {
+        flex-direction: column;
+    }
+    .modal-left {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+    .modal-right {
+        width: 100%;
+    }
+    .modal-left img {
+        width: 220px;
+    }
+    .detail-table {
+        table-layout: fixed;
+        width: 100%;
+    }
+    .detail-table th,
+    .detail-table td {
+        width: 25%;
+    }
+}
