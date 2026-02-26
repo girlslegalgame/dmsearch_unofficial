@@ -28,9 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const showSameNameCheck = document.getElementById('show-same-name-check');
     const resultsContainer = document.querySelector('.container');
     const paginationContainer = document.querySelector('.pagination');
-    const resultsSummary = document.querySelector('.search-results-summary p');
+    const resultsSummaryElement = document.querySelector('.search-results-summary'); // 親要素を取得
+    const resultsSummaryText = document.querySelector('.search-results-summary p');
     
     // --- ② メインの制御関数 ---
+
+    /**
+     * 文明検索UIの表示制御
+     */
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
         const isMultiOn = !multiColorBtn.classList.contains('is-off');
@@ -46,8 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /**
+     * 非同期検索実行
+     */
     function performSearch(url) {
         if (resultsContainer) { resultsContainer.style.opacity = '0.5'; }
+        
         fetch(url)
             .then(response => response.text())
             .then(html => {
@@ -56,8 +65,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newResultsContainer = doc.querySelector('.container');
                 const newPagination = doc.querySelector('.pagination');
                 const newSummary = doc.querySelector('.search-results-summary p');
-                if (resultsSummary && newSummary) { resultsSummary.innerHTML = newSummary.innerHTML; }
+                
+                // 結果の差し替え
+                if (resultsSummaryText && newSummary) { resultsSummaryText.innerHTML = newSummary.innerHTML; }
                 if (resultsContainer && newResultsContainer) { resultsContainer.innerHTML = newResultsContainer.innerHTML; }
+                
+                // ページネーションの差し替え
                 if (paginationContainer) {
                     if (newPagination) {
                         paginationContainer.innerHTML = newPagination.innerHTML;
@@ -67,11 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         paginationContainer.style.display = 'none';
                     }
                 }
+
                 if (resultsContainer) {
-                    const urlParams = new URL(url, window.location.origin);
-                    if (urlParams.search !== '' && urlParams.search !== '?') {
-                         resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
+                    // スムーズスクロール実行
+                    // 件数表示エリアがあればそこへ、なければカード一覧へスクロール
+                    const scrollTarget = resultsSummaryElement || resultsContainer;
+                    scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     resultsContainer.style.opacity = '1';
                 }
             })
@@ -83,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
     }
+
     const triggerSearch = () => {
         if(searchForm) searchForm.dispatchEvent(new Event('submit', { cancelable: true }));
     };
@@ -99,15 +114,18 @@ document.addEventListener('DOMContentLoaded', () => {
             performSearch(newUrl);
         });
     }
+
     if (sortOrderSelect) {
         sortOrderSelect.addEventListener('change', () => {
             if (sortOrderHiddenInput) sortOrderHiddenInput.value = sortOrderSelect.value;
             triggerSearch();
         });
     }
+
     if (showSameNameCheck) {
         showSameNameCheck.addEventListener('change', triggerSearch);
     }
+
     if (toggleAdvancedBtn) {
         toggleAdvancedBtn.addEventListener('click', () => {
             const isOpen = advancedSearchArea.classList.toggle('is-open');
@@ -115,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(advancedStateInput) advancedStateInput.value = isOpen ? '1' : '0';
         });
     }
+
     if (goodsTypeSelect) {
         goodsTypeSelect.addEventListener('change', () => {
             fetch(`api.php?type=goods&goodstype_id=${goodsTypeSelect.value}`)
@@ -218,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ⑧ カード詳細モーダルのロジック ---
     const cardDetailModal = document.getElementById('card-modal');
-    // 交差監視用オブジェクト（スクロール位置で名前を変えるため）
     let modalObserver = null;
 
     function openCardDetailModal(cardId) {
@@ -232,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modalCardName.textContent = '読み込み中...';
         cardDetailModal.style.display = 'flex';
 
-        // 前回の監視を解除
         if (modalObserver) modalObserver.disconnect();
 
         fetch(`get_card_details.php?id=${cardId}`)
@@ -244,28 +261,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // IntersectionObserverの初期化
                 modalObserver = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
-                        // 要素が半分以上(0.5)見えている場合にヘッダー名を更新
                         if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
                             modalCardName.textContent = entry.target.dataset.cardName;
                         }
                     });
                 }, {
                     root: modalCardsContainer,
-                    threshold: 0.5 // 半分見えたら切り替え
+                    threshold: 0.5
                 });
 
                 data.cards.forEach((cardInfo, index) => {
                     const templateClone = modalCardTemplate.content.cloneNode(true);
                     const cardInstance = templateClone.querySelector('.modal-card-instance');
-                    
-                    // 監視用のデータ属性をセット
                     cardInstance.dataset.cardName = cardInfo.card_name;
                     const part = String.fromCharCode(97 + index);
 
-                    // 情報の埋め込み
                     templateClone.querySelector('.modal-card-type').textContent = cardInfo.card_type;
                     templateClone.querySelector('.modal-civilization').textContent = cardInfo.civilization;
                     templateClone.querySelector('.modal-rarity').textContent = cardInfo.rarity;
@@ -275,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-race').textContent = cardInfo.race;
                     templateClone.querySelector('.modal-illustrator').textContent = cardInfo.illustrator;
 
-                    // 画像設定
                     let imageUrl = 'path/to/placeholder.webp';
                     if (data.image_urls && data.image_urls[part]) {
                         imageUrl = data.image_urls[part];
@@ -286,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-card-image').src = imageUrl;
                     templateClone.querySelector('.modal-card-image').alt = cardInfo.card_name;
 
-                    // テキスト
                     const textSection = templateClone.querySelector('.modal-ability-section');
                     if (cardInfo.text && cardInfo.text !== '（テキスト情報なし）') {
                         templateClone.querySelector('.modal-text').innerHTML = cardInfo.text;
@@ -299,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     modalCardsContainer.appendChild(templateClone);
-                    // 追加した要素を監視対象にする
                     modalObserver.observe(cardInstance);
                 });
             })
@@ -309,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // モーダルの閉じる処理
     if (cardDetailModal) {
         const closeModal = () => { 
             cardDetailModal.style.display = 'none';
@@ -319,9 +327,49 @@ document.addEventListener('DOMContentLoaded', () => {
         cardDetailModal.addEventListener('click', (e) => { if (e.target === cardDetailModal) closeModal(); });
     }
 
-    // 画像クリックでモーダルを開く
+    // --- ④ グローバルクリックリスナー ---
     document.body.addEventListener('click', (e) => {
+        // ページネーションリンクの処理
+        const paginationLink = e.target.closest('.pagination a');
+        if (paginationLink && !paginationLink.classList.contains('current-page')) {
+            e.preventDefault();
+            performSearch(paginationLink.href);
+            return;
+        }
+
+        // カード画像の処理
         const cardImage = e.target.closest('.card-image-item');
-        if (cardImage) openCardDetailModal(cardImage.dataset.cardId);
+        if (cardImage) {
+            openCardDetailModal(cardImage.dataset.cardId);
+            return;
+        }
     });
+
+    // --- ⑤ リセット処理 ---
+    if (resetButtons.length > 0) {
+        resetButtons.forEach(button => {
+            button.addEventListener('click', resetSearch);
+        });
+    }
+
+    function resetSearch() {
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) searchInput.value = "";
+        
+        // フォームのリセット
+        searchForm.reset();
+
+        // 特別なUI（文明ボタンなど）の状態をリセット
+        document.querySelectorAll('.civ-btn').forEach(btn => {
+            const isMonoOrMulti = btn.dataset.targetInput === 'mono_color' || btn.dataset.targetInput === 'multi_color';
+            if (isMonoOrMulti) btn.classList.remove('is-off');
+            else btn.classList.add('is-off');
+        });
+
+        // モーダル選択内容をリセット
+        resetModalStates.forEach(reset => reset());
+        
+        updateCivilizationControls();
+        triggerSearch();
+    }
 });
