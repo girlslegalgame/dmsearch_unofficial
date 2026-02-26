@@ -89,18 +89,18 @@ if ($card_id === 0) {
 }
 $response = [];
 
-$stmt = $pdo->prepare("SELECT sets_id FROM card_sets WHERE card_id = ? LIMIT 1");
+$stmt = $pdo->prepare("SELECT combination_id FROM card_combination WHERE card_id = ? LIMIT 1");
 $stmt->execute([$card_id]);
-$set_info = $stmt->fetch(PDO::FETCH_ASSOC);
+$combination_info = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($set_info) {
+if ($combination_info) {
     // === セットカードの処理 ===
-    $response['is_set'] = true;
-    $stmt = $pdo->prepare("SELECT sets_name FROM sets WHERE sets_id = ?");
-    $stmt->execute([$set_info['sets_id']]);
-    $response['set_name'] = $stmt->fetchColumn();
-    $stmt = $pdo->prepare("SELECT c.*, cd.* FROM card_sets cs JOIN card c ON cs.card_id = c.card_id JOIN card_detail cd ON c.card_id = cd.card_id WHERE cs.sets_id = ? ORDER BY cs.card_id ASC");
-    $stmt->execute([$set_info['sets_id']]);
+    $response['is_combination'] = true;
+    $stmt = $pdo->prepare("SELECT combination_name FROM combination WHERE combination_id = ?");
+    $stmt->execute([$combination_info['combination_id']]);
+    $response['combination_name'] = $stmt->fetchColumn();
+    $stmt = $pdo->prepare("SELECT c.*, cd.* FROM card_combination cs JOIN card c ON cs.card_id = c.card_id JOIN card_detail cd ON c.card_id = cd.card_id WHERE cs.combination_id = ? ORDER BY cs.card_id ASC");
+    $stmt->execute([$combination_info['combination_id']]);
     $response['cards'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (!empty($response['cards'])) {
@@ -121,7 +121,7 @@ if ($set_info) {
     }
 } else {
     // === 通常カードの処理 ===
-    $response['is_set'] = false;
+    $response['is_combination'] = false;
     $stmt = $pdo->prepare("SELECT c.*, cd.* FROM card c JOIN card_detail cd ON c.card_id = cd.card_id WHERE c.card_id = ?");
     $stmt->execute([$card_id]);
     $card_data = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -158,7 +158,7 @@ foreach ($response['cards'] as &$card) {
     $stmt->execute([$current_card_id]);
     $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
-    if (!$response['is_set']) {
+    if (!$response['is_combination']) {
         // 【デバッグ用】Ability Nameリストを取得 (本番で不要な場合はこのブロックごと削除)
         $stmt_debug_ability = $pdo->prepare("
             SELECT a.ability_name
