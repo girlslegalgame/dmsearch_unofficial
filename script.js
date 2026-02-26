@@ -465,6 +465,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const cardInstance = templateClone.querySelector('.modal-card-instance');
                     cardInstance.dataset.cardName = cardInfo.card_name;
                     const part = String.fromCharCode(97 + index);
+
+                    // --- 基本情報の埋め込み ---
                     templateClone.querySelector('.modal-card-type').textContent = cardInfo.card_type;
                     templateClone.querySelector('.modal-civilization').textContent = cardInfo.civilization;
                     templateClone.querySelector('.modal-rarity').textContent = cardInfo.rarity;
@@ -474,50 +476,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-race').textContent = cardInfo.race;
                     templateClone.querySelector('.modal-illustrator').textContent = cardInfo.illustrator;
 
-                    const abilityNamesDebugEl = templateClone.querySelector('.modal-debug-ability-names');
-                    if (abilityNamesDebugEl) {
-                        if (cardInfo.ability_names_debug && cardInfo.ability_names_debug.length > 0) {
-                            abilityNamesDebugEl.textContent = cardInfo.ability_names_debug.join('、');
-                        } else {
-                            abilityNamesDebugEl.textContent = '（なし）';
-                        }
-                    }
-    
+                    // --- 画像URLの設定 ---
                     let imageUrl = 'path/to/placeholder.webp';
-                    if (cardInfo.modelnum) {
+                    if (data.image_urls && data.image_urls[part]) {
+                        imageUrl = data.image_urls[part];
+                    } else if (cardInfo.modelnum) {
                         const parts = cardInfo.modelnum.split('-');
-                        const seriesFolder = parts.length > 0 ? parts[0].toLowerCase() : '';
-                        if (seriesFolder) {
-                            // is_set から is_combination に変更
-                            if (data.is_combination && data.image_urls && data.image_urls[part]) {
-                                imageUrl = data.image_urls[part];
-                            } else {
-                                imageUrl = `card/${seriesFolder}/${cardInfo.modelnum}.webp`;
-                            }
-                        }
+                        const seriesFolder = parts[0].toLowerCase();
+                        imageUrl = `card/${seriesFolder}/${cardInfo.modelnum}.webp`;
                     }
                     templateClone.querySelector('.modal-card-image').src = imageUrl;
                     templateClone.querySelector('.modal-card-image').alt = cardInfo.card_name;
+
+                    // --- 能力テキストの埋め込み (修正点: cardInfo.text をそのまま使う) ---
                     const textSection = templateClone.querySelector('.modal-ability-section');
-                    
-                    // is_set から is_combination に変更
-                    let abilityText = data.is_combination ? 
-                        ((data.texts && data.texts[part]) ? formatAbilityText(data.texts[part]) : '（テキスト情報なし）') : 
-                        cardInfo.text;
-                    if (abilityText && abilityText !== '（テキスト情報なし）') {
-                        templateClone.querySelector('.modal-text').innerHTML = abilityText;
+                    if (cardInfo.text && cardInfo.text !== '（テキスト情報なし）') {
+                        templateClone.querySelector('.modal-text').innerHTML = cardInfo.text;
                         textSection.style.display = 'block';
+                    } else {
+                        textSection.style.display = 'none';
                     }
+
+                    // --- フレーバーテキストの埋め込み (修正点: cardInfo.flavortext をそのまま使う) ---
                     const flavorSection = templateClone.querySelector('.modal-flavor-section');
-                    
-                    // is_set から is_combination に変更
-                    let flavorText = data.is_combination ? 
-                        ((data.flavortexts && data.flavortexts[part]) ? formatFlavorText(data.flavortexts[part]) : null) :
-                        cardInfo.flavortext;
-                    if (flavorText) {
-                        templateClone.querySelector('.modal-flavortext').innerHTML = flavorText;
+                    if (cardInfo.flavortext) {
+                        templateClone.querySelector('.modal-flavortext').innerHTML = cardInfo.flavortext;
                         flavorSection.style.display = 'block';
+                    } else {
+                        flavorSection.style.display = 'none';
                     }
+
                     modalCardsContainer.appendChild(templateClone);
                 });
                 
