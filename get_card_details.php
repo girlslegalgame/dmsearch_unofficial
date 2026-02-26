@@ -89,21 +89,16 @@ if ($card_id === 0) {
 }
 $response = [];
 
-// card_sets から card_combination に変更
 $stmt = $pdo->prepare("SELECT combination_id FROM card_combination WHERE card_id = ? LIMIT 1");
 $stmt->execute([$card_id]);
 $combination_info = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($combination_info) {
-    // === コンビネーションカードの処理 ===
     $response['is_combination'] = true;
-    
-    // sets から combination に変更
     $stmt = $pdo->prepare("SELECT combination_name FROM combination WHERE combination_id = ?");
     $stmt->execute([$combination_info['combination_id']]);
     $response['combination_name'] = $stmt->fetchColumn();
 
-    // card_sets から card_combination に、sets_id から combination_id に変更
     $stmt = $pdo->prepare("SELECT c.*, cd.* FROM card_combination cc JOIN card c ON cc.card_id = c.card_id JOIN card_detail cd ON c.card_id = cd.card_id WHERE cc.combination_id = ? ORDER BY cc.card_id ASC");
     $stmt->execute([$combination_info['combination_id']]);
     $response['cards'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -111,8 +106,8 @@ if ($combination_info) {
     if (!empty($response['cards'])) {
         $modelnum = $response['cards'][0]['modelnum'] ?? null;
         $series_folder = get_series_folder_from_modelnum($modelnum);
-        $response['texts'] = process_files_from_folder($modelnum, 'text');
-        $response['flavortexts'] = process_files_from_folder($modelnum, 'flavortext');
+        
+        // 全体のイメージURLのみここで処理
         $image_urls = [];
         if ($modelnum && $series_folder) {
             $folder_path = "card/" . $series_folder . "/" . $modelnum;
@@ -125,7 +120,6 @@ if ($combination_info) {
         $response['image_urls'] = $image_urls;
     }
 } else {
-    // === 通常カードの処理 ===
     $response['is_combination'] = false;
     $stmt = $pdo->prepare("SELECT c.*, cd.* FROM card c JOIN card_detail cd ON c.card_id = cd.card_id WHERE c.card_id = ?");
     $stmt->execute([$card_id]);
@@ -137,12 +131,14 @@ if ($combination_info) {
     $response['cards'] = [$card_data];
 }
 
-// --- 各カードの詳細情報を取得 ---
-foreach ($response['cards'] as &$card) {
+// --- 各カードの詳細情報をループ内で処理（重要：ここでコンビネーションのテキストも処理する） ---
+foreach ($response['cards'] as $index => &$card) {
     $current_card_id = $card['card_id'];
     $modelnum = $card['modelnum'] ?? null;
     $series_folder = get_series_folder_from_modelnum($modelnum);
-    
+    $part = String.fromCharCode(97 + $index); // a, b, c...
+
+    // 基本情報取得
     $stmt = $pdo->prepare("SELECT t.cardtype_name, c.characteristics_name, cc.characteristics_id FROM card_cardtype cc JOIN cardtype t ON cc.cardtype_id = t.cardtype_id LEFT JOIN characteristics c ON cc.characteristics_id = c.characteristics_id WHERE cc.card_id = ?");
     $stmt->execute([$current_card_id]);
     $type_info = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -167,32 +163,30 @@ foreach ($response['cards'] as &$card) {
     $stmt->execute([$current_card_id]);
     $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
-    // 通常カード（is_combinationがfalse）の場合のみ、個別にテキスト整形を行う
-    if (!$response['is_combination']) {
-        $stmt_debug_ability = $pdo->prepare("
-            SELECT a.ability_name
-            FROM card_ability ca
-            JOIN ability a ON ca.ability_id = a.ability_id
-            WHERE ca.card_id = ?
-            ORDER BY a.reading COLLATE utf8mb4_unicode_ci ASC
-        ");
-        $stmt_debug_ability->execute([$current_card_id]);
-        $card['ability_names_debug'] = $stmt_debug_ability->fetchAll(PDO::FETCH_COLUMN);
+    // 能力名デバッグ
+    $stmt_debug_ability = $pdo->prepare("SELECT a.ability_name FROM card_ability ca JOIN ability a ON ca.ability_id = a.ability_id WHERE ca.card_id = ? ORDER BY a.reading COLLATE utf8mb4_unicode_ci ASC");
+    $stmt_debug_ability->execute([$current_card_id]);
+    $card['ability_names_debug'] = $stmt_debug_ability->fetchAll(PDO::FETCH_COLUMN);
 
-        $text_from_file = null;
-        $single_text_file = ($modelnum && $series_folder) ? "text/" . $series_folder . "/" . $modelnum . ".txt" : null;
-        if ($single_text_file && file_exists($single_text_file)) {
-            $text_from_file = file_get_contents($single_text_file);
-        }
-        $card['text'] = format_text_for_display($text_from_file ?: ($card['text'] ?? ''), true);
+    // テキスト・フレーバーテキスト処理（外部ファイル優先、なければDB）
+    $part_suffix = $response['is_combination'] ? chr(97 + $index) : ""; // コンビネーションなら a, b... をつける
+    $file_id = $modelnum . $part_suffix;
 
-        $flavor_from_file = null;
-        $single_flavor_file = ($modelnum && $series_folder) ? "flavortext/" . $series_folder . "/" . $modelnum . ".txt" : null;
-        if ($single_flavor_file && file_exists($single_flavor_file)) {
-            $flavor_from_file = file_get_contents($single_flavor_file);
-        }
-        $card['flavortext'] = format_text_for_display($flavor_from_file ?: ($card['flavortext'] ?? ''), false);
+    // 能力テキスト
+    $text_from_file = null;
+    $single_text_file = ($modelnum && $series_folder) ? "text/" . $series_folder . "/" . $file_id . ".txt" : null;
+    if ($single_text_file && file_exists($single_text_file)) {
+        $text_from_file = file_get_contents($single_text_file);
     }
+    $card['text'] = format_text_for_display($text_from_file ?: ($card['text'] ?? ''), true);
+
+    // フレーバーテキスト
+    $flavor_from_file = null;
+    $single_flavor_file = ($modelnum && $series_folder) ? "flavortext/" . $series_folder . "/" . $file_id . ".txt" : null;
+    if ($single_flavor_file && file_exists($single_flavor_file)) {
+        $flavor_from_file = file_get_contents($single_flavor_file);
+    }
+    $card['flavortext'] = format_text_for_display($flavor_from_file ?: ($card['flavortext'] ?? ''), false);
 }
 unset($card);
 
