@@ -89,16 +89,20 @@ if ($card_id === 0) {
 }
 $response = [];
 
+// card_combination テーブルから combination_id を取得
 $stmt = $pdo->prepare("SELECT combination_id FROM card_combination WHERE card_id = ? LIMIT 1");
 $stmt->execute([$card_id]);
 $combination_info = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($combination_info) {
     $response['is_combination'] = true;
+    
+    // combination テーブルから名前を取得
     $stmt = $pdo->prepare("SELECT combination_name FROM combination WHERE combination_id = ?");
     $stmt->execute([$combination_info['combination_id']]);
     $response['combination_name'] = $stmt->fetchColumn();
 
+    // 紐付いているカードをすべて取得
     $stmt = $pdo->prepare("SELECT c.*, cd.* FROM card_combination cc JOIN card c ON cc.card_id = c.card_id JOIN card_detail cd ON c.card_id = cd.card_id WHERE cc.combination_id = ? ORDER BY cc.card_id ASC");
     $stmt->execute([$combination_info['combination_id']]);
     $response['cards'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -131,14 +135,13 @@ if ($combination_info) {
     $response['cards'] = [$card_data];
 }
 
-// --- 各カードの詳細情報をループ内で処理（重要：ここでコンビネーションのテキストも処理する） ---
+// --- 各カードの詳細情報をループ内で処理 ---
 foreach ($response['cards'] as $index => &$card) {
     $current_card_id = $card['card_id'];
     $modelnum = $card['modelnum'] ?? null;
     $series_folder = get_series_folder_from_modelnum($modelnum);
-    $part = String.fromCharCode(97 + $index); // a, b, c...
 
-    // 基本情報取得
+    // 基本情報取得 (カードタイプ・文明・レアリティ・種族・イラストレーター)
     $stmt = $pdo->prepare("SELECT t.cardtype_name, c.characteristics_name, cc.characteristics_id FROM card_cardtype cc JOIN cardtype t ON cc.cardtype_id = t.cardtype_id LEFT JOIN characteristics c ON cc.characteristics_id = c.characteristics_id WHERE cc.card_id = ?");
     $stmt->execute([$current_card_id]);
     $type_info = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -163,13 +166,9 @@ foreach ($response['cards'] as $index => &$card) {
     $stmt->execute([$current_card_id]);
     $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
-    // 能力名デバッグ
-    $stmt_debug_ability = $pdo->prepare("SELECT a.ability_name FROM card_ability ca JOIN ability a ON ca.ability_id = a.ability_id WHERE ca.card_id = ? ORDER BY a.reading COLLATE utf8mb4_unicode_ci ASC");
-    $stmt_debug_ability->execute([$current_card_id]);
-    $card['ability_names_debug'] = $stmt_debug_ability->fetchAll(PDO::FETCH_COLUMN);
-
-    // テキスト・フレーバーテキスト処理（外部ファイル優先、なければDB）
-    $part_suffix = $response['is_combination'] ? chr(97 + $index) : ""; // コンビネーションなら a, b... をつける
+    // 能力テキスト・フレーバーテキスト処理
+    // コンビネーションならサフィックス a, b... を決定する
+    $part_suffix = $response['is_combination'] ? chr(97 + $index) : ""; 
     $file_id = $modelnum . $part_suffix;
 
     // 能力テキスト
@@ -178,6 +177,7 @@ foreach ($response['cards'] as $index => &$card) {
     if ($single_text_file && file_exists($single_text_file)) {
         $text_from_file = file_get_contents($single_text_file);
     }
+    // ファイルになければDBのtextカラムを使用
     $card['text'] = format_text_for_display($text_from_file ?: ($card['text'] ?? ''), true);
 
     // フレーバーテキスト
@@ -186,7 +186,13 @@ foreach ($response['cards'] as $index => &$card) {
     if ($single_flavor_file && file_exists($single_flavor_file)) {
         $flavor_from_file = file_get_contents($single_flavor_file);
     }
+    // ファイルになければDBのflavortextカラムを使用
     $card['flavortext'] = format_text_for_display($flavor_from_file ?: ($card['flavortext'] ?? ''), false);
+
+    // デバッグ用能力名
+    $stmt_debug_ability = $pdo->prepare("SELECT a.ability_name FROM card_ability ca JOIN ability a ON ca.ability_id = a.ability_id WHERE ca.card_id = ? ORDER BY a.reading COLLATE utf8mb4_unicode_ci ASC");
+    $stmt_debug_ability->execute([$current_card_id]);
+    $card['ability_names_debug'] = $stmt_debug_ability->fetchAll(PDO::FETCH_COLUMN);
 }
 unset($card);
 
