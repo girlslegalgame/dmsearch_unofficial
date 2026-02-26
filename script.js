@@ -221,6 +221,13 @@ document.addEventListener('DOMContentLoaded', () => {
                  else { select.value = '0'; }
              }
         });
+
+        // AND/ORラジオボタンのリセット
+        ['race', 'ability', 'others', 'soul'].forEach(type => {
+            const andRadio = document.getElementById(`${type}-and`);
+            if(andRadio) andRadio.checked = true;
+        });
+
         const searchName = document.querySelector('input[name="search_name"]');
         const searchReading = document.querySelector('input[name="search_reading"]');
         const searchText = document.querySelector('input[name="search_text"]');
@@ -259,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCivilizationControls();
 
     // --- ⑦ 汎用ソート関数 と 検索モーダル設定のロジック ---
-   const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ':'03b','ェ':'04a','エ':'04b','ォ':'05a','オ':'05b','カ':'06a','ガ':'06b','キ':'07a','ギ':'07b','ク':'08a','グ':'08b','ケ':'09a','ゲ':'09b','コ':'10a','ゴ':'10b','サ':'11a','ざ':'11b','シ':'12a','ジ':'12b','ス':'13a','ズ':'13b','セ':'14a','ゼ':'14b','ソ':'15a','ゾ':'15b','タ':'16a','ダ':'16b','チ':'17a','ヂ':'17b','ッ':'18a','ツ':'18b','ヅ':'18b','テ':'19a','デ':'19b','ト':'20a','ド':'20b','ナ':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ャ':'36a','ヤ':'36b','ュ':'37a','ユ':'37b','ョ':'38a','ヨ':'38b','ラ':'39a','リ':'40a','ル':'41a','レ':'42a','ロ':'43a','ワ':'44a','ヲ':'45a','ン':'46a'};
+   const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ':'03b','ェ':'04a','エ':'04b','ォ':'05a','オ':'05b','カ':'06a','ガ':'06b','キ':'07a','ギ':'07b','ク':'08a','グ':'08b','ケ':'09a','ゲ':'09b','コ':'10a','ゴ':'10b','サ':'11a','ザ':'11b','シ':'12a','ジ':'12b','ス':'13a','ズ':'13b','セ':'14a','ゼ':'14b','ソ':'15a','ゾ':'15b','タ':'16a','ダ':'16b','チ':'17a','ヂ':'17b','ッ':'18a','ツ':'18b','ヅ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ャ':'36a','ヤ':'36b','ュ':'37a','ユ':'37b','ョ':'38a','ヨ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a'};
     function getSortableString(str) { if (!str) return ''; return str.split('').map(char => sortMap[char] || char).join(''); }
     function customSortJS(a, b) {
         const readingA = a.reading || '';
@@ -424,17 +431,11 @@ document.addEventListener('DOMContentLoaded', () => {
         resetModalStates.push(resetState);
     }
 
-    setupSearchModal({
-        modalType: 'race',
-        hiddenInputName: 'race_ids[]',
-        displayClassName: 'selected-races-display'
-    });
-
-    setupSearchModal({
-        modalType: 'ability',
-        hiddenInputName: 'ability_ids[]',
-        displayClassName: 'selected-abilities-display'
-    });
+    // --- 各種モーダルの初期化 ---
+    setupSearchModal({ modalType: 'race', hiddenInputName: 'race_ids[]', displayClassName: 'selected-races-display' });
+    setupSearchModal({ modalType: 'ability', hiddenInputName: 'ability_ids[]', displayClassName: 'selected-abilities-display' });
+    setupSearchModal({ modalType: 'others', hiddenInputName: 'others_ids[]', displayClassName: 'selected-others-display' });
+    setupSearchModal({ modalType: 'soul', hiddenInputName: 'soul_ids[]', displayClassName: 'selected-soul-display' });
 
 
     // --- ⑧ カード詳細モーダルのロジック ---
@@ -457,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 
-                // set_name から combination_name に変更
+                // combination_name を優先表示
                 modalCardName.textContent = data.combination_name || data.cards[0].card_name;
                 
                 data.cards.forEach((cardInfo, index) => {
@@ -466,7 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cardInstance.dataset.cardName = cardInfo.card_name;
                     const part = String.fromCharCode(97 + index);
 
-                    // --- 基本情報の埋め込み ---
+                    // 基本情報
                     templateClone.querySelector('.modal-card-type').textContent = cardInfo.card_type;
                     templateClone.querySelector('.modal-civilization').textContent = cardInfo.civilization;
                     templateClone.querySelector('.modal-rarity').textContent = cardInfo.rarity;
@@ -476,7 +477,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-race').textContent = cardInfo.race;
                     templateClone.querySelector('.modal-illustrator').textContent = cardInfo.illustrator;
 
-                    // --- 画像URLの設定 ---
+                    // デバッグ用能力名
+                    const abilityNamesDebugEl = templateClone.querySelector('.modal-debug-ability-names');
+                    if (abilityNamesDebugEl) {
+                        abilityNamesDebugEl.textContent = (cardInfo.ability_names_debug && cardInfo.ability_names_debug.length > 0) 
+                            ? cardInfo.ability_names_debug.join('、') : '（なし）';
+                    }
+    
+                    // 画像
                     let imageUrl = 'path/to/placeholder.webp';
                     if (data.image_urls && data.image_urls[part]) {
                         imageUrl = data.image_urls[part];
@@ -488,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-card-image').src = imageUrl;
                     templateClone.querySelector('.modal-card-image').alt = cardInfo.card_name;
 
-                    // --- 能力テキストの埋め込み (修正点: cardInfo.text をそのまま使う) ---
+                    // 能力テキスト (PHP側で整形済みの HTML をそのまま使用)
                     const textSection = templateClone.querySelector('.modal-ability-section');
                     if (cardInfo.text && cardInfo.text !== '（テキスト情報なし）') {
                         templateClone.querySelector('.modal-text').innerHTML = cardInfo.text;
@@ -497,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         textSection.style.display = 'none';
                     }
 
-                    // --- フレーバーテキストの埋め込み (修正点: cardInfo.flavortext をそのまま使う) ---
+                    // フレーバーテキスト (PHP側で整形済みの HTML をそのまま使用)
                     const flavorSection = templateClone.querySelector('.modal-flavor-section');
                     if (cardInfo.flavortext) {
                         templateClone.querySelector('.modal-flavortext').innerHTML = cardInfo.flavortext;
@@ -509,8 +517,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     modalCardsContainer.appendChild(templateClone);
                 });
                 
-                // is_set から is_combination に変更
-                if (data.is_combination && data.cards.length > 0) {
+                // コンビネーションカード名の上書き（必要に応じて）
+                if (data.is_combination && data.cards.length > 0 && !data.combination_name) {
                     modalCardName.textContent = data.cards[0].card_name;
                 }
             })
@@ -520,6 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 modalCardsContainer.innerHTML = '<p style="text-align:center;">通信エラーが発生しました。</p>';
             });
     }
+
 	if (cardDetailModal) {
 		const modalCloseBtn = cardDetailModal.querySelector('.modal-header .close-btn');
 		const modalOverlay = cardDetailModal.closest('.modal-overlay');
@@ -536,47 +545,4 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		});
 	}
-    function formatAbilityText(rawText) {
-        if (!rawText || rawText.trim() === '') return '（テキスト情報なし）';
-        const iconMap = {
-                '{ST}' : '<img src="parts/card_list_strigger.webp" alt="S-Trigger" class="text-icon">',
-                '{BR}' : '<img src="parts/card_list_block.webp" alt="Blocker" class="text-icon">',
-                '{SV}' : '<img src="parts/card_list_survivor.webp" alt="Survivor" class="text-icon">',
-                '{TT}' : '<img src="parts/card_list_taptrigger.webp" alt="Tap-Trigger" class="text-icon">',
-                '{TR}' : '<img src="parts/card_list_turborush.webp" alt="Turbo-Rush" class="text-icon">',
-                '{SS}' : '<img src="parts/card_list_silentskill.webp" alt="Silent_Skill" class="text-icon">',
-                '{WS}' : '<img src="parts/card_list_wavestriker.webp" alt="Wave_Striker" class="text-icon">',
-                '{MM}' : '<img src="parts/card_list_metamorph.webp" alt="Metamorph" class="text-icon">',
-                '{AC}' : '<img src="parts/card_list_accel.webp" alt="Accel" class="text-icon">',
-                '{SB}' : '<img src="parts/card_list_strike_back.webp" alt="Strike-Back" class="text-icon">',
-                '{FE}' : '<img src="parts/card_list_fortenergy.webp" alt="Fort-Energy" class="text-icon">'
-        };
-        const iconTags = Object.keys(iconMap);
-        return rawText.split('\n').map(line => {
-            let trimmed = line.trim();
-            if (trimmed === '') return null;
-            const isIndented = trimmed.toUpperCase().startsWith('{TAB}');
-            if (isIndented) { trimmed = trimmed.substring(5).trim(); }
-            const startsWithIcon = iconTags.some(tag => trimmed.toUpperCase().startsWith(tag.toUpperCase()));
-            const isParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')');
-            let processedLine = trimmed.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            for (const tag of iconTags) {
-                processedLine = processedLine.replace(new RegExp(tag.replace(/\{/g, '\\{').replace(/\}/g, '\\}'), 'gi'), iconMap[tag]);
-            }
-            let prefix = '';
-            let wrapperClass = '';
-            if (isIndented) {
-                wrapperClass = ' class="indented-text"';
-                if (!startsWithIcon) { prefix = '▶ '; }
-            } else if (!startsWithIcon && !isParenthetical) {
-                prefix = '■ ';
-            }
-            return `<span${wrapperClass}>${prefix}${processedLine}</span>`;
-        }).filter(line => line !== null).join('<br>');
-    }
-    function formatFlavorText(rawText) {
-         if (!rawText || rawText.trim() === '') return null;
-         const escaped = rawText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-         return escaped.replace(/\n/g, '<br>');
-    }
 });
