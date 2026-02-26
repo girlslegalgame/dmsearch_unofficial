@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 require_once 'db_connect.php';
 
-// ★★★ すべてのヘルパー関数を、ファイルの最初に一度だけ定義する ★★★
+// ★★★ ヘルパー関数 ★★★
 function get_series_folder_from_modelnum($modelnum) {
     if (!$modelnum || strpos($modelnum, '-') === false) return '';
     $parts = explode('-', $modelnum);
@@ -80,8 +80,8 @@ function format_text_for_display($raw_text, $is_ability) {
     $final_text = implode('<br>', $processed_lines);
     return $is_ability ? $final_text : nl2br($final_text);
 }
-// ★★★ ヘルパー関数の定義はここまで ★★★
 
+// --- メイン処理 ---
 $card_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 if ($card_id === 0) {
     echo json_encode(['error' => 'Invalid ID']);
@@ -89,17 +89,22 @@ if ($card_id === 0) {
 }
 $response = [];
 
+// card_sets から card_combination に変更
 $stmt = $pdo->prepare("SELECT combination_id FROM card_combination WHERE card_id = ? LIMIT 1");
 $stmt->execute([$card_id]);
 $combination_info = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($combination_info) {
-    // === セットカードの処理 ===
+    // === コンビネーションカードの処理 ===
     $response['is_combination'] = true;
+    
+    // sets から combination に変更
     $stmt = $pdo->prepare("SELECT combination_name FROM combination WHERE combination_id = ?");
     $stmt->execute([$combination_info['combination_id']]);
     $response['combination_name'] = $stmt->fetchColumn();
-    $stmt = $pdo->prepare("SELECT c.*, cd.* FROM card_combination cs JOIN card c ON cs.card_id = c.card_id JOIN card_detail cd ON c.card_id = cd.card_id WHERE cs.combination_id = ? ORDER BY cs.card_id ASC");
+
+    // card_sets から card_combination に、sets_id から combination_id に変更
+    $stmt = $pdo->prepare("SELECT c.*, cd.* FROM card_combination cc JOIN card c ON cc.card_id = c.card_id JOIN card_detail cd ON c.card_id = cd.card_id WHERE cc.combination_id = ? ORDER BY cc.card_id ASC");
     $stmt->execute([$combination_info['combination_id']]);
     $response['cards'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -132,7 +137,7 @@ if ($combination_info) {
     $response['cards'] = [$card_data];
 }
 
-// --- 各カードの共通詳細情報と、通常カードのテキストを処理 ---
+// --- 各カードの詳細情報を取得 ---
 foreach ($response['cards'] as &$card) {
     $current_card_id = $card['card_id'];
     $modelnum = $card['modelnum'] ?? null;
@@ -145,21 +150,25 @@ foreach ($response['cards'] as &$card) {
     if ($type_info && $type_info['characteristics_id'] != 1 && !empty($type_info['characteristics_name'])) { $type_parts[] = $type_info['characteristics_name']; }
     if ($type_info && !empty($type_info['cardtype_name'])) { $type_parts[] = $type_info['cardtype_name']; }
     $card['card_type'] = !empty($type_parts) ? implode('', $type_parts) : '---';
+    
     $stmt = $pdo->prepare("SELECT c.civilization_name FROM card_civilization cc JOIN civilization c ON cc.civilization_id = c.civilization_id WHERE cc.card_id = ?");
     $stmt->execute([$current_card_id]);
     $card['civilization'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
+    
     $stmt = $pdo->prepare("SELECT r.rarity_name FROM card_rarity cr JOIN rarity r ON cr.rarity_id = r.rarity_id WHERE cr.card_id = ? LIMIT 1");
     $stmt->execute([$current_card_id]);
     $card['rarity'] = $stmt->fetchColumn() ?: '---';
+    
     $stmt = $pdo->prepare("SELECT r.race_name FROM card_race cr JOIN race r ON cr.race_id = r.race_id WHERE cr.card_id = ?");
     $stmt->execute([$current_card_id]);
     $card['race'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
+    
     $stmt = $pdo->prepare("SELECT i.illus_name FROM card_illus ci JOIN illus i ON ci.illus_id = i.illus_id WHERE ci.card_id = ?");
     $stmt->execute([$current_card_id]);
     $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
+    // 通常カード（is_combinationがfalse）の場合のみ、個別にテキスト整形を行う
     if (!$response['is_combination']) {
-        // 【デバッグ用】Ability Nameリストを取得 (本番で不要な場合はこのブロックごと削除)
         $stmt_debug_ability = $pdo->prepare("
             SELECT a.ability_name
             FROM card_ability ca
@@ -169,7 +178,7 @@ foreach ($response['cards'] as &$card) {
         ");
         $stmt_debug_ability->execute([$current_card_id]);
         $card['ability_names_debug'] = $stmt_debug_ability->fetchAll(PDO::FETCH_COLUMN);
-        // 【デバッグ用】Ability IDリストを取得 (本番で不要な場合はこのブロックごと削除)
+
         $text_from_file = null;
         $single_text_file = ($modelnum && $series_folder) ? "text/" . $series_folder . "/" . $modelnum . ".txt" : null;
         if ($single_text_file && file_exists($single_text_file)) {
