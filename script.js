@@ -35,9 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- ② メインの制御関数 ---
 
-    /**
-     * 文明検索UIの表示制御
-     */
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
         const isMultiOn = !multiColorBtn.classList.contains('is-off');
@@ -53,9 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * 非同期検索実行
-     */
     function performSearch(url) {
         if (resultsContainer) { resultsContainer.style.opacity = '0.5'; }
         
@@ -68,11 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newPagination = doc.querySelector('.pagination');
                 const newSummary = doc.querySelector('.search-results-summary p');
                 
-                // 結果の差し替え
                 if (resultsSummaryText && newSummary) { resultsSummaryText.innerHTML = newSummary.innerHTML; }
                 if (resultsContainer && newResultsContainer) { resultsContainer.innerHTML = newResultsContainer.innerHTML; }
                 
-                // ページネーションの差し替え
                 if (paginationContainer) {
                     if (newPagination) {
                         paginationContainer.innerHTML = newPagination.innerHTML;
@@ -84,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (resultsContainer) {
-                    // スムーズスクロール実行（ならびかえエリアをターゲットにする）
                     const scrollTarget = sortAreaElement || resultsContainer;
                     scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     resultsContainer.style.opacity = '1';
@@ -148,7 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- モーダル設定ロジック ---
     function setupSearchModal(config) {
         const { modalType, hiddenInputName, displayClassName } = config; 
         const selectBox = document.getElementById(`${modalType}-select-box`);
@@ -288,6 +278,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-race').textContent = cardInfo.race;
                     templateClone.querySelector('.modal-illustrator').textContent = cardInfo.illustrator;
 
+                    // 能力名表示の修正（設定特殊能力リストをTDに表示）
+                    const abilityNamesDebugEl = templateClone.querySelector('.modal-debug-ability-names');
+                    if (abilityNamesDebugEl) {
+                        abilityNamesDebugEl.textContent = (cardInfo.ability_names_debug && cardInfo.ability_names_debug.length > 0) 
+                            ? cardInfo.ability_names_debug.join('、') : '（なし）';
+                    }
+
                     let imageUrl = 'path/to/placeholder.webp';
                     if (data.image_urls && data.image_urls[part]) {
                         imageUrl = data.image_urls[part];
@@ -328,9 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardDetailModal.addEventListener('click', (e) => { if (e.target === cardDetailModal) closeModal(); });
     }
 
-    // --- ④ グローバルクリックリスナー ---
     document.body.addEventListener('click', (e) => {
-        // ページネーションリンクの処理
         const paginationLink = e.target.closest('.pagination a');
         if (paginationLink && !paginationLink.classList.contains('current-page')) {
             e.preventDefault();
@@ -338,7 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // カード画像の処理
         const cardImage = e.target.closest('.card-image-item');
         if (cardImage) {
             openCardDetailModal(cardImage.dataset.cardId);
@@ -346,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- ⑤ リセット処理 ---
     if (resetButtons.length > 0) {
         resetButtons.forEach(button => {
             button.addEventListener('click', resetSearch);
@@ -354,24 +347,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetSearch() {
-        // 検索窓のリセット
         const searchInput = document.querySelector('input[name="search"]');
         if (searchInput) searchInput.value = "";
         
-        // フォームのリセット（標準のHTMLリセット）
         searchForm.reset();
 
-        // 特別なUI（文明ボタンなど）の状態を手動でリセット
         document.querySelectorAll('.civ-btn').forEach(btn => {
             const isMonoOrMulti = btn.dataset.targetInput === 'mono_color' || btn.dataset.targetInput === 'multi_color';
             if (isMonoOrMulti) btn.classList.remove('is-off');
             else btn.classList.add('is-off');
         });
 
-        // モーダル選択内容をリセット
         resetModalStates.forEach(reset => reset());
         
         updateCivilizationControls();
-        triggerSearch();
+        // triggerSearch(); // リセット時に自動で検索しないよう削除
     }
 });
