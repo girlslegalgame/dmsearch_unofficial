@@ -28,8 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const showSameNameCheck = document.getElementById('show-same-name-check');
     const resultsContainer = document.querySelector('.container');
     const paginationContainer = document.querySelector('.pagination');
-    const resultsSummaryElement = document.querySelector('.search-results-summary'); // 親要素を取得
     const resultsSummaryText = document.querySelector('.search-results-summary p');
+    
+    // スクロール先のターゲット（ならびかえエリア）
+    const sortAreaElement = document.getElementById('sort-area');
     
     // --- ② メインの制御関数 ---
 
@@ -82,9 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (resultsContainer) {
-                    // スムーズスクロール実行
-                    // 件数表示エリアがあればそこへ、なければカード一覧へスクロール
-                    const scrollTarget = resultsSummaryElement || resultsContainer;
+                    // スムーズスクロール実行（ならびかえエリアをターゲットにする）
+                    const scrollTarget = sortAreaElement || resultsContainer;
                     scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     resultsContainer.style.opacity = '1';
                 }
@@ -353,13 +354,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetSearch() {
+        // 検索窓のリセット
         const searchInput = document.querySelector('input[name="search"]');
         if (searchInput) searchInput.value = "";
         
-        // フォームのリセット
+        // フォームのリセット（標準のHTMLリセット）
         searchForm.reset();
 
-        // 特別なUI（文明ボタンなど）の状態をリセット
+        // 特別なUI（文明ボタンなど）の状態を手動でリセット
         document.querySelectorAll('.civ-btn').forEach(btn => {
             const isMonoOrMulti = btn.dataset.targetInput === 'mono_color' || btn.dataset.targetInput === 'multi_color';
             if (isMonoOrMulti) btn.classList.remove('is-off');
