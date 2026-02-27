@@ -194,12 +194,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ⑤ リセット処理 ---
     let resetModalStates = []; 
     function resetSearch() {
+        searchForm.reset(); // 標準要素のリセット（これで checkbox や select 等の大半が初期状態に戻ります）
+
+        // 検索ワードのクリア
         const searchInput = document.querySelector('input[name="search"]');
         if (searchInput) searchInput.value = "";
         
-        searchForm.reset();
+        // 【修正】各数値入力ボックスを明示的にクリアし、disabledを解除
+        const numInputs = ['cost_min_input', 'cost_max_input', 'pow_min_input', 'pow_max_input'];
+        numInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = "";
+                el.disabled = false;
+            }
+        });
 
-        // 【修正】すべてのセレクトボックスを初期値（0 または all）に戻す
+        const yearMinInput = document.querySelector('input[name="year_min"]');
+        const yearMaxInput = document.querySelector('input[name="year_max"]');
+        if (yearMinInput) yearMinInput.value = "";
+        if (yearMaxInput) yearMaxInput.value = "";
+
+        // セレクトボックスを初期値（0 または all）に戻す
         document.querySelectorAll('select.styled-select, .select01 select').forEach(select => {
              if (select.id !== 'sort-order') {
                  if (select.name === 'mana_filter') { select.value = 'all'; } 
@@ -207,6 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
              }
         });
 
+        // 文明ボタンの状態を手動リセット
         document.querySelectorAll('.civ-btn').forEach(button => {
             const targetInput = document.getElementById(button.dataset.targetInput);
             const buttonId = button.dataset.targetInput;
@@ -219,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // AND/ORラジオボタンのリセット
         ['race', 'ability', 'others', 'soul'].forEach(type => {
             const andRadio = document.getElementById(`${type}-and`);
             if(andRadio) andRadio.checked = true;
@@ -228,10 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateToggleButtonLabel();
         updateCivilizationControls();
 
-        // 商品の種類（goodstype_id_filter）が変わった（リセットされた）ため、商品リストも更新する
-        if (goodsTypeSelect) {
-            goodsTypeSelect.dispatchEvent(new Event('change'));
-        }
+        if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
     }
     
     if (resetButtons.length > 0) {
