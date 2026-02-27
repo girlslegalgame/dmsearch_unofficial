@@ -30,10 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const paginationContainer = document.querySelector('.pagination');
     const resultsSummary = document.querySelector('.search-results-summary p');
     
-    // スクロール先のターゲット（ならびかえエリア）
     const sortAreaElement = document.getElementById('sort-area');
     
-    // --- ② メインの制御関数と、共有される変数 ---
+    // --- ② メインの制御関数 ---
+
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
         const isMultiOn = !multiColorBtn.classList.contains('is-off');
@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 if (resultsContainer) {
-                    // スムーズスクロール実行（ならびかえエリアをターゲットにする）
                     const scrollTarget = sortAreaElement || resultsContainer;
                     scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     resultsContainer.style.opacity = '1';
@@ -85,11 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
     }
+
     const triggerSearch = () => {
         if(searchForm) searchForm.dispatchEvent(new Event('submit', { cancelable: true }));
     };
 
-    // --- ③ イベントリスナーの設定 ---
+    // --- ③ イベントリスナー ---
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -101,7 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
             performSearch(newUrl);
         });
 
-        // 【文明検索機能のイベントリスナー】
         searchForm.addEventListener('click', (e) => {
             const button = e.target.closest('.civ-btn');
             if (!button) return;
@@ -133,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(advancedStateInput) advancedStateInput.value = isOpen ? '1' : '0';
         });
     }
+
     if (goodsTypeSelect) {
         goodsTypeSelect.addEventListener('change', () => {
             fetch(`api.php?type=goods&goodstype_id=${goodsTypeSelect.value}`)
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleBtn) toggleBtn.addEventListener('click', toggleCheckboxes);
     searchCheckboxes.forEach(cb => cb.addEventListener('change', updateToggleButtonLabel));
 
-    // --- ④ グローバルなクリックイベントの司令塔 ---
+    // --- ④ グローバルなクリックイベント ---
     document.body.addEventListener('click', (e) => {
         const paginationLink = e.target.closest('.pagination a');
         if (paginationLink && !paginationLink.classList.contains('current-page')) {
@@ -191,15 +191,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- ⑤ リセットボタンのイベントリスナー ---
+    // --- ⑤ リセット処理 ---
     let resetModalStates = []; 
     function resetSearch() {
         const searchInput = document.querySelector('input[name="search"]');
         if (searchInput) searchInput.value = "";
-        
-        searchForm.reset(); // 標準要素のリセット
-
-        // 文明ボタンの状態を手動リセット
+        searchForm.reset();
         document.querySelectorAll('.civ-btn').forEach(button => {
             const targetInput = document.getElementById(button.dataset.targetInput);
             const buttonId = button.dataset.targetInput;
@@ -211,28 +208,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (targetInput) targetInput.value = '0';
             }
         });
-
-        // AND/ORラジオボタンのリセット
         ['race', 'ability', 'others', 'soul'].forEach(type => {
             const andRadio = document.getElementById(`${type}-and`);
             if(andRadio) andRadio.checked = true;
         });
-
         resetModalStates.forEach(resetFunc => resetFunc());
         updateToggleButtonLabel();
         updateCivilizationControls();
         if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
-        // triggerSearch(); // 指示により自動検索は行わない
     }
     if (resetButtons.length > 0) {
         resetButtons.forEach(button => { button.addEventListener('click', resetSearch); });
     }
     
-    // --- ⑥ 初期化処理 ---
     updateToggleButtonLabel();
     updateCivilizationControls();
 
-    // --- ⑦ 汎用ソート関数 と 検索モーダル設定のロジック ---
+    // --- ⑦ モーダル設定とソートロジック ---
+    const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ':'03b','ェ':'04a','エ':'04b','ォ':'05a','オ':'05b','カ':'06a','ガ':'06b','キ':'07a','ギ':'07b','ク':'08a','グ':'08b','ケ':'09a','ゲ':'09b','コ':'10a','ゴ':'10b','サ':'11a','ざ':'11b','シ':'12a','ジ':'12b','ス':'13a','ズ':'13b','セ':'14a','ゼ':'14b','ソ':'15a','ゾ':'15b','タ':'16a','ダ':'16b','チ':'17a','ヂ':'17b','ッ':'18a','ツ':'18b','ヅ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','ハ':'26a','バ':'26b','パ':'26c','ヒ':'27a','ビ':'27b','ピ':'27c','フ':'28a','ブ':'28b','プ':'28c','ヘ':'29a','ベ':'29b','ペ':'29c','ホ':'30a','ボ':'30b','ポ':'30c','マ':'31a','ミ':'32a','ム':'33a','メ':'34a','モ':'35a','ャ':'36a','ヤ':'36b','ュ':'37a','ユ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a'};
+    function getSortableString(str) { if (!str) return ''; return str.split('').map(char => sortMap[char] || char).join(''); }
+    function customSortJS(a, b) {
+        const readingA = a.reading || '';
+        const readingB = b.reading || '';
+        return getSortableString(readingA).localeCompare(getSortableString(readingB));
+    }
+
     function setupSearchModal(config) {
         const { modalType, hiddenInputName, displayClassName } = config; 
         const selectBox = document.getElementById(`${modalType}-select-box`);
@@ -240,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!selectBox || !modal) return;
 
         const modalClearBtn = document.getElementById(`${modalType}-modal-clear-btn`);
+        const modalSearchInput = document.getElementById(`${modalType}-modal-search-input`);
         const modalList = document.getElementById(`${modalType}-modal-list`);
         const modalCancelBtn = document.getElementById(`${modalType}-modal-cancel-btn`);
         const modalConfirmBtn = document.getElementById(`${modalType}-modal-confirm-btn`);
@@ -270,8 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(selectedDisplay) selectedDisplay.textContent = '';
                 if (placeholder) placeholder.style.display = 'block';
             }
-            const existingHiddenFields = searchForm.querySelectorAll(`input[name="${hiddenInputName}"]`);
-            existingHiddenFields.forEach(field => field.remove());
+            searchForm.querySelectorAll(`input[name="${hiddenInputName}"]`).forEach(field => field.remove());
             selectedItems.forEach((name, id) => {
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
@@ -281,18 +281,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        function performSuggestSearch() {
+            const query = modalSearchInput ? modalSearchInput.value.toLowerCase() : '';
+            const filteredItems = allItems.filter(item => 
+                item.name.toLowerCase().includes(query) || (item.reading && item.reading.toLowerCase().includes(query))
+            );
+            renderList(filteredItems.sort(customSortJS));
+        }
+
         selectBox.addEventListener('click', () => {
             modal.style.display = 'flex';
             if (allItems.length === 0) {
                 fetch(`api.php?type=${modalType}&query=`)
                     .then(response => response.json())
-                    .then(data => { allItems = data; renderList(allItems); });
-            } else { renderList(allItems); }
+                    .then(data => { allItems = data; renderList([...allItems].sort(customSortJS)); });
+            } else { renderList([...allItems].sort(customSortJS)); }
         });
 
-        const closeModal = () => { if (modal) modal.style.display = 'none'; };        
+        const closeModal = () => { if (modal) modal.style.display = 'none'; if (modalSearchInput) modalSearchInput.value = ''; };        
         if(modalCancelBtn) modalCancelBtn.addEventListener('click', closeModal);
         if(modalConfirmBtn) modalConfirmBtn.addEventListener('click', () => { updateSelectedDisplay(); closeModal(); });
+        if(modalClearBtn) modalClearBtn.addEventListener('click', () => { selectedItems.clear(); performSuggestSearch(); });
 
         if (modalList) {
             modalList.addEventListener('change', (e) => {
@@ -304,6 +313,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+        
+        let debounceTimeout;
+        if (modalSearchInput) {
+            modalSearchInput.addEventListener('input', () => {
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(performSuggestSearch, 250);
+            });
+        }
         resetModalStates.push(() => { selectedItems.clear(); updateSelectedDisplay(); });
     }
 
@@ -312,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearchModal({ modalType: 'others', hiddenInputName: 'others_ids[]', displayClassName: 'selected-others-display' });
     setupSearchModal({ modalType: 'soul', hiddenInputName: 'soul_ids[]', displayClassName: 'selected-soul-display' });
 
-    // --- ⑧ カード詳細モーダルのロジック ---
+    // --- ⑧ カード詳細モーダル ---
     const cardDetailModal = document.getElementById('card-modal');
     let modalObserver = null;
 
@@ -338,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // IntersectionObserverの初期化（表示部分によって名前を変える）
                 modalObserver = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
                         if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
@@ -362,7 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-race').textContent = cardInfo.race;
                     templateClone.querySelector('.modal-illustrator').textContent = cardInfo.illustrator;
 
-                    // 【能力名表示の修正】
                     const abilityNamesDebugEl = templateClone.querySelector('.modal-debug-ability-names');
                     if (abilityNamesDebugEl) {
                         abilityNamesDebugEl.textContent = (cardInfo.ability_names_debug && cardInfo.ability_names_debug.length > 0) 
