@@ -196,7 +196,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetSearch() {
         const searchInput = document.querySelector('input[name="search"]');
         if (searchInput) searchInput.value = "";
+        
         searchForm.reset();
+
+        // 【修正】すべてのセレクトボックスを初期値（0 または all）に戻す
+        document.querySelectorAll('select.styled-select, .select01 select').forEach(select => {
+             if (select.id !== 'sort-order') {
+                 if (select.name === 'mana_filter') { select.value = 'all'; } 
+                 else { select.value = '0'; }
+             }
+        });
+
         document.querySelectorAll('.civ-btn').forEach(button => {
             const targetInput = document.getElementById(button.dataset.targetInput);
             const buttonId = button.dataset.targetInput;
@@ -208,15 +218,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (targetInput) targetInput.value = '0';
             }
         });
+
         ['race', 'ability', 'others', 'soul'].forEach(type => {
             const andRadio = document.getElementById(`${type}-and`);
             if(andRadio) andRadio.checked = true;
         });
+
         resetModalStates.forEach(resetFunc => resetFunc());
         updateToggleButtonLabel();
         updateCivilizationControls();
-        if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
+
+        // 商品の種類（goodstype_id_filter）が変わった（リセットされた）ため、商品リストも更新する
+        if (goodsTypeSelect) {
+            goodsTypeSelect.dispatchEvent(new Event('change'));
+        }
     }
+    
     if (resetButtons.length > 0) {
         resetButtons.forEach(button => { button.addEventListener('click', resetSearch); });
     }
