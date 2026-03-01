@@ -235,6 +235,12 @@ $id_sql = "
     {$join_str}
     {$where}
 ";
+
+echo "<pre style='background:#fff; color:#000; padding:10px; margin:10px; border:1px solid #ccc; text-align:left;'>";
+echo "【実行SQL】\n" . htmlspecialchars($id_sql) . "\n\n";
+echo "【パラメータ】\n"; print_r($params);
+echo "</pre>";
+
 $stmt = $pdo->prepare($id_sql);
 $stmt->execute($params);
 $all_matching_card_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
