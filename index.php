@@ -203,32 +203,16 @@ if ($selected_goodstype_id > 0) { $joins['goods_goodstype'] = 'LEFT JOIN goods O
 if ($selected_mana !== 'all') {
     if ($selected_mana === '-1') { $conditions[] = "cd.mana IS NULL"; } else { $conditions[] = "cd.mana = :mana"; $params[':mana'] = intval($selected_mana); }
 }
-$civ_summary_subquery = "(SELECT card_id, COUNT(civilization_id) as civ_count FROM card_civilization WHERE civilization_id != 6 GROUP BY card_id)";
+$civ_summary_subquery = "(SELECT card_id, COUNT(civilization_id) as civ_count FROM card_civilization GROUP BY card_id)";
 $civ_type_conditions = [];
-
 if (!$cost_zero && !$cost_infinity) {
-    // UI上で単色・多色ボタンのON/OFFを判定するが、初期状態（両方ON）の時は制限をかけない
-    $is_mono_active = ($mono_color_status == 1);
-    $is_multi_active = ($multi_color_status == 1);
-
-    // ★追加: もし両方ON（デフォルト状態）なら、文明数による制限は一切かけない（無色も引っかかるようにする）
-    if ($is_mono_active && $is_multi_active && empty($selected_exclude_civs)) {
-        // 何も条件を追加しない
-    } else {
-        // どちらか片方だけON、または除外設定がある場合のみ制限をかける
-        if ($is_mono_active) { 
-            // 単色 (または無色。無色はciv_countが0になるのでNULL判定も入れる)
-            $civ_type_conditions[] = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1) OR card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id != 6)"; 
+    if ($mono_color_status == 1) { $civ_type_conditions[] = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1)"; }
+    if ($multi_color_status == 1) {
+        $multi_cond = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count > 1)";
+        if(!empty($selected_exclude_civs)) {
+            foreach($selected_exclude_civs as $exclude_id) { $multi_cond .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($exclude_id) . ")"; }
         }
-        if ($is_multi_active) {
-            $multi_cond = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count > 1)";
-            if(!empty($selected_exclude_civs)) {
-                foreach($selected_exclude_civs as $exclude_id) { 
-                    $multi_cond .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($exclude_id) . ")"; 
-                }
-            }
-            $civ_type_conditions[] = $multi_cond;
-        }
+        $civ_type_conditions[] = $multi_cond;
     }
 }
 $civ_select_conditions = [];
