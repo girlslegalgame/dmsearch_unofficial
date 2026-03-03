@@ -207,43 +207,97 @@ if ($selected_goodstype_id > 0) { $joins['goods_goodstype'] = 'LEFT JOIN goods O
 if ($selected_mana !== 'all') {
     if ($selected_mana === '-1') { $conditions[] = "cd.mana IS NULL"; } else { $conditions[] = "cd.mana = :mana"; $params[':mana'] = intval($selected_mana); }
 }
-$civ_summary_subquery = "(SELECT card_id, COUNT(civilization_id) as civ_count FROM card_civilization GROUP BY card_id)";
+$civ_summary_subquery = "(SELECT card_id, COUNT(civilization_id) as civ_count FROM card_civilization WHERE civilization_id != 6 GROUP BY card_id)";
 $civ_type_conditions = [];
+
+// 単色・多色ボタンの判定
+$is_mono_active = ($mono_color_status == 1);
+$is_multi_active = ($multi_color_status == 1);
+
+// コスト0/無限検索をしておらず、かつ「単色・多色の両方がON（デフォルト）で、除外指定もメイン指定もない」場合は条件なし
 if (!$cost_zero && !$cost_infinity) {
-    if ($mono_color_status == 1) { $civ_type_conditions[] = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1)"; }
-    if ($multi_color_status == 1) {
-        $multi_cond = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count > 1)";
-        if(!empty($selected_exclude_civs)) {
-            foreach($selected_exclude_civs as $exclude_id) { $multi_cond .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($exclude_id) . ")"; }
-        }
-        $civ_type_conditions[] = $multi_cond;
-    }
-}
-if (!empty($civ_type_conditions)) { $conditions[] = '(' . implode(' OR ', $civ_type_conditions) . ')'; }
-
-if (!empty($selected_main_civs)) {
-    if ($multi_color_status == 1 && count($selected_main_civs) >= 2 && $multi_search_type === 'exact') {
-        // 「選んだ文明をすべて含む（かつ他を持たない）」のAND検索
-        $civ_count = count($selected_main_civs);
-        foreach($selected_main_civs as $main_id) {
-            $conditions[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
-        }
-        // 持っている文明の数が、選んだ文明の数と一致すること
-        $conditions[] = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = {$civ_count})";
+    if ($is_mono_active && $is_multi_active && empty($selected_exclude_civs) && empty($selected_main_civs)) {
+        // 何も条件を追加しない（全カードが対象になる）
     } else {
-        // 従来の「いずれかを含む」のOR検索
-        $civ_select_conditions = [];
-        foreach($selected_main_civs as $main_id) { 
-            $civ_select_conditions[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")"; 
+        
+        // --- 1. 文明が1つ以上選択されている場合 ---
+        if (!empty($selected_main_civs)) {
+            $civ_count = count($selected_main_civs);
+            $exact_mode = ($multi_search_type === 'exact' && $civ_count >= 2);
+            
+            $mono_cond = "";
+            $multi_cond = "";
+
+            // 【単色ボタンがONの場合】
+            // 「選んだ文明のいずれかを持つ単色カード」を探す
+            if ($is_mono_active) {
+                $mono_civ_ors = [];
+                foreach($selected_main_civs as $main_id) {
+                    $mono_civ_ors[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
+                }
+                // (選んだ文明のどれかを持つ) AND (単色である)
+                $mono_cond = "((" . implode(' OR ', $mono_civ_ors) . ") AND card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1))";
+            }
+
+            // 【多色ボタンがONの場合】
+            if ($is_multi_active) {
+                if ($exact_mode) {
+                    // 「すべて含む」モード：選んだ文明をすべて持ち、かつ、他の文明を持たない（数が一致する）
+                    $multi_and_conds = [];
+                    foreach($selected_main_civs as $main_id) {
+                        $multi_and_conds[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
+                    }
+                    $multi_cond = "((" . implode(' AND ', $multi_and_conds) . ") AND card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = {$civ_count}))";
+                } else {
+                    // 「いずれかを含む」モード：選んだ文明のどれかを持つ、多色カード（必要なら除外も適用）
+                    $multi_or_conds = [];
+                    foreach($selected_main_civs as $main_id) {
+                        $multi_or_conds[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
+                    }
+                    $multi_cond = "((" . implode(' OR ', $multi_or_conds) . ") AND card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count > 1))";
+                    
+                    if(!empty($selected_exclude_civs)) {
+                        foreach($selected_exclude_civs as $exclude_id) { 
+                            $multi_cond .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($exclude_id) . ")"; 
+                        }
+                    }
+                }
+            }
+
+            // 単色と多色の条件をガッチャンコする
+            if ($mono_cond && $multi_cond) {
+                $conditions[] = "(" . $mono_cond . " OR " . $multi_cond . ")";
+            } elseif ($mono_cond) {
+                $conditions[] = $mono_cond;
+            } elseif ($multi_cond) {
+                $conditions[] = $multi_cond;
+            } else {
+                $conditions[] = "1 = 0"; // どちらもOFFの場合は何も出さない
+            }
+
+        } 
+        // --- 2. 文明が1つも選択されていない（単色/多色のボタンのON/OFFのみ）場合 ---
+        else {
+            if ($is_mono_active) {
+                $civ_type_conditions[] = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1) OR card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id != 6)";
+            }
+            if ($is_multi_active) {
+                $multi_cond = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count > 1)";
+                if(!empty($selected_exclude_civs)) {
+                    foreach($selected_exclude_civs as $exclude_id) { 
+                        $multi_cond .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($exclude_id) . ")"; 
+                    }
+                }
+                $civ_type_conditions[] = $multi_cond;
+            }
+            if (!empty($civ_type_conditions)) { 
+                $conditions[] = '(' . implode(' OR ', $civ_type_conditions) . ')'; 
+            } else {
+                $conditions[] = "1 = 0";
+            }
         }
-        $conditions[] = '(' . implode(' OR ', $civ_select_conditions) . ')'; 
     }
 }
-
-if (!$cost_zero && !$cost_infinity && empty($civ_type_conditions) && empty($selected_main_civs)) { 
-    $conditions[] = "1 = 0"; 
-}
-
 // === SQLクエリの実行 (2段階取得アプローチ) ===
 $join_str = !empty($joins) ? implode(' ', array_unique($joins)) : '';
 $where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
