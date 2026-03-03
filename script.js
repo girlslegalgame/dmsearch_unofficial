@@ -9,16 +9,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const advancedStateInput = document.getElementById('advanced-state');
     const toggleBtn = document.getElementById('toggleBtn');
     const searchCheckboxes = document.querySelectorAll('.checkbox-container input[type="checkbox"]');
+    
+    // 文明検索用
     const monoColorBtn = document.querySelector('[data-target-input="mono_color"]');
     const multiColorBtn = document.querySelector('[data-target-input="multi_color"]');
     const mainCivButtons = document.querySelectorAll('#main-civs-buttons .civ-btn');
     const excludeSection = document.getElementById('exclude-civs-section');
     const excludeCivWrappers = document.querySelectorAll('.exclude-civ-wrapper');
-    
-    // ▼ 多色検索対象の要素を取得
     const multiSearchTypeSection = document.getElementById('multi-search-type-section');
     const multiSearchTypeSelect = document.getElementById('multi_search_type');
 
+    // 数値入力・その他
     const costMinInput = document.getElementById('cost_min_input');
     const costMaxInput = document.getElementById('cost_max_input');
     const costZeroCheck = document.getElementById('cost_zero_check');
@@ -37,8 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const sortAreaElement = document.getElementById('sort-area');
     
-// --- ② メインの制御関数 ---
+    // --- ② メインの制御関数 ---
 
+    /**
+     * 文明検索UIの連動制御（表示・非表示・矛盾リセット）
+     */
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
 
@@ -64,10 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. 「多色に含めない文明」セクションの表示制御
         if (excludeSection) {
-            // 表示する条件: 
-            // 多色がON 
-            // かつ 文明が1つ以上選ばれている 
-            // かつ （2つ未満しか選んでいない、または「いずれかを含む(OR)」モードである）
+            // 表示する条件: 多色ON かつ 文明が1つ以上選択 かつ （2つ未満 または ORモード）
             if (isMultiOn && selectedCount >= 1 && (selectedCount < 2 || !isExactMode)) {
                 excludeSection.style.display = 'block';
             } else {
@@ -75,14 +76,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. 個別の除外文明ボタンの表示制御（重要！）
+        // 3. 個別の除外文明ボタンの表示制御
         excludeCivWrappers.forEach(wrapper => {
             const civId = wrapper.id.replace('exclude-wrapper-', '');
             // メイン側で選ばれている文明は、除外側のリストから物理的に隠す
             if (selectedMainCivIds.includes(civId)) {
                 wrapper.style.display = 'none';
             } else {
-                // 選ばれていなければ、除外側のリストに表示する
                 wrapper.style.display = 'block';
             }
         });
@@ -91,6 +91,51 @@ document.addEventListener('DOMContentLoaded', () => {
     if (multiSearchTypeSelect) {
         multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
     }
+
+    /**
+     * 非同期検索実行
+     */
+    function performSearch(url) {
+        if (resultsContainer) { resultsContainer.style.opacity = '0.5'; }
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newResultsContainer = doc.querySelector('.container');
+                const newPagination = doc.querySelector('.pagination');
+                const newSummary = doc.querySelector('.search-results-summary p');
+                
+                if (resultsSummary && newSummary) { resultsSummary.innerHTML = newSummary.innerHTML; }
+                if (resultsContainer && newResultsContainer) { resultsContainer.innerHTML = newResultsContainer.innerHTML; }
+                
+                if (paginationContainer) {
+                    if (newPagination) {
+                        paginationContainer.innerHTML = newPagination.innerHTML;
+                        paginationContainer.style.display = 'block';
+                    } else {
+                        paginationContainer.innerHTML = '';
+                        paginationContainer.style.display = 'none';
+                    }
+                }
+                if (resultsContainer) {
+                    const scrollTarget = sortAreaElement || resultsContainer;
+                    scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    resultsContainer.style.opacity = '1';
+                }
+            })
+            .catch(error => {
+                console.error('Fetch Error:', error);
+                if(resultsContainer) {
+                    resultsContainer.innerHTML = "<p style='text-align:center; color: red;'>検索中にエラーが発生しました。</p>";
+                    resultsContainer.style.opacity = '1';
+                }
+            });
+    }
+
+    const triggerSearch = () => {
+        if(searchForm) searchForm.dispatchEvent(new Event('submit', { cancelable: true }));
+    };
 
     // --- ③ イベントリスナーの設定 ---
     if (searchForm) {
@@ -104,10 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
             performSearch(newUrl);
         });
 
+        // 文明ボタンのクリック処理
         searchForm.addEventListener('click', (e) => {
             const button = e.target.closest('.civ-btn');
             if (!button) return;
             const isTurningOff = !button.classList.contains('is-off');
+            
+            // 単色・多色の排他（最低片方はONにする制御）
             if (button === monoColorBtn && isTurningOff && multiColorBtn.classList.contains('is-off')) return;
             if (button === multiColorBtn && isTurningOff && monoColorBtn.classList.contains('is-off')) return;
             
@@ -119,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 targetInput.value = isNowOn ? (button.dataset.civId || '1') : '0';
             }
 
-            // 追加: メイン文明がONになったら、対応する除外文明を強制OFFにする
+            // メイン文明がONになったら、対応する除外文明を強制OFFにする
             if (isNowOn && button.closest('#main-civs-buttons')) {
                 const civId = button.dataset.civId;
                 const excludeInput = document.getElementById(`exclude_civ_${civId}`);
@@ -131,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCivilizationControls();
         });
     }
+
     if (sortOrderSelect) {
         sortOrderSelect.addEventListener('change', () => {
             if (sortOrderHiddenInput) sortOrderHiddenInput.value = sortOrderSelect.value;
@@ -147,7 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(advancedStateInput) advancedStateInput.value = isOpen ? '1' : '0';
         });
     }
-
     if (goodsTypeSelect) {
         goodsTypeSelect.addEventListener('change', () => {
             fetch(`api.php?type=goods&goodstype_id=${goodsTypeSelect.value}`)
@@ -161,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // チェックボックス・数値入力の入力不可切り替え
     const setupCheckboxToggle = (check1, check2, input1, input2) => {
         const toggleInputs = () => {
             const disable = (check1 && check1.checked) || (check2 && check2.checked);
@@ -175,7 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(check2) check2.addEventListener('change', () => { if (check2.checked && check1) check1.checked = false; toggleInputs(); });
         toggleInputs();
     };
-
     if (costZeroCheck && costInfinityCheck && costMinInput && costMaxInput) setupCheckboxToggle(costZeroCheck, costInfinityCheck, costMinInput, costMaxInput);
     if (powInfinityCheck && powMinInput && powMaxInput) setupCheckboxToggle(powInfinityCheck, null, powMinInput, powMaxInput);
 
@@ -209,20 +257,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ⑤ リセット処理 ---
     let resetModalStates = []; 
     function resetSearch() {
-        searchForm.reset(); // 標準要素のリセット（これで checkbox や select 等の大半が初期状態に戻ります）
+        searchForm.reset(); 
 
-        // 検索ワードのクリア
         const searchInput = document.querySelector('input[name="search"]');
         if (searchInput) searchInput.value = "";
         
-        // 【修正】各数値入力ボックスを明示的にクリアし、disabledを解除
         const numInputs = ['cost_min_input', 'cost_max_input', 'pow_min_input', 'pow_max_input'];
         numInputs.forEach(id => {
             const el = document.getElementById(id);
-            if (el) {
-                el.value = "";
-                el.disabled = false;
-            }
+            if (el) { el.value = ""; el.disabled = false; }
         });
 
         const yearMinInput = document.querySelector('input[name="year_min"]');
@@ -230,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (yearMinInput) yearMinInput.value = "";
         if (yearMaxInput) yearMaxInput.value = "";
 
-        // セレクトボックスを初期値（0 または all）に戻す
         document.querySelectorAll('select.styled-select, .select01 select').forEach(select => {
              if (select.id !== 'sort-order') {
                  if (select.name === 'mana_filter') { select.value = 'all'; } 
@@ -238,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
              }
         });
 
-        // 文明ボタンの状態を手動リセット
         document.querySelectorAll('.civ-btn').forEach(button => {
             const targetInput = document.getElementById(button.dataset.targetInput);
             const buttonId = button.dataset.targetInput;
@@ -251,7 +292,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // AND/ORラジオボタンのリセット
         ['race', 'ability', 'others', 'soul'].forEach(type => {
             const andRadio = document.getElementById(`${type}-and`);
             if(andRadio) andRadio.checked = true;
@@ -269,11 +309,12 @@ document.addEventListener('DOMContentLoaded', () => {
         resetButtons.forEach(button => { button.addEventListener('click', resetSearch); });
     }
     
+    // --- ⑥ 初期化 ---
     updateToggleButtonLabel();
     updateCivilizationControls();
 
-    // --- ⑦ モーダル設定とソートロジック ---
-    const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ':'03b','ェ':'04a','エ':'04b','ォ':'05a','オ':'05b','カ':'06a','ガ':'06b','キ':'07a','ギ':'07b','ク':'08a','グ':'08b','ケ':'09a','ゲ':'09b','コ':'10a','ゴ':'10b','サ':'11a','ざ':'11b','シ':'12a','ジ':'12b','ス':'13a','ズ':'13b','セ':'14a','ゼ':'14b','ソ':'15a','ゾ':'15b','タ':'16a','ダ':'16b','チ':'17a','ヂ':'17b','ッ':'18a','ツ':'18b','ヅ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','ハ':'26a','バ':'26b','パ':'26c','ヒ':'27a','ビ':'27b','ピ':'27c','フ':'28a','ブ':'28b','プ':'28c','ヘ':'29a','ベ':'29b','ペ':'29c','ホ':'30a','ボ':'30b','ポ':'30c','マ':'31a','ミ':'32a','ム':'33a','メ':'34a','モ':'35a','ャ':'36a','ヤ':'36b','ュ':'37a','ユ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a'};
+    // --- ⑦ モーダル内検索・ソートロジック ---
+    const sortMap = {'ゔぁ':'03c01','ゔぃ':'03c02','ゔぇ':'03c04','ゔぉ':'03c05','ヴァ':'03c01','ヴィ':'03c02','ヴェ':'03c04','ヴォ':'03c05','ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a','ゔ':'03c03','ヴ':'03c03','ァ':'01a','ア':'01b','ィ':'02a','イ':'02b','ゥ':'03a','ウ':'03b','ェ':'04a','エ':'04b','ォ':'05a','オ':'05b','カ':'06a','ガ':'06b','キ':'07a','ギ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','ハ':'26a','バ':'26b','パ':'26c','ヒ':'27a','ビ':'27b','ピ':'27c','フ':'28a','ブ':'28b','プ':'28c','ヘ':'29a','べ':'29b','ぺ':'29c','ホ':'30a','ボ':'30b','ポ':'30c','マ':'31a','ミ':'32a','ム':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a'};
     function getSortableString(str) { if (!str) return ''; return str.split('').map(char => sortMap[char] || char).join(''); }
     function customSortJS(a, b) {
         const readingA = a.reading || '';
@@ -377,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearchModal({ modalType: 'others', hiddenInputName: 'others_ids[]', displayClassName: 'selected-others-display' });
     setupSearchModal({ modalType: 'soul', hiddenInputName: 'soul_ids[]', displayClassName: 'selected-soul-display' });
 
-    // --- ⑧ カード詳細モーダル ---
+    // --- ⑧ カード詳細モーダル（交差監視によるカード名切り替え） ---
     const cardDetailModal = document.getElementById('card-modal');
     let modalObserver = null;
 
