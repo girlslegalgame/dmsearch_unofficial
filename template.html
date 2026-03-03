@@ -103,6 +103,15 @@
                         </div>
                     </div>
                 </div>
+                <div id="multi-search-type-section" style="display: none;">
+                    <label class="search-label left-align-label">多色カードの検索対象</label>
+                    <div class="search-group">
+                        <select name="multi_search_type" id="multi_search_type" class="styled-select">
+                            <option value="or" <?= (isset($multi_search_type) && $multi_search_type === 'or') ? 'selected' : '' ?>>選んだ文明のいずれかを含む</option>
+                            <option value="exact" <?= (isset($multi_search_type) && $multi_search_type === 'exact') ? 'selected' : '' ?>>選んだ文明をすべて含む</option>
+                        </select>
+                    </div>
+                </div>                
             </div>
             <div class="search-group-container">
                 <label class="search-label left-align-label">コスト</label>
