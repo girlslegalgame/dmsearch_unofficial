@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const sortAreaElement = document.getElementById('sort-area');
     
-    // --- ② メインの制御関数 ---
+// --- ② メインの制御関数 ---
 
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
@@ -51,47 +51,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 現在「すべて含む(exact)」モードになっているか
-        let isExactMode = (multiSearchTypeSelect && multiSearchTypeSelect.value === 'exact');
-
         // ▼ 多色検索対象ドロップダウンの表示制御 ▼
+        let isExactModeActive = false; // 実際にexactモードとして機能しているか
         if (multiSearchTypeSection) {
             if (isMultiOn && selectedMainCivCount >= 2) {
                 // 多色がONで、文明が2つ以上選ばれていれば表示
                 multiSearchTypeSection.style.display = 'block';
-            } else {
-                // それ以外は隠す
-                multiSearchTypeSection.style.display = 'none';
-                if (multiSearchTypeSelect) {
-                    multiSearchTypeSelect.value = 'or'; // 隠れる時は内部的に 'or' に戻す
-                    isExactMode = false;
+                if (multiSearchTypeSelect && multiSearchTypeSelect.value === 'exact') {
+                    isExactModeActive = true;
                 }
+            } else {
+                // 2つ未満なら隠す
+                multiSearchTypeSection.style.display = 'none';
+                // 隠れている間は、裏で持っている値に関わらず exact モードは無効として扱う
             }
         }
 
         // ▼ 多色に含めない文明（除外）の表示制御 ▼
         if (excludeSection) {
-            // 多色がONで、文明が1つ以上選ばれていて、かつ「すべて含む(exact)」モードでない時に表示
-            if (isMultiOn && selectedMainCivCount >= 1 && !isExactMode) {
+            // 条件: 多色がON かつ 1つ以上選ばれている かつ 「有効なexactモード」ではない
+            if (isMultiOn && selectedMainCivCount >= 1 && !isExactModeActive) {
                 excludeSection.style.display = 'block';
             } else {
                 excludeSection.style.display = 'none';
             }
         }
 
-        // 除外ボタンの個別表示制御（選んでいる文明は除外ボタン側を隠す）
+        // ▼ 除外ボタンの個別表示制御（選んでいる文明は除外ボタン側を隠す） ▼
         const mainCivStatus = {};
         mainCivButtons.forEach(btn => { mainCivStatus[btn.dataset.civId] = !btn.classList.contains('is-off'); });
         excludeCivWrappers.forEach(wrapper => {
             const civId = wrapper.id.replace('exclude-wrapper-', '');
-            wrapper.style.display = mainCivStatus[civId] === false ? 'block' : 'none';
+            // メイン側で選ばれていなければ（falseなら）、除外側のボタンを表示する
+            wrapper.style.display = (mainCivStatus[civId] === false) ? 'block' : 'none';
         });
     }
 
-    // ▼ ドロップダウン変更時にも表示を即座に更新する ▼
     if (multiSearchTypeSelect) {
         multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
     }
+    
     function performSearch(url) {
         if (resultsContainer) { resultsContainer.style.opacity = '0.5'; }
         fetch(url)
