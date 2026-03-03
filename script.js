@@ -14,8 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainCivButtons = document.querySelectorAll('#main-civs-buttons .civ-btn');
     const excludeSection = document.getElementById('exclude-civs-section');
     const excludeCivWrappers = document.querySelectorAll('.exclude-civ-wrapper');
+    
+    // ▼ 多色検索対象の要素を取得
     const multiSearchTypeSection = document.getElementById('multi-search-type-section');
     const multiSearchTypeSelect = document.getElementById('multi_search_type');
+
     const costMinInput = document.getElementById('cost_min_input');
     const costMaxInput = document.getElementById('cost_max_input');
     const costZeroCheck = document.getElementById('cost_zero_check');
@@ -39,10 +42,44 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
         const isMultiOn = !multiColorBtn.classList.contains('is-off');
-        const isAnyMainCivOnExcludingColorless = [...mainCivButtons].some(btn => !btn.classList.contains('is-off') && btn.dataset.civId !== '6');
-        if (excludeSection) {
-            excludeSection.style.display = (isMultiOn && isAnyMainCivOnExcludingColorless) ? 'block' : 'none';
+        
+        // 選択されているメイン文明の数をカウント（無色:ID=6 を除く）
+        let selectedMainCivCount = 0;
+        mainCivButtons.forEach(btn => {
+            if (!btn.classList.contains('is-off') && btn.dataset.civId !== '6') {
+                selectedMainCivCount++;
+            }
+        });
+
+        // 現在「すべて含む(exact)」モードになっているか
+        let isExactMode = (multiSearchTypeSelect && multiSearchTypeSelect.value === 'exact');
+
+        // ▼ 多色検索対象ドロップダウンの表示制御 ▼
+        if (multiSearchTypeSection) {
+            if (isMultiOn && selectedMainCivCount >= 2) {
+                // 多色がONで、文明が2つ以上選ばれていれば表示
+                multiSearchTypeSection.style.display = 'block';
+            } else {
+                // それ以外は隠す
+                multiSearchTypeSection.style.display = 'none';
+                if (multiSearchTypeSelect) {
+                    multiSearchTypeSelect.value = 'or'; // 隠れる時は内部的に 'or' に戻す
+                    isExactMode = false;
+                }
+            }
         }
+
+        // ▼ 多色に含めない文明（除外）の表示制御 ▼
+        if (excludeSection) {
+            // 多色がONで、文明が1つ以上選ばれていて、かつ「すべて含む(exact)」モードでない時に表示
+            if (isMultiOn && selectedMainCivCount >= 1 && !isExactMode) {
+                excludeSection.style.display = 'block';
+            } else {
+                excludeSection.style.display = 'none';
+            }
+        }
+
+        // 除外ボタンの個別表示制御（選んでいる文明は除外ボタン側を隠す）
         const mainCivStatus = {};
         mainCivButtons.forEach(btn => { mainCivStatus[btn.dataset.civId] = !btn.classList.contains('is-off'); });
         excludeCivWrappers.forEach(wrapper => {
@@ -50,10 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.style.display = mainCivStatus[civId] === false ? 'block' : 'none';
         });
     }
+
+    // ▼ ドロップダウン変更時にも表示を即座に更新する ▼
     if (multiSearchTypeSelect) {
         multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
     }
-
     function performSearch(url) {
         if (resultsContainer) { resultsContainer.style.opacity = '0.5'; }
         fetch(url)
