@@ -41,97 +41,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
+
         const isMultiOn = !multiColorBtn.classList.contains('is-off');
         
-        // 選択されているメイン文明の数をカウント（無色:ID=6 を除く）
-        let selectedMainCivCount = 0;
+        // メイン文明（無色除く）の選択状況を把握
+        const selectedMainCivIds = [];
         mainCivButtons.forEach(btn => {
             if (!btn.classList.contains('is-off') && btn.dataset.civId !== '6') {
-                selectedMainCivCount++;
+                selectedMainCivIds.push(btn.dataset.civId);
             }
         });
+        const selectedCount = selectedMainCivIds.length;
 
-        // ▼ 多色検索対象ドロップダウンの表示制御 ▼
-        let isExactModeActive = false; // 実際にexactモードとして機能しているか
+        // ドロップダウンの値（すべて含むモードか）を取得
+        const isExactMode = (multiSearchTypeSelect && multiSearchTypeSelect.value === 'exact');
+
+        // 1. 多色検索対象ドロップダウンの表示制御
         if (multiSearchTypeSection) {
-            if (isMultiOn && selectedMainCivCount >= 2) {
-                // 多色がONで、文明が2つ以上選ばれていれば表示
-                multiSearchTypeSection.style.display = 'block';
-                if (multiSearchTypeSelect && multiSearchTypeSelect.value === 'exact') {
-                    isExactModeActive = true;
-                }
-            } else {
-                // 2つ未満なら隠す
-                multiSearchTypeSection.style.display = 'none';
-                // 隠れている間は、裏で持っている値に関わらず exact モードは無効として扱う
-            }
+            // 多色がON かつ 2つ以上選択されている場合のみ表示
+            multiSearchTypeSection.style.display = (isMultiOn && selectedCount >= 2) ? 'block' : 'none';
         }
 
-        // ▼ 多色に含めない文明（除外）の表示制御 ▼
+        // 2. 「多色に含めない文明」セクションの表示制御
         if (excludeSection) {
-            // 条件: 多色がON かつ 1つ以上選ばれている かつ 「有効なexactモード」ではない
-            if (isMultiOn && selectedMainCivCount >= 1 && !isExactModeActive) {
+            // 表示する条件: 
+            // 多色がON 
+            // かつ 文明が1つ以上選ばれている 
+            // かつ （2つ未満しか選んでいない、または「いずれかを含む(OR)」モードである）
+            if (isMultiOn && selectedCount >= 1 && (selectedCount < 2 || !isExactMode)) {
                 excludeSection.style.display = 'block';
             } else {
                 excludeSection.style.display = 'none';
             }
         }
 
-        // ▼ 除外ボタンの個別表示制御（選んでいる文明は除外ボタン側を隠す） ▼
-        const mainCivStatus = {};
-        mainCivButtons.forEach(btn => { mainCivStatus[btn.dataset.civId] = !btn.classList.contains('is-off'); });
+        // 3. 個別の除外文明ボタンの表示制御（重要！）
         excludeCivWrappers.forEach(wrapper => {
             const civId = wrapper.id.replace('exclude-wrapper-', '');
-            // メイン側で選ばれていなければ（falseなら）、除外側のボタンを表示する
-            wrapper.style.display = (mainCivStatus[civId] === false) ? 'block' : 'none';
+            // メイン側で選ばれている文明は、除外側のリストから物理的に隠す
+            if (selectedMainCivIds.includes(civId)) {
+                wrapper.style.display = 'none';
+            } else {
+                // 選ばれていなければ、除外側のリストに表示する
+                wrapper.style.display = 'block';
+            }
         });
     }
 
     if (multiSearchTypeSelect) {
         multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
     }
-    
-    function performSearch(url) {
-        if (resultsContainer) { resultsContainer.style.opacity = '0.5'; }
-        fetch(url)
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newResultsContainer = doc.querySelector('.container');
-                const newPagination = doc.querySelector('.pagination');
-                const newSummary = doc.querySelector('.search-results-summary p');
-                if (resultsSummary && newSummary) { resultsSummary.innerHTML = newSummary.innerHTML; }
-                if (resultsContainer && newResultsContainer) { resultsContainer.innerHTML = newResultsContainer.innerHTML; }
-                if (paginationContainer) {
-                    if (newPagination) {
-                        paginationContainer.innerHTML = newPagination.innerHTML;
-                        paginationContainer.style.display = 'block';
-                    } else {
-                        paginationContainer.innerHTML = '';
-                        paginationContainer.style.display = 'none';
-                    }
-                }
-                if (resultsContainer) {
-                    const scrollTarget = sortAreaElement || resultsContainer;
-                    scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    resultsContainer.style.opacity = '1';
-                }
-            })
-            .catch(error => {
-                console.error('Fetch Error:', error);
-                if(resultsContainer) {
-                    resultsContainer.innerHTML = "<p style='text-align:center; color: red;'>検索中にエラーが発生しました。</p>";
-                    resultsContainer.style.opacity = '1';
-                }
-            });
-    }
 
-    const triggerSearch = () => {
-        if(searchForm) searchForm.dispatchEvent(new Event('submit', { cancelable: true }));
-    };
-
-    // --- ③ イベントリスナー ---
+    // --- ③ イベントリスナーの設定 ---
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -149,24 +110,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const isTurningOff = !button.classList.contains('is-off');
             if (button === monoColorBtn && isTurningOff && multiColorBtn.classList.contains('is-off')) return;
             if (button === multiColorBtn && isTurningOff && monoColorBtn.classList.contains('is-off')) return;
+            
             const targetInput = document.getElementById(button.dataset.targetInput);
             button.classList.toggle('is-off');
+            const isNowOn = !button.classList.contains('is-off');
+
             if (targetInput) {
-                targetInput.value = button.classList.contains('is-off') ? '0' : (button.dataset.civId || '1');
+                targetInput.value = isNowOn ? (button.dataset.civId || '1') : '0';
             }
+
+            // 追加: メイン文明がONになったら、対応する除外文明を強制OFFにする
             if (isNowOn && button.closest('#main-civs-buttons')) {
                 const civId = button.dataset.civId;
-                const excludeButton = document.querySelector(`.exclude-civ-wrapper button[data-civ-id="${civId}"]`);
                 const excludeInput = document.getElementById(`exclude_civ_${civId}`);
-                if (excludeButton && !excludeButton.classList.contains('is-off')) {
-                    excludeButton.classList.add('is-off');
-                    if (excludeInput) excludeInput.value = '0';
-                }
-            }            
+                const excludeButton = document.querySelector(`.exclude-civ-wrapper button[data-target-input="exclude_civ_${civId}"]`);
+                if (excludeInput) excludeInput.value = '0';
+                if (excludeButton) excludeButton.classList.add('is-off');
+            }
+
             updateCivilizationControls();
         });
     }
-
     if (sortOrderSelect) {
         sortOrderSelect.addEventListener('change', () => {
             if (sortOrderHiddenInput) sortOrderHiddenInput.value = sortOrderSelect.value;
