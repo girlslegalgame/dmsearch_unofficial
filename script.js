@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainCivButtons = document.querySelectorAll('#main-civs-buttons .civ-btn');
     const excludeSection = document.getElementById('exclude-civs-section');
     const excludeCivWrappers = document.querySelectorAll('.exclude-civ-wrapper');
+    const multiSearchTypeSection = document.getElementById('multi-search-type-section');
+    const multiSearchTypeSelect = document.getElementById('multi_search_type');
     const costMinInput = document.getElementById('cost_min_input');
     const costMaxInput = document.getElementById('cost_max_input');
     const costZeroCheck = document.getElementById('cost_zero_check');
@@ -47,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const civId = wrapper.id.replace('exclude-wrapper-', '');
             wrapper.style.display = mainCivStatus[civId] === false ? 'block' : 'none';
         });
+    }
+    if (multiSearchTypeSelect) {
+        multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
     }
 
     function performSearch(url) {
@@ -247,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCivilizationControls();
 
         if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
+        if (multiSearchTypeSelect) multiSearchTypeSelect.value = 'or';
     }
     
     if (resetButtons.length > 0) {
