@@ -60,6 +60,7 @@ $selected_sort = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'release_new
 $show_same_name = isset($_GET['show_same_name']) || !$is_submitted;
 
 if ($is_submitted) {
+    $multi_search_type = isset($_GET['multi_search_type']) ? $_GET['multi_search_type'] : 'or';
     $search_name = isset($_GET['search_name']);
     $search_reading = isset($_GET['search_reading']);
     $search_text = isset($_GET['search_text']);
@@ -78,6 +79,9 @@ if ($is_submitted) {
     $multi_color_status = isset($_GET['multi_color']) ? intval($_GET['multi_color']) : 0;
     if (!empty($_GET['main_civs'])) { $selected_main_civs = array_values(array_filter($_GET['main_civs'], fn($v) => $v != 0)); }
     if (!empty($_GET['exclude_civs'])) { $selected_exclude_civs = array_values(array_filter($_GET['exclude_civs'], fn($v) => $v != 0)); }
+    if ($multi_search_type === 'exact' && count($selected_main_civs) >= 2) {
+        $selected_exclude_civs = []; // exactモードの時は除外リストを無視する
+    }
 }
 
 // === SQLクエリの組み立て ===
@@ -215,13 +219,30 @@ if (!$cost_zero && !$cost_infinity) {
         $civ_type_conditions[] = $multi_cond;
     }
 }
-$civ_select_conditions = [];
-if (!empty($selected_main_civs)) {
-    foreach($selected_main_civs as $main_id) { $civ_select_conditions[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")"; }
-}
 if (!empty($civ_type_conditions)) { $conditions[] = '(' . implode(' OR ', $civ_type_conditions) . ')'; }
-if (!empty($civ_select_conditions)) { $conditions[] = '(' . implode(' OR ', $civ_select_conditions) . ')'; }
-if (!$cost_zero && !$cost_infinity && empty($civ_type_conditions) && empty($civ_select_conditions)) { $conditions[] = "1 = 0"; }
+
+if (!empty($selected_main_civs)) {
+    if ($multi_color_status == 1 && count($selected_main_civs) >= 2 && $multi_search_type === 'exact') {
+        // 「選んだ文明をすべて含む（かつ他を持たない）」のAND検索
+        $civ_count = count($selected_main_civs);
+        foreach($selected_main_civs as $main_id) {
+            $conditions[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
+        }
+        // 持っている文明の数が、選んだ文明の数と一致すること
+        $conditions[] = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = {$civ_count})";
+    } else {
+        // 従来の「いずれかを含む」のOR検索
+        $civ_select_conditions = [];
+        foreach($selected_main_civs as $main_id) { 
+            $civ_select_conditions[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")"; 
+        }
+        $conditions[] = '(' . implode(' OR ', $civ_select_conditions) . ')'; 
+    }
+}
+
+if (!$cost_zero && !$cost_infinity && empty($civ_type_conditions) && empty($selected_main_civs)) { 
+    $conditions[] = "1 = 0"; 
+}
 
 // === SQLクエリの実行 (2段階取得アプローチ) ===
 $join_str = !empty($joins) ? implode(' ', array_unique($joins)) : '';
