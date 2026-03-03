@@ -155,6 +155,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetInput) {
                 targetInput.value = button.classList.contains('is-off') ? '0' : (button.dataset.civId || '1');
             }
+            if (isNowOn && button.closest('#main-civs-buttons')) {
+                const civId = button.dataset.civId;
+                const excludeButton = document.querySelector(`.exclude-civ-wrapper button[data-civ-id="${civId}"]`);
+                const excludeInput = document.getElementById(`exclude_civ_${civId}`);
+                if (excludeButton && !excludeButton.classList.contains('is-off')) {
+                    excludeButton.classList.add('is-off');
+                    if (excludeInput) excludeInput.value = '0';
+                }
+            }            
             updateCivilizationControls();
         });
     }
