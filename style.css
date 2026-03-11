@@ -273,6 +273,10 @@ button {
     vertical-align: middle;
     margin: 0 2px;
 }
+.indented-text {
+    display: inline-block;
+    margin-left: 1em; /* 文字1つ分の字下げ（スペース） */
+}
 .pagination a.current-page {
     background-color: #007bff;
     color: white;
