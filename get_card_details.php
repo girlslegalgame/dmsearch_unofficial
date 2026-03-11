@@ -39,30 +39,59 @@ function format_text_for_display($raw_text, $is_ability) {
     foreach ($lines as $line) {
         $trimmed_line = trim($line);
         if (empty($trimmed_line)) continue;
-        $line_to_process = $trimmed_line; 
+        
         if ($is_ability) {
-            $isIndented = str_starts_with(strtoupper($line_to_process), '{TAB}');
-            if ($isIndented) { $line_to_process = trim(substr($line_to_process, 5)); }
-            $startsWithIcon = false;
-            foreach (array_keys($icon_map) as $icon_tag) {
-                if (str_starts_with(strtoupper($line_to_process), strtoupper($icon_tag))) {
-                    $startsWithIcon = true;
-                    break;
+            $is_indented = false;
+            $prefix = '';
+            $line_content = $trimmed_line;
+
+            // 行頭が {TAB} で始まるかチェック
+            if (str_starts_with(strtoupper($line_content), '{TAB}')) {
+                $is_indented = true;
+                $line_content = trim(substr($line_content, 5)); // {TAB} を削除してトリム
+                
+                $has_icon_after_tab = false;
+                // {TAB} の直後にアイコンタグがあるかチェック
+                foreach (array_keys($icon_map) as $icon_tag) {
+                    if (str_starts_with(strtoupper($line_content), strtoupper($icon_tag))) {
+                        $has_icon_after_tab = true;
+                        break;
+                    }
+                }
+
+                if ($has_icon_after_tab) {
+                    // 直後にアイコンがある場合：字下げ（&emsp;）のみ（アイコン自体は後で置換される）
+                    $prefix = '&emsp;'; 
+                } else {
+                    // 直後にアイコンがない場合：字下げ ＋ ▶
+                    $prefix = '&emsp;▶';
+                }
+            } else {
+                // 行頭が {TAB} でない場合
+                $startsWithIcon = false;
+                foreach (array_keys($icon_map) as $icon_tag) {
+                    if (str_starts_with(strtoupper($line_content), strtoupper($icon_tag))) {
+                        $startsWithIcon = true;
+                        break;
+                    }
+                }
+                $isParenthetical = str_starts_with($line_content, '(') && str_ends_with($line_content, ')');
+                
+                // アイコン始まりでもカッコ括りでもなければ ■ をつける
+                if (!$startsWithIcon && !$isParenthetical) {
+                    $prefix = '■';
                 }
             }
-            $isParenthetical = str_starts_with($line_to_process, '(') && str_ends_with($line_to_process, ')');
-            $escaped_line = htmlspecialchars($line_to_process);
+
+            // HTMLエンティティ化
+            $escaped_line = htmlspecialchars($line_content);
+            // アイコンタグを画像タグに置換
             $formatted_line = str_ireplace(array_keys($icon_map), array_values($icon_map), $escaped_line);
-            $prefix = '';
-            $wrapper_class = '';
-            if ($isIndented) {
-                $wrapper_class = ' class="indented-text"';
-                if (!$startsWithIcon) { $prefix = '▶ '; }
-            } elseif (!$startsWithIcon && !$isParenthetical) {
-                $prefix = '■ ';
-            }
-            $processed_lines[] = '<span' . $wrapper_class . '>' . $prefix . $formatted_line . '</span>';
+            
+            // 組み立て
+            $processed_lines[] = '<span>' . $prefix . $formatted_line . '</span>';
         } else {
+            // フレーバーテキストの場合はそのまま
             $processed_lines[] = htmlspecialchars($trimmed_line);
         }
     }
