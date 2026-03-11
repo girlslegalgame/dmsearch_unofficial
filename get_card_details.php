@@ -62,7 +62,7 @@ function format_text_for_display($raw_text, $is_ability) {
 
                 if (!$has_icon_after_tab) {
                     // 直後にアイコンがない場合のみ「▶」を表示
-                    $prefix = '▶ ';
+                    $prefix = '▶';
                 }
             } else {
                 // 行頭が {TAB} でない場合
@@ -77,7 +77,7 @@ function format_text_for_display($raw_text, $is_ability) {
                 
                 // アイコン始まりでもカッコ括りでもなければ ■ をつける
                 if (!$startsWithIcon && !$isParenthetical) {
-                    $prefix = '■ ';
+                    $prefix = '■';
                 }
             }
 
