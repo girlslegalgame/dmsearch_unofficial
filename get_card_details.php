@@ -41,13 +41,14 @@ function format_text_for_display($raw_text, $is_ability) {
         if (empty($trimmed_line)) continue;
         
         if ($is_ability) {
-            $is_indented = false;
             $prefix = '';
+            $wrapper_class = '';
             $line_content = $trimmed_line;
 
             // 行頭が {TAB} で始まるかチェック
             if (str_starts_with(strtoupper($line_content), '{TAB}')) {
-                $is_indented = true;
+                // {TAB} がある場合はインデント用のCSSクラスを付与
+                $wrapper_class = ' class="indented-text"';
                 $line_content = trim(substr($line_content, 5)); // {TAB} を削除してトリム
                 
                 $has_icon_after_tab = false;
@@ -59,12 +60,9 @@ function format_text_for_display($raw_text, $is_ability) {
                     }
                 }
 
-                if ($has_icon_after_tab) {
-                    // 直後にアイコンがある場合：字下げ（&emsp;）のみ（アイコン自体は後で置換される）
-                    $prefix = '&emsp;'; 
-                } else {
-                    // 直後にアイコンがない場合：字下げ ＋ ▶
-                    $prefix = '&emsp;▶';
+                if (!$has_icon_after_tab) {
+                    // 直後にアイコンがない場合のみ「▶」を表示
+                    $prefix = '▶ ';
                 }
             } else {
                 // 行頭が {TAB} でない場合
@@ -79,7 +77,7 @@ function format_text_for_display($raw_text, $is_ability) {
                 
                 // アイコン始まりでもカッコ括りでもなければ ■ をつける
                 if (!$startsWithIcon && !$isParenthetical) {
-                    $prefix = '■';
+                    $prefix = '■ ';
                 }
             }
 
@@ -88,8 +86,8 @@ function format_text_for_display($raw_text, $is_ability) {
             // アイコンタグを画像タグに置換
             $formatted_line = str_ireplace(array_keys($icon_map), array_values($icon_map), $escaped_line);
             
-            // 組み立て
-            $processed_lines[] = '<span>' . $prefix . $formatted_line . '</span>';
+            // spanタグにクラス（ある場合）とプレフィックスを含めて組み立て
+            $processed_lines[] = "<span{$wrapper_class}>{$prefix}{$formatted_line}</span>";
         } else {
             // フレーバーテキストの場合はそのまま
             $processed_lines[] = htmlspecialchars($trimmed_line);
