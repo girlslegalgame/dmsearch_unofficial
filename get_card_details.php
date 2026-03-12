@@ -36,6 +36,7 @@ function format_text_for_display($raw_text, $is_ability) {
         '{OD}' => '<img src="parts/card_list_overdrive.webp" alt="Over-Drive" class="text-icon">',
         '{SF}' => '<img src="parts/card_list_shieldforce.webp" alt="Shield-Force" class="text-icon">',
         '{KM}' => '<img src="parts/card_list_knightmagic.webp" alt="Knight-Magic" class="text-icon">',
+        '{AC}' => '<img src="parts/card_list_accel.webp" alt="Accel" class="text-icon">',
     ];
     $lines = explode("\n", $raw_text);
     $processed_lines = [];
