@@ -32,7 +32,9 @@ function format_text_for_display($raw_text, $is_ability) {
         '{AC}' => '<img src="parts/card_list_accel.webp" alt="Accel" class="text-icon">',
         '{SB}' => '<img src="parts/card_list_strike_back.webp" alt="Strike-Back" class="text-icon">',
         '{FE}' => '<img src="parts/card_list_fortenergy.webp" alt="Fort-Energy" class="text-icon">',
+        '{T3}' => '<img src="parts/card_list_thrillingthree.webp" alt="Thrilling-Three" class="text-icon">',
         '{OD}' => '<img src="parts/card_list_overdrive.webp" alt="Over-Drive" class="text-icon">',
+        '{SF}' => '<img src="parts/card_list_shieldforce.webp" alt="Shield-Force" class="text-icon">',
     ];
     $lines = explode("\n", $raw_text);
     $processed_lines = [];
