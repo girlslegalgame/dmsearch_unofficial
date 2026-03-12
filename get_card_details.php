@@ -35,6 +35,7 @@ function format_text_for_display($raw_text, $is_ability) {
         '{T3}' => '<img src="parts/card_list_thrillingthree.webp" alt="Thrilling-Three" class="text-icon">',
         '{OD}' => '<img src="parts/card_list_overdrive.webp" alt="Over-Drive" class="text-icon">',
         '{SF}' => '<img src="parts/card_list_shieldforce.webp" alt="Shield-Force" class="text-icon">',
+        '{KM}' => '<img src="parts/card_list_knightmagic.webp" alt="Knight-Magic" class="text-icon">',
     ];
     $lines = explode("\n", $raw_text);
     $processed_lines = [];
