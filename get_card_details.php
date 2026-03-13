@@ -46,6 +46,7 @@ function format_text_for_display($raw_text, $is_ability) {
         '{ES}' => '<img src="parts/card_list_evilsoul.webp" alt="Evil-Soul" class="text-icon">',
         '{KS}' => '<img src="parts/card_list_kungfusoul.webp" alt="Kung-Fu-Soul" class="text-icon">',
         '{WS}' => '<img src="parts/card_list_wildsoul.webp" alt="Wild-Soul" class="text-icon">',
+        '{BS}' => '<img src="parts/card_list_bloodysoul.webp" alt="Bloody-Soul" class="text-icon">',
     ];
     $lines = explode("\n", $raw_text);
     $processed_lines = [];
