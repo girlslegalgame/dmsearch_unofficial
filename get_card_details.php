@@ -41,6 +41,11 @@ function format_text_for_display($raw_text, $is_ability) {
         '{HF}' => '<img src="parts/card_list_holyfield.webp" alt="Holy-Field" class="text-icon">',
         '{SR}' => '<img src="parts/card_list_soulrecall.webp" alt="Soul-Recall" class="text-icon">',
         '{MT}' => '<img src="parts/card_list_marshalltouch.webp" alt="Marshall-Touch" class="text-icon">',
+        '{HS}' => '<img src="parts/card_list_holysoul.webp" alt="Holy-Soul" class="text-icon">',
+        '{MS}' => '<img src="parts/card_list_magicsoul.webp" alt="Magic-Soul" class="text-icon">',
+        '{ES}' => '<img src="parts/card_list_evilsoul.webp" alt="Evil-Soul" class="text-icon">',
+        '{KS}' => '<img src="parts/card_list_kungfusoul.webp" alt="Kung-Fu-Soul" class="text-icon">',
+        '{WS}' => '<img src="parts/card_list_wildsoul.webp" alt="Wild-Soul" class="text-icon">',
     ];
     $lines = explode("\n", $raw_text);
     $processed_lines = [];
