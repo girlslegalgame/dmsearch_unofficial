@@ -36,7 +36,6 @@ function format_text_for_display($raw_text, $is_ability) {
         '{OD}' => '<img src="parts/card_list_overdrive.webp" alt="Over-Drive" class="text-icon">',
         '{SF}' => '<img src="parts/card_list_shieldforce.webp" alt="Shield-Force" class="text-icon">',
         '{KM}' => '<img src="parts/card_list_knightmagic.webp" alt="Knight-Magic" class="text-icon">',
-        '{AC}' => '<img src="parts/card_list_accel.webp" alt="Accel" class="text-icon">',
         '{BB}' => '<img src="parts/card_list_breakbonus.webp" alt="Break-Bonus" class="text-icon">',
         '{HF}' => '<img src="parts/card_list_holyfield.webp" alt="Holy-Field" class="text-icon">',
         '{SR}' => '<img src="parts/card_list_soulrecall.webp" alt="Soul-Recall" class="text-icon">',
@@ -45,7 +44,6 @@ function format_text_for_display($raw_text, $is_ability) {
         '{MS}' => '<img src="parts/card_list_magicsoul.webp" alt="Magic-Soul" class="text-icon">',
         '{ES}' => '<img src="parts/card_list_evilsoul.webp" alt="Evil-Soul" class="text-icon">',
         '{KS}' => '<img src="parts/card_list_kungfusoul.webp" alt="Kung-Fu-Soul" class="text-icon">',
-        '{WS}' => '<img src="parts/card_list_wildsoul.webp" alt="Wild-Soul" class="text-icon">',
         '{BS}' => '<img src="parts/card_list_bloodysoul.webp" alt="Bloody-Soul" class="text-icon">',
     ];
     $lines = explode("\n", $raw_text);
@@ -205,24 +203,42 @@ foreach ($response['cards'] as $index => &$card) {
     $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
     // 能力テキスト・フレーバーテキスト処理
-    // コンビネーションならサフィックス a, b... を決定する
-    $part_suffix = $response['is_combination'] ? chr(97 + $index) : ""; 
-    $file_id = $modelnum . $part_suffix;
-
-    // 能力テキストの取得 (外部ファイルを優先)
     $text_from_file = null;
-    $single_text_file = ($modelnum && $series_folder) ? "text/" . $series_folder . "/" . $file_id . ".txt" : null;
-    if ($single_text_file && file_exists($single_text_file)) {
-        $text_from_file = file_get_contents($single_text_file);
-    }
-    $card['text'] = format_text_for_display($text_from_file ?: ($card['text'] ?? ''), true);
-
-    // フレーバーテキストの取得 (外部ファイルを優先)
     $flavor_from_file = null;
-    $single_flavor_file = ($modelnum && $series_folder) ? "flavortext/" . $series_folder . "/" . $file_id . ".txt" : null;
-    if ($single_flavor_file && file_exists($single_flavor_file)) {
-        $flavor_from_file = file_get_contents($single_flavor_file);
+
+    if ($modelnum && $series_folder) {
+        $part_char = $response['is_combination'] ? chr(97 + $index) : "";
+
+        // --- 能力テキスト (.txt) の検索 (画像と同仕様) ---
+        $text_base_path = "text/" . $series_folder . "/" . $modelnum . $part_char . ".txt";
+        $text_folder_path = "text/" . $series_folder . "/" . $modelnum;
+        
+        if (is_dir($text_folder_path)) {
+            $text_file_path = $text_folder_path . "/" . $modelnum . $part_char . ".txt";
+        } else {
+            $text_file_path = $text_base_path;
+        }
+
+        if (file_exists($text_file_path)) {
+            $text_from_file = file_get_contents($text_file_path);
+        }
+
+        // --- フレーバーテキスト (.txt) の検索 (画像と同仕様) ---
+        $flavor_base_path = "flavortext/" . $series_folder . "/" . $modelnum . $part_char . ".txt";
+        $flavor_folder_path = "flavortext/" . $series_folder . "/" . $modelnum;
+        
+        if (is_dir($flavor_folder_path)) {
+            $flavor_file_path = $flavor_folder_path . "/" . $modelnum . $part_char . ".txt";
+        } else {
+            $flavor_file_path = $flavor_base_path;
+        }
+
+        if (file_exists($flavor_file_path)) {
+            $flavor_from_file = file_get_contents($flavor_file_path);
+        }
     }
+
+    $card['text'] = format_text_for_display($text_from_file ?: ($card['text'] ?? ''), true);
     $card['flavortext'] = format_text_for_display($flavor_from_file ?: ($card['flavortext'] ?? ''), false);
 
     // デバッグ用能力名リスト
