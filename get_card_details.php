@@ -39,6 +39,7 @@ function format_text_for_display($raw_text, $is_ability) {
         '{AC}' => '<img src="parts/card_list_accel.webp" alt="Accel" class="text-icon">',
         '{BB}' => '<img src="parts/card_list_breakbonus.webp" alt="Break-Bonus" class="text-icon">',
         '{HF}' => '<img src="parts/card_list_holyfield.webp" alt="Holy-Field" class="text-icon">',
+        '{SR}' => '<img src="parts/card_list_soulrecall.webp" alt="Soul-Recall" class="text-icon">',
     ];
     $lines = explode("\n", $raw_text);
     $processed_lines = [];
