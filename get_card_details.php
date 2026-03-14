@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 require_once 'db_connect.php';
-require_once 'functions.php'; // 共通関数を読み込み
+require_once 'functions.php';
 
 $card_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 if ($card_id === 0) {
@@ -44,48 +44,56 @@ foreach ($response['cards'] as $index => &$card) {
     $current_id = $card['card_id'];
     $modelnum = $card['modelnum'];
     $series = get_series_folder($modelnum);
-    $part_char = $response['is_combination'] ? chr(97 + $index) : ""; // a, b, c...
+    $part_char = $response['is_combination'] ? chr(97 + $index) : "";
 
-    // --- 基本情報（タイプ、文明、レアリティ、種族、イラスト） ---
+    // --- 基本情報 ---
     // タイプ
-    $stmt = $pdo->prepare("SELECT t.cardtype_name, c.characteristics_name FROM card_cardtype cc JOIN cardtype t ON cc.cardtype_id = t.cardtype_id LEFT JOIN characteristics c ON cc.characteristics_id = c.characteristics_id WHERE cc.card_id = ?");
+    $stmt = $pdo->prepare("SELECT t.cardtype_name, c.characteristics_name, cc.characteristics_id FROM card_cardtype cc JOIN cardtype t ON cc.cardtype_id = t.cardtype_id LEFT JOIN characteristics c ON cc.characteristics_id = c.characteristics_id WHERE cc.card_id = ?");
     $stmt->execute([$current_id]);
     $ti = $stmt->fetch(PDO::FETCH_ASSOC);
-    $card['card_type'] = ($ti['characteristics_name'] ?? '') . ($ti['cardtype_name'] ?? '');
+    $type_parts = [];
+    if ($ti && ($ti['characteristics_id'] ?? 0) != 1) $type_parts[] = $ti['characteristics_name'];
+    if ($ti) $type_parts[] = $ti['cardtype_name'];
+    $card['card_type'] = implode('', $type_parts) ?: '---';
 
     // 文明 / 種族 / イラストレーター
     $stmt = $pdo->prepare("SELECT c.civilization_name FROM card_civilization cc JOIN civilization c ON cc.civilization_id = c.civilization_id WHERE cc.card_id = ?");
     $stmt->execute([$current_id]);
-    $card['civilization'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    $card['civilization'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
     $stmt = $pdo->prepare("SELECT r.race_name FROM card_race cr JOIN race r ON cr.race_id = r.race_id WHERE cr.card_id = ?");
     $stmt->execute([$current_id]);
-    $card['race'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    $card['race'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
     $stmt = $pdo->prepare("SELECT i.illus_name FROM card_illus ci JOIN illus i ON ci.illus_id = i.illus_id WHERE ci.card_id = ?");
     $stmt->execute([$current_id]);
-    $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
     // レアリティ
     $stmt = $pdo->prepare("SELECT r.rarity_name FROM card_rarity cr JOIN rarity r ON cr.rarity_id = r.rarity_id WHERE cr.card_id = ? LIMIT 1");
     $stmt->execute([$current_id]);
     $card['rarity'] = $stmt->fetchColumn() ?: '---';
 
-    // --- テキスト整形 (functions.phpの関数を使用) ---
-    // 外部テキストファイルがあれば読み込み、なければDBから
+    // --- 外部テキスト読み込みロジック (再強化) ---
     $text_content = $card['text'] ?? '';
     $flavor_content = $card['flavortext'] ?? '';
     
-    $txt_path = "text/{$series}/{$modelnum}/{$modelnum}{$part_char}.txt";
-    if (file_exists($txt_path)) $text_content = file_get_contents($txt_path);
-    
-    $flv_path = "flavortext/{$series}/{$modelnum}/{$modelnum}{$part_char}.txt";
-    if (file_exists($flv_path)) $flavor_content = file_get_contents($flv_path);
+    // 能力テキストのパス判定 (シリーズ/型番/型番a.txt or シリーズ/型番a.txt)
+    $path1 = "text/{$series}/{$modelnum}/{$modelnum}{$part_char}.txt";
+    $path2 = "text/{$series}/{$modelnum}{$part_char}.txt";
+    if (file_exists($path1)) $text_content = file_get_contents($path1);
+    elseif (file_exists($path2)) $text_content = file_get_contents($path2);
+
+    // フレーバーのパス判定
+    $fpath1 = "flavortext/{$series}/{$modelnum}/{$modelnum}{$part_char}.txt";
+    $fpath2 = "flavortext/{$series}/{$modelnum}{$part_char}.txt";
+    if (file_exists($fpath1)) $flavor_content = file_get_contents($fpath1);
+    elseif (file_exists($fpath2)) $flavor_content = file_get_contents($fpath2);
 
     $card['text'] = format_card_text($text_content, true);
     $card['flavortext'] = format_card_text($flavor_content, false);
 
-    // --- 画像パス決定 (functions.phpの関数を使用) ---
+    // --- 画像パス ---
     $card['image_url'] = get_card_image_url($modelnum, $part_char);
 
     // --- デバッグ用 ---
