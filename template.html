@@ -374,7 +374,7 @@
         <div class="card-grid">
             <?php foreach ($cards as $card): ?>
                 <div class="card">
-                    <img src="<?= htmlspecialchars($card['image_url']) ?>" alt="カード画像" class="card-image-item" data-card-id="<?= $card['card_id'] ?>">
+                    <img src="<?= htmlspecialchars($card['image_url']) ?>" alt="カード画像" class="card-image-item" data-card-id="<?= $card['card_id'] ?>" loading="lazy" decoding="async">
                 </div>
             <?php endforeach; ?>
         </div>
