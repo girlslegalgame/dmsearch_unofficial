@@ -130,4 +130,75 @@ if (!$cost_zero && !$cost_infinity && !($is_mono && $is_multi && !$selected_excl
         if ($mono_q && $multi_q) $conditions[] = "($mono_q OR $multi_q)"; else $conditions[] = $mono_q ?: ($multi_q ?: "1=0");
     } else {
         $c_cond = [];
-        if ($is_mono) $c_cond[] = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt = 1) OR card.card_id N
+        if ($is_mono) $c_cond[] = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt = 1) OR card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id != 6)";
+        if ($is_multi) {
+            $mq = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt > 1)";
+            foreach($selected_exclude_civs as $id) $mq .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = ".intval($id).")";
+            $c_cond[] = $mq;
+        }
+        if ($c_cond) $conditions[] = '('.implode(' OR ', $c_cond).')'; else $conditions[] = "1=0";
+    }
+}
+
+// === データ取得とソート ===
+$where = $conditions ? 'WHERE '.implode(' AND ', $conditions) : '';
+$join_str = $joins ? implode(' ', array_unique($joins)) : '';
+$stmt = $pdo->prepare("SELECT DISTINCT card.card_id FROM card JOIN card_detail cd ON card.card_id = cd.card_id $join_str $where");
+$stmt->execute($params);
+$ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+$cards = []; $total = 0;
+if ($ids) {
+    $ph = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("SELECT c.card_id, c.card_name, c.reading, c.cost, c.pow, cd.modelnum, cd.release_date, cr.rarity_id, (SELECT COUNT(*) FROM card_civilization cc WHERE cc.card_id = c.card_id) as civ_count, (SELECT MIN(civilization_id) FROM card_civilization cc WHERE cc.card_id = c.card_id) as min_civ_id FROM card c JOIN card_detail cd ON c.card_id = cd.card_id LEFT JOIN card_rarity cr ON c.card_id = cr.card_id WHERE c.card_id IN ($ph)");
+    $stmt->execute($ids);
+    $details = $stmt->fetchAll();
+
+    // 重複排除
+    $unique = [];
+    if ($show_same_name) { foreach ($details as $c) if (!isset($unique[$c['modelnum']])) $unique[$c['modelnum']] = $c; }
+    else { foreach ($details as $c) if (!isset($unique[$c['card_name']]) || $c['release_date'] > $unique[$c['card_name']]['release_date']) $unique[$c['card_name']] = $c; }
+    $unique = array_values($unique);
+    $total = count($unique);
+
+    // ソート
+    usort($unique, function($a, $b) use ($selected_sort) {
+        switch ($selected_sort) {
+            case 'release_old': $m = strcmp($a['release_date'], $b['release_date']); break;
+            case 'cost_desc': $m = ($b['cost']??-1) <=> ($a['cost']??-1); break;
+            case 'cost_asc': $m = ($a['cost']??-1) <=> ($b['cost']??-1); break;
+            case 'name_asc': $m = strcmp(get_sortable_reading($a['reading']), get_sortable_reading($b['reading'])); break;
+            case 'name_desc': $m = strcmp(get_sortable_reading($b['reading']), get_sortable_reading($a['reading'])); break;
+            case 'power_desc': $m = ($b['pow']??-1) <=> ($a['pow']??-1); break;
+            case 'power_asc': $m = ($a['pow']??-1) <=> ($b['pow']??-1); break;
+            default: $m = strcmp($b['release_date'], $a['release_date']); break;
+        }
+        return $m ?: ($b['rarity_id']??0 <=> $a['rarity_id']??0) ?: (get_civ_priority($a) <=> get_civ_priority($b)) ?: ($a['card_id'] <=> $b['card_id']);
+    });
+
+    // ページ切り出しと画像パス
+    $page_cards = array_slice($unique, $offset, $perPage);
+    foreach ($page_cards as $c) {
+        $c['image_url'] = get_card_image_url($c['modelnum']);
+        $cards[] = $c;
+    }
+}
+
+// === テンプレート表示用データ ===
+$totalPages = ceil($total / $perPage);
+$civilization_list = $pdo->query("SELECT * FROM civilization ORDER BY civilization_id")->fetchAll();
+$characteristics_list = $pdo->query("SELECT * FROM characteristics ORDER BY characteristics_id")->fetchAll();
+$cardtype_list = $pdo->query("SELECT * FROM cardtype ORDER BY cardtype_id")->fetchAll();
+$race_list = $pdo->query("SELECT * FROM race")->fetchAll(); usort($race_list, function($a,$b){ return strcmp(get_sortable_reading($a['reading']), get_sortable_reading($b['reading'])); });
+$rarity_list = $pdo->query("SELECT * FROM rarity ORDER BY rarity_id")->fetchAll();
+$ability_list = $pdo->query("SELECT * FROM ability ORDER BY reading")->fetchAll();
+$treasure_list = $pdo->query("SELECT * FROM treasure ORDER BY treasure_id")->fetchAll();
+$soul_list = $pdo->query("SELECT * FROM soul ORDER BY soul_id")->fetchAll();
+$frame_list = $pdo->query("SELECT * FROM frame ORDER BY frame_id")->fetchAll();
+$goodstype_list = $pdo->query("SELECT * FROM goodstype ORDER BY goodstype_id")->fetchAll();
+$goods_list = ($selected_goodstype_id > 0) ? $pdo->prepare("SELECT * FROM goods WHERE goodstype_id = ?")->execute([$selected_goodstype_id]) : $pdo->query("SELECT * FROM goods ORDER BY goods_id");
+$goods_list = ($selected_goodstype_id > 0) ? (function($pdo, $id){ $s = $pdo->prepare("SELECT * FROM goods WHERE goodstype_id = ?"); $s->execute([$id]); return $s->fetchAll(); })($pdo, $selected_goodstype_id) : $pdo->query("SELECT * FROM goods ORDER BY goods_id")->fetchAll();
+$illustrator_list = $pdo->query("SELECT * FROM illus ORDER BY reading")->fetchAll();
+$others_list = $pdo->query("SELECT * FROM others ORDER BY others_id")->fetchAll();
+
+include 'template.html';
