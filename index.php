@@ -1,434 +1,133 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 require_once 'db_connect.php';
+require_once 'functions.php';
 
-/**
- * 種族リストをソートするための比較関数
- */
-function customRaceSort($a, $b) {
-    static $charMap = null;
-    if ($charMap === null) {
-        $charMap = [
-            'ゔぁ'=>'03c01','ゔぃ'=>'03c02','ゔぇ'=>'03c04','ゔぉ'=>'03c05','ヴァ'=>'03c01','ヴィ'=>'03c02','ヴェ'=>'03c04','ヴォ'=>'03c05','ぁ'=>'01a','あ'=>'01b','ぃ'=>'02a','い'=>'02b','ぅ'=>'03a','う'=>'03b','ぇ'=>'04a','え'=>'04b','ぉ'=>'05a','お'=>'05b','か'=>'06a','が'=>'06b','き'=>'07a','ぎ'=>'07b','く'=>'08a','ぐ'=>'08b','け'=>'09a','げ'=>'09b','こ'=>'10a','ご'=>'10b','さ'=>'11a','ざ'=>'11b','し'=>'12a','じ'=>'12b','す'=>'13a','ず'=>'13b','せ'=>'14a','ぜ'=>'14b','そ'=>'15a','ぞ'=>'15b','た'=>'16a','だ'=>'16b','ち'=>'17a','ぢ'=>'17b','っ'=>'18a','つ'=>'18b','づ'=>'18b','て'=>'19a','で'=>'19b','と'=>'20a','ど'=>'20b','な'=>'21a','に'=>'22a','ぬ'=>'23a','ね'=>'24a','の'=>'25a','は'=>'26a','ば'=>'26b','ぱ'=>'26c','ひ'=>'27a','び'=>'27b','ぴ'=>'27c','ふ'=>'28a','ぶ'=>'28b','ぷ'=>'28c','へ'=>'29a','べ'=>'29b','ぺ'=>'29c','ほ'=>'30a','ぼ'=>'30b','ぽ'=>'30c','ま'=>'31a','み'=>'32a','む'=>'33a','め'=>'34a','も'=>'35a','ゃ'=>'36a','や'=>'36b','ゅ'=>'37a','ゆ'=>'37b','ょ'=>'38a','よ'=>'38b','ら'=>'39a','り'=>'40a','る'=>'41a','れ'=>'42a','ろ'=>'43a','わ'=>'44a','を'=>'45a','ん'=>'46a','ー'=>'47a','ゔ'=>'03c03', 'ヴ'=>'03c03','ァ'=>'01a','ア'=>'01b','ィ'=>'02a','イ'=>'02b','ゥ'=>'03a','ウ'=>'03b','ェ'=>'04a','エ'=>'04b','ォ'=>'05a','オ'=>'05b','カ'=>'06a','ガ'=>'06b','キ'=>'07a','ギ'=>'07b','ク'=>'08a','グ'=>'08b','ケ'=>'09a','ゲ'=>'09b','コ'=>'10a','ゴ'=>'10b','さ'=>'11a','ざ'=>'11b','し'=>'12a','じ'=>'12b','す'=>'13a','ず'=>'13b','せ'=>'14a','ぜ'=>'14b','そ'=>'15a','ぞ'=>'15b','た'=>'16a','だ'=>'16b','ち'=>'17a','ヂ'=>'17b','ッ'=>'18a','ツ'=>'18b','ヅ'=>'18b','て'=>'19a','で'=>'19b','と'=>'20a','ど'=>'20b','な'=>'21a','に'=>'22a','ぬ'=>'23a','ね'=>'24a','ノ'=>'25a','ハ'=>'26a','バ'=>'26b','パ'=>'26c','ヒ'=>'27a','ビ'=>'27b','ピ'=>'27c','フ'=>'28a','ブ'=>'28b','プ'=>'28c','ヘ'=>'29a','ベ'=>'29b','ペ'=>'29c','ホ'=>'30a','ボ'=>'30b','ポ'=>'30c','マ'=>'31a','ミ'=>'32a','ム'=>'33a','メ'=>'34a','モ'=>'35a','ャ'=>'36a','ヤ'=>'36b','ュ'=>'37a','ユ'=>'37b','ョ'=>'38a','ヨ'=>'38b','ら'=>'39a','り'=>'40a','る'=>'41a','れ'=>'42a','ろ'=>'43a','わ'=>'44a','ヲ'=>'45a','ん'=>'46a',
-        ];
-    }
-    $readingA_sortable = strtr($a['reading'], $charMap);
-    $readingB_sortable = strtr($b['reading'], $charMap);
-    return strcmp($readingA_sortable, $readingB_sortable);
-}
-
-// === 初期設定 ===
+// === 設定とページネーション ===
 $perPage = 50;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $perPage;
 
-// === フォームからの入力値の受け取り ===
-$search = isset($_GET['search']) ? $_GET['search'] : '';
+// === GET入力の整理 ===
 $is_submitted = count($_GET) > 0;
-$cost_min = isset($_GET['cost_min']) ? $_GET['cost_min'] : '';
-$cost_max = isset($_GET['cost_max']) ? $_GET['cost_max'] : '';
+$search = $_GET['search'] ?? '';
+$cost_min = $_GET['cost_min'] ?? '';
+$cost_max = $_GET['cost_max'] ?? '';
 $cost_zero = isset($_GET['cost_zero']);
 $cost_infinity = isset($_GET['cost_infinity']);
-$pow_min = isset($_GET['pow_min']) ? $_GET['pow_min'] : '';
-$pow_max = isset($_GET['pow_max']) ? $_GET['pow_max'] : '';
+$pow_min = $_GET['pow_min'] ?? '';
+$pow_max = $_GET['pow_max'] ?? '';
 $pow_infinity = isset($_GET['pow_infinity']);
-$year_min = isset($_GET['year_min']) ? $_GET['year_min'] : '';
-$year_max = isset($_GET['year_max']) ? $_GET['year_max'] : '';
-$selected_char_id = isset($_GET['characteristics_id']) ? intval($_GET['characteristics_id']) : 0;
-$selected_cardtype_id = isset($_GET['cardtype_id']) ? intval($_GET['cardtype_id']) : 0; 
-$selected_race_ids = isset($_GET['race_ids']) && is_array($_GET['race_ids']) ? array_map('intval', $_GET['race_ids']) : [];
-$race_search_mode = isset($_GET['race_search_mode']) && $_GET['race_search_mode'] === 'OR' ? 'OR' : 'AND';
-$selected_ability_ids = isset($_GET['ability_ids']) && is_array($_GET['ability_ids']) ? array_map('intval', $_GET['ability_ids']) : [];
-$ability_search_mode = isset($_GET['ability_search_mode']) && $_GET['ability_search_mode'] === 'OR' ? 'OR' : 'AND';
-$selected_rarity_id = isset($_GET['rarity_id']) ? intval($_GET['rarity_id']) : 0;
-$selected_twinpact = isset($_GET['twinpact_filter']) ? $_GET['twinpact_filter'] : '0';
-$selected_treasure_id = isset($_GET['treasure_id_filter']) ? $_GET['treasure_id_filter'] : '0';
-$selected_regulation = isset($_GET['regulation_filter']) ? $_GET['regulation_filter'] : '0';
-$selected_others_ids = isset($_GET['others_ids']) && is_array($_GET['others_ids']) ? array_map('intval', $_GET['others_ids']) : [];
-$others_search_mode = isset($_GET['others_search_mode']) && $_GET['others_search_mode'] === 'OR' ? 'OR' : 'AND';
-$selected_soul_ids = isset($_GET['soul_ids']) && is_array($_GET['soul_ids']) ? array_map('intval', $_GET['soul_ids']) : [];
-$soul_search_mode = isset($_GET['soul_search_mode']) && $_GET['soul_search_mode'] === 'OR' ? 'OR' : 'AND';
-$selected_frame_id = isset($_GET['frame_id_filter']) ? intval($_GET['frame_id_filter']) : 0;
-$selected_goods_id = isset($_GET['goods_id_filter']) ? intval($_GET['goods_id_filter']) : 0;
-$selected_goodstype_id = isset($_GET['goodstype_id_filter']) ? intval($_GET['goodstype_id_filter']) : 0;
-$selected_illus_id = isset($_GET['illus_id_filter']) ? intval($_GET['illus_id_filter']) : 0;
-$selected_mana = isset($_GET['mana_filter']) ? $_GET['mana_filter'] : 'all';
-$selected_sort = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'release_new';
+$year_min = $_GET['year_min'] ?? '';
+$year_max = $_GET['year_max'] ?? '';
+$selected_char_id = intval($_GET['characteristics_id'] ?? 0);
+$selected_cardtype_id = intval($_GET['cardtype_id'] ?? 0); 
+$selected_race_ids = isset($_GET['race_ids']) ? array_map('intval', $_GET['race_ids']) : [];
+$race_search_mode = ($_GET['race_search_mode'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
+$selected_ability_ids = isset($_GET['ability_ids']) ? array_map('intval', $_GET['ability_ids']) : [];
+$ability_search_mode = ($_GET['ability_search_mode'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
+$selected_rarity_id = intval($_GET['rarity_id'] ?? 0);
+$selected_twinpact = $_GET['twinpact_filter'] ?? '0';
+$selected_treasure_id = $_GET['treasure_id_filter'] ?? '0';
+$selected_regulation = $_GET['regulation_filter'] ?? '0';
+$selected_others_ids = isset($_GET['others_ids']) ? array_map('intval', $_GET['others_ids']) : [];
+$others_search_mode = ($_GET['others_search_mode'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
+$selected_soul_ids = isset($_GET['soul_ids']) ? array_map('intval', $_GET['soul_ids']) : [];
+$soul_search_mode = ($_GET['soul_search_mode'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
+$selected_frame_id = intval($_GET['frame_id_filter'] ?? 0);
+$selected_goods_id = intval($_GET['goods_id_filter'] ?? 0);
+$selected_goodstype_id = intval($_GET['goodstype_id_filter'] ?? 0);
+$selected_illus_id = intval($_GET['illus_id_filter'] ?? 0);
+$selected_mana = $_GET['mana_filter'] ?? 'all';
+$selected_sort = $_GET['sort_order'] ?? 'release_new';
 $show_same_name = isset($_GET['show_same_name']) || !$is_submitted;
+$is_advanced_open = ($_GET['advanced_open'] ?? '0') == '1';
 
 if ($is_submitted) {
-    $multi_search_type = isset($_GET['multi_search_type']) ? $_GET['multi_search_type'] : 'or';
-    $search_name = isset($_GET['search_name']);
-    $search_reading = isset($_GET['search_reading']);
-    $search_text = isset($_GET['search_text']);
-    $search_race = isset($_GET['search_race']);
-    $search_flavortext = isset($_GET['search_flavortext']);
-    $search_illus = isset($_GET['search_illus']);
+    $multi_search_type = $_GET['multi_search_type'] ?? 'or';
+    $search_name = isset($_GET['search_name']); $search_reading = isset($_GET['search_reading']);
+    $search_text = isset($_GET['search_text']); $search_race = isset($_GET['search_race']);
+    $search_flavortext = isset($_GET['search_flavortext']); $search_illus = isset($_GET['search_illus']);
+    $mono_color_status = intval($_GET['mono_color'] ?? 0);
+    $multi_color_status = intval($_GET['multi_color'] ?? 0);
+    $selected_main_civs = isset($_GET['main_civs']) ? array_values(array_filter($_GET['main_civs'], fn($v) => $v != 0)) : [];
+    $selected_exclude_civs = isset($_GET['exclude_civs']) ? array_values(array_filter($_GET['exclude_civs'], fn($v) => $v != 0)) : [];
+    if ($multi_search_type === 'exact' && count($selected_main_civs) >= 2) $selected_exclude_civs = [];
 } else {
-    $search_name = true; $search_reading = true; $search_text = true;
-    $search_race = false; $search_flavortext = false; $search_illus = false;
-}
-$is_advanced_open = !empty($_GET['advanced_open']) && $_GET['advanced_open'] == '1';
-$mono_color_status = 1; $multi_color_status = 1;
-$selected_main_civs = []; $selected_exclude_civs = [];
-if ($is_submitted) {
-    $mono_color_status = isset($_GET['mono_color']) ? intval($_GET['mono_color']) : 0;
-    $multi_color_status = isset($_GET['multi_color']) ? intval($_GET['multi_color']) : 0;
-    if (!empty($_GET['main_civs'])) { $selected_main_civs = array_values(array_filter($_GET['main_civs'], fn($v) => $v != 0)); }
-    if (!empty($_GET['exclude_civs'])) { $selected_exclude_civs = array_values(array_filter($_GET['exclude_civs'], fn($v) => $v != 0)); }
-    if ($multi_search_type === 'exact' && count($selected_main_civs) >= 2) {
-        $selected_exclude_civs = []; // exactモードの時は除外リストを無視する
-    }
+    $search_name = $search_reading = $search_text = true;
+    $search_race = $search_flavortext = $search_illus = false;
+    $mono_color_status = $multi_color_status = 1;
+    $selected_main_civs = $selected_exclude_civs = [];
 }
 
-// === SQLクエリの組み立て ===
-$conditions = [];
-$params = [];
-$joins = [];
+// === SQL構築 ===
+$conditions = []; $params = []; $joins = [];
 
 if ($search !== '') {
-    $keyword_conditions = [];
-    if ($search_name) { $keyword_conditions[] = 'card.card_name LIKE :search_keyword_name'; $params[':search_keyword_name'] = '%' . $search . '%'; }
-    if ($search_reading) { $keyword_conditions[] = 'card.reading LIKE :search_keyword_reading'; $params[':search_keyword_reading'] = '%' . $search . '%'; }
-    if ($search_text) { $keyword_conditions[] = 'card.text LIKE :search_keyword_text'; $params[':search_keyword_text'] = '%' . $search . '%'; }
-    if ($search_flavortext) { $keyword_conditions[] = 'card.flavortext LIKE :search_keyword_flavor'; $params[':search_keyword_flavor'] = '%' . $search . '%'; }
-    if ($search_race) {
-        $joins['card_race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
-        $joins['race'] = 'LEFT JOIN race ON card_race.race_id = race.race_id';
-        $keyword_conditions[] = 'race.race_name LIKE :search_keyword_race';
-        $params[':search_keyword_race'] = '%' . $search . '%';
-    }
-    if ($search_illus) {
-        $joins['card_illus_search'] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id';
-        $joins['illus_search'] = 'LEFT JOIN illus ON card_illus.illus_id = illus.illus_id';
-        $keyword_conditions[] = 'illus.illus_name LIKE :search_keyword_illus';
-        $params[':search_keyword_illus'] = '%' . $search . '%';
-    }
-    if (!empty($keyword_conditions)) { $conditions[] = '(' . implode(' OR ', $keyword_conditions) . ')'; }
-}
-if ($cost_infinity) { $conditions[] = 'card.cost = 2147483647';
-} elseif ($cost_zero) { $conditions[] = 'card.cost IS NULL';
-} else {
-    if ($cost_min !== '' && is_numeric($cost_min)) { $conditions[] = 'card.cost >= :cost_min'; $params[':cost_min'] = intval($cost_min); }
-    if ($cost_max !== '' && is_numeric($cost_max)) { $conditions[] = 'card.cost <= :cost_max'; $params[':cost_max'] = intval($cost_max); }
-}
-if ($pow_infinity) { $conditions[] = 'card.pow = 2147483647';
-} else {
-    if ($pow_min !== '' && is_numeric($pow_min)) { $conditions[] = 'card.pow >= :pow_min'; $params[':pow_min'] = intval($pow_min); }
-    if ($pow_max !== '' && is_numeric($pow_max)) { $conditions[] = 'card.pow <= :pow_max'; $params[':pow_max'] = intval($pow_max); }
-}
-if ($year_min !== '' && is_numeric($year_min)) { $conditions[] = "cd.release_date >= :date_min"; $params[':date_min'] = $year_min . '-01-01'; }
-if ($year_max !== '' && is_numeric($year_max)) { $conditions[] = "cd.release_date <= :date_max"; $params[':date_max'] = $year_max . '-12-31'; }
-if ($selected_char_id > 0) { $joins['card_cardtype_char'] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.characteristics_id = :characteristics_id"; $params[':characteristics_id'] = $selected_char_id; }
-if ($selected_cardtype_id > 0) { $joins['card_cardtype_type'] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.cardtype_id = :cardtype_id"; $params[':cardtype_id'] = $selected_cardtype_id; }
-
-// --- 種族検索の最適化 ---
-if (!empty($selected_race_ids)) {
-    $race_placeholders = [];
-    foreach ($selected_race_ids as $index => $race_id) {
-        $placeholder = ':race_id_' . $index;
-        $race_placeholders[] = $placeholder;
-        $params[$placeholder] = $race_id;
-    }
-    if ($race_search_mode === 'AND') {
-        $conditions[] = "card.card_id IN (SELECT card_id FROM card_race WHERE race_id IN (" . implode(',', $race_placeholders) . ") GROUP BY card_id HAVING COUNT(DISTINCT race_id) = " . count($selected_race_ids) . ")";
-    } else {
-        $joins['card_race_race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
-        $conditions[] = "card_race.race_id IN (" . implode(',', $race_placeholders) . ")";
-    }
+    $kwd = [];
+    if ($search_name) { $kwd[] = 'card.card_name LIKE :s_name'; $params[':s_name'] = "%$search%"; }
+    if ($search_reading) { $kwd[] = 'card.reading LIKE :s_read'; $params[':s_read'] = "%$search%"; }
+    if ($search_text) { $kwd[] = 'card.text LIKE :s_text'; $params[':s_text'] = "%$search%"; }
+    if ($search_flavortext) { $kwd[] = 'card.flavortext LIKE :s_flavor'; $params[':s_flavor'] = "%$search%"; }
+    if ($search_race) { $joins[] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id LEFT JOIN race ON card_race.race_id = race.race_id'; $kwd[] = 'race.race_name LIKE :s_race'; $params[':s_race'] = "%$search%"; }
+    if ($search_illus) { $joins[] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id LEFT JOIN illus ON card_illus.illus_id = illus.illus_id'; $kwd[] = 'illus.illus_name LIKE :s_illus'; $params[':s_illus'] = "%$search%"; }
+    if ($kwd) $conditions[] = '(' . implode(' OR ', $kwd) . ')';
 }
 
-if ($selected_rarity_id > 0) { $joins['card_rarity_rarity'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.rarity_id = :rarity_id"; $params[':rarity_id'] = $selected_rarity_id; }
-
-// --- ソウル検索の最適化 ---
-if (!empty($selected_soul_ids)) {
-    $soul_placeholders = [];
-    foreach ($selected_soul_ids as $index => $s_id) {
-        $placeholder = ':soul_id_' . $index;
-        $soul_placeholders[] = $placeholder;
-        $params[$placeholder] = $s_id;
-    }
-    if ($soul_search_mode === 'AND') {
-        $conditions[] = "card.card_id IN (SELECT card_id FROM card_soul WHERE soul_id IN (" . implode(',', $soul_placeholders) . ") GROUP BY card_id HAVING COUNT(DISTINCT soul_id) = " . count($selected_soul_ids) . ")";
-    } else {
-        $joins['card_soul'] = 'LEFT JOIN card_soul ON card.card_id = card_soul.card_id';
-        $conditions[] = "card_soul.soul_id IN (" . implode(',', $soul_placeholders) . ")";
-    }
+// 数値条件
+if ($cost_infinity) $conditions[] = 'card.cost = '.DM_INFINITY;
+elseif ($cost_zero) $conditions[] = 'card.cost IS NULL';
+else {
+    if (is_numeric($cost_min)) { $conditions[] = 'card.cost >= :c_min'; $params[':c_min'] = intval($cost_min); }
+    if (is_numeric($cost_max)) { $conditions[] = 'card.cost <= :c_max'; $params[':c_max'] = intval($cost_max); }
 }
+if ($pow_infinity) $conditions[] = 'card.pow = '.DM_INFINITY;
+else {
+    if (is_numeric($pow_min)) { $conditions[] = 'card.pow >= :p_min'; $params[':p_min'] = intval($pow_min); }
+    if (is_numeric($pow_max)) { $conditions[] = 'card.pow <= :p_max'; $params[':p_max'] = intval($pow_max); }
+}
+if (is_numeric($year_min)) { $conditions[] = "cd.release_date >= :y_min"; $params[':y_min'] = "$year_min-01-01"; }
+if (is_numeric($year_max)) { $conditions[] = "cd.release_date <= :y_max"; $params[':y_max'] = "$year_max-12-31"; }
 
+// 各種ID条件
+if ($selected_char_id > 0) { $joins[] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.characteristics_id = :char_id"; $params[':char_id'] = $selected_char_id; }
+if ($selected_cardtype_id > 0) { $joins[] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.cardtype_id = :type_id"; $params[':type_id'] = $selected_cardtype_id; }
+if ($selected_rarity_id > 0) { $joins[] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.rarity_id = :rarity_id"; $params[':rarity_id'] = $selected_rarity_id; }
 if ($selected_frame_id > 0) { $conditions[] = "cd.frame_id = :frame_id"; $params[':frame_id'] = $selected_frame_id; }
-
-// --- 特殊能力検索の最適化 ---
-if (!empty($selected_ability_ids)) {
-    $ability_placeholders = [];
-    foreach ($selected_ability_ids as $index => $ability_id) {
-        $placeholder = ':ability_id_' . $index;
-        $ability_placeholders[] = $placeholder;
-        $params[$placeholder] = $ability_id;
-    }
-    if ($ability_search_mode === 'AND') {
-        $conditions[] = "card.card_id IN (SELECT card_id FROM card_ability WHERE ability_id IN (" . implode(',', $ability_placeholders) . ") GROUP BY card_id HAVING COUNT(DISTINCT ability_id) = " . count($selected_ability_ids) . ")";
-    } else {
-        $joins['card_ability'] = 'LEFT JOIN card_ability ON card.card_id = card_ability.card_id';
-        $conditions[] = "card_ability.ability_id IN (" . implode(',', $ability_placeholders) . ")";
-    }
-}
-
-if ($selected_illus_id > 0) { $joins['card_illus_illus'] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id'; $conditions[] = "card_illus.illus_id = :illus_id"; $params[':illus_id'] = $selected_illus_id; }
-if ($selected_twinpact !== '0') { $conditions[] = "cd.twinpact = :twinpact"; $params[':twinpact'] = ($selected_twinpact === '1') ? 1 : 0; }
-if ($selected_treasure_id != '0') {
-    $joins['card_rarity_treasure'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id';
-    if ($selected_treasure_id == '-1') { $conditions[] = "card_rarity.treasure_id IS NULL"; } else { $conditions[] = "card_rarity.treasure_id = :treasure_id"; $params[':treasure_id'] = intval($selected_treasure_id); }
-}
-if ($selected_regulation !== '0') {
-    $regulation_map = ['1' => '制限なし', '2' => '殿堂', '3' => 'プレミアム殿堂'];
-    if (array_key_exists($selected_regulation, $regulation_map)) { $conditions[] = "cd.regulation = :regulation"; $params[':regulation'] = $regulation_map[$selected_regulation]; }
-}
-
-// --- その他検索の最適化 ---
-if (!empty($selected_others_ids)) {
-    $others_placeholders = [];
-    foreach ($selected_others_ids as $index => $o_id) {
-        $placeholder = ':others_id_' . $index;
-        $others_placeholders[] = $placeholder;
-        $params[$placeholder] = $o_id;
-    }
-    if ($others_search_mode === 'AND') {
-        $conditions[] = "card.card_id IN (SELECT card_id FROM card_others WHERE others_id IN (" . implode(',', $others_placeholders) . ") GROUP BY card_id HAVING COUNT(DISTINCT others_id) = " . count($selected_others_ids) . ")";
-    } else {
-        $joins['card_others'] = 'LEFT JOIN card_others ON card.card_id = card_others.card_id';
-        $conditions[] = "card_others.others_id IN (" . implode(',', $others_placeholders) . ")";
-    }
-}
-
 if ($selected_goods_id > 0) { $conditions[] = "cd.goods_id = :goods_id"; $params[':goods_id'] = $selected_goods_id; }
-if ($selected_goodstype_id > 0) { $joins['goods_goodstype'] = 'LEFT JOIN goods ON cd.goods_id = goods.goods_id'; $conditions[] = "goods.goodstype_id = :goodstype_id"; $params[':goodstype_id'] = $selected_goodstype_id; }
-if ($selected_mana !== 'all') {
-    if ($selected_mana === '-1') { $conditions[] = "cd.mana IS NULL"; } else { $conditions[] = "cd.mana = :mana"; $params[':mana'] = intval($selected_mana); }
+if ($selected_goodstype_id > 0) { $joins[] = 'LEFT JOIN goods ON cd.goods_id = goods.goods_id'; $conditions[] = "goods.goodstype_id = :goodstype_id"; $params[':goodstype_id'] = $selected_goodstype_id; }
+if ($selected_illus_id > 0) { $joins[] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id'; $conditions[] = "card_illus.illus_id = :illus_id"; $params[':illus_id'] = $selected_illus_id; }
+if ($selected_twinpact !== '0') { $conditions[] = "cd.twinpact = :tp"; $params[':tp'] = ($selected_twinpact === '1' ? 1 : 0); }
+if ($selected_regulation !== '0') { $regMap = ['1'=>'制限なし','2'=>'殿堂','3'=>'プレミアム殿堂']; if(isset($regMap[$selected_regulation])) { $conditions[] = "cd.regulation = :reg"; $params[':reg'] = $regMap[$selected_regulation]; } }
+if ($selected_mana !== 'all') { if ($selected_mana === '-1') $conditions[] = "cd.mana IS NULL"; else { $conditions[] = "cd.mana = :mana"; $params[':mana'] = intval($selected_mana); } }
+if ($selected_treasure_id != '0') { $joins[] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; if ($selected_treasure_id == '-1') $conditions[] = "card_rarity.treasure_id IS NULL"; else { $conditions[] = "card_rarity.treasure_id = :tr_id"; $params[':tr_id'] = intval($selected_treasure_id); } }
+
+// AND検索（種族、能力、ソウル、その他）
+foreach ([['ids'=>$selected_race_ids, 'mode'=>$race_search_mode, 'tbl'=>'card_race', 'col'=>'race_id'], ['ids'=>$selected_ability_ids, 'mode'=>$ability_search_mode, 'tbl'=>'card_ability', 'col'=>'ability_id'], ['ids'=>$selected_soul_ids, 'mode'=>$soul_search_mode, 'tbl'=>'card_soul', 'col'=>'soul_id'], ['ids'=>$selected_others_ids, 'mode'=>$others_search_mode, 'tbl'=>'card_others', 'col'=>'others_id']] as $group) {
+    if (!$group['ids']) continue;
+    $p_names = []; foreach ($group['ids'] as $i => $id) { $name = ":{$group['col']}_{$i}"; $p_names[] = $name; $params[$name] = $id; }
+    if ($group['mode'] === 'AND') $conditions[] = "card.card_id IN (SELECT card_id FROM {$group['tbl']} WHERE {$group['col']} IN (".implode(',',$p_names).") GROUP BY card_id HAVING COUNT(DISTINCT {$group['col']}) = ".count($group['ids']).")";
+    else { $joins[] = "LEFT JOIN {$group['tbl']} ON card.card_id = {$group['tbl']}.card_id"; $conditions[] = "{$group['tbl']}.{$group['col']} IN (".implode(',',$p_names).")"; }
 }
-
-$civ_summary_subquery = "(SELECT card_id, COUNT(civilization_id) as civ_count FROM card_civilization WHERE civilization_id != 6 GROUP BY card_id)";
-$civ_type_conditions = [];
-
-// 単色・多色ボタンの判定
-$is_mono_active = ($mono_color_status == 1);
-$is_multi_active = ($multi_color_status == 1);
 
 // 文明ロジック
-if (!$cost_zero && !$cost_infinity) {
-    if ($is_mono_active && $is_multi_active && empty($selected_exclude_civs) && empty($selected_main_civs)) {
-        // 条件なし
+$is_mono = ($mono_color_status == 1); $is_multi = ($multi_color_status == 1);
+if (!$cost_zero && !$cost_infinity && !($is_mono && $is_multi && !$selected_exclude_civs && !$selected_main_civs)) {
+    $civ_sub = "(SELECT card_id, COUNT(civilization_id) as cnt FROM card_civilization WHERE civilization_id != 6 GROUP BY card_id)";
+    if ($selected_main_civs) {
+        $mc = count($selected_main_civs); $exact = ($multi_search_type === 'exact' && $mc >= 2);
+        $mono_q = ""; $multi_q = "";
+        $in_sql = "SELECT card_id FROM card_civilization WHERE civilization_id IN (".implode(',', array_map('intval', $selected_main_civs)).")";
+        if ($is_mono) $mono_q = "(card.card_id IN ($in_sql) AND card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt = 1))";
+        if ($is_multi) {
+            if ($exact) {
+                $multi_q = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt = $mc)";
+                foreach($selected_main_civs as $id) $multi_q .= " AND card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = ".intval($id).")";
+            } else {
+                $multi_q = "(card.card_id IN ($in_sql) AND card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt > 1))";
+                foreach($selected_exclude_civs as $id) $multi_q .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = ".intval($id).")";
+            }
+        }
+        if ($mono_q && $multi_q) $conditions[] = "($mono_q OR $multi_q)"; else $conditions[] = $mono_q ?: ($multi_q ?: "1=0");
     } else {
-        if (!empty($selected_main_civs)) {
-            $civ_count = count($selected_main_civs);
-            $exact_mode = ($multi_search_type === 'exact' && $civ_count >= 2);
-            $mono_cond = "";
-            $multi_cond = "";
-
-            if ($is_mono_active) {
-                $mono_civ_ors = [];
-                foreach($selected_main_civs as $main_id) {
-                    $mono_civ_ors[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
-                }
-                $mono_cond = "((" . implode(' OR ', $mono_civ_ors) . ") AND card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1))";
-            }
-            if ($is_multi_active) {
-                if ($exact_mode) {
-                    $multi_and_conds = [];
-                    foreach($selected_main_civs as $main_id) {
-                        $multi_and_conds[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
-                    }
-                    $multi_cond = "((" . implode(' AND ', $multi_and_conds) . ") AND card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = {$civ_count}))";
-                } else {
-                    $multi_or_conds = [];
-                    foreach($selected_main_civs as $main_id) {
-                        $multi_or_conds[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
-                    }
-                    $multi_cond = "((" . implode(' OR ', $multi_or_conds) . ") AND card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count > 1))";
-                    if(!empty($selected_exclude_civs)) {
-                        foreach($selected_exclude_civs as $exclude_id) { 
-                            $multi_cond .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($exclude_id) . ")"; 
-                        }
-                    }
-                }
-            }
-            if ($mono_cond && $multi_cond) { $conditions[] = "(" . $mono_cond . " OR " . $multi_cond . ")"; } 
-            elseif ($mono_cond) { $conditions[] = $mono_cond; } 
-            elseif ($multi_cond) { $conditions[] = $multi_cond; } 
-            else { $conditions[] = "1 = 0"; }
-        } else {
-            if ($is_mono_active) {
-                $civ_type_conditions[] = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1) OR card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id != 6)";
-            }
-            if ($is_multi_active) {
-                $multi_cond = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count > 1)";
-                if(!empty($selected_exclude_civs)) {
-                    foreach($selected_exclude_civs as $exclude_id) { 
-                        $multi_cond .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($exclude_id) . ")"; 
-                    }
-                }
-                $civ_type_conditions[] = $multi_cond;
-            }
-            if (!empty($civ_type_conditions)) { $conditions[] = '(' . implode(' OR ', $civ_type_conditions) . ')'; } 
-            else { $conditions[] = "1 = 0"; }
-        }
-    }
-}
-
-// === SQLクエリの実行 ===
-$join_str = !empty($joins) ? implode(' ', array_unique($joins)) : '';
-$where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
-
-$id_sql = "
-    SELECT DISTINCT card.card_id
-    FROM card
-    JOIN card_detail cd ON card.card_id = cd.card_id
-    {$join_str}
-    {$where}
-";
-
-$stmt = $pdo->prepare($id_sql);
-$stmt->execute($params);
-$all_matching_card_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-$cards = [];
-$total = 0;
-
-if (!empty($all_matching_card_ids)) {
-    $placeholders = implode(',', array_fill(0, count($all_matching_card_ids), '?'));
-    $details_sql = "
-        SELECT 
-            c.card_id, c.card_name, c.reading, c.cost, c.pow,
-            cd.modelnum, cd.release_date,
-            cr.rarity_id,
-            (SELECT COUNT(cc.civilization_id) FROM card_civilization cc WHERE cc.card_id = c.card_id) as civ_count,
-            (SELECT MIN(cc.civilization_id) FROM card_civilization cc WHERE cc.card_id = c.card_id) as min_civ_id
-        FROM card c
-        JOIN card_detail cd ON c.card_id = cd.card_id
-        LEFT JOIN card_rarity cr ON c.card_id = cr.card_id
-        WHERE c.card_id IN ({$placeholders})
-    ";
-    $stmt = $pdo->prepare($details_sql);
-    $stmt->execute($all_matching_card_ids);
-    $all_card_details = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $unique_cards = [];
-    if ($show_same_name) {
-        $unique_cards_by_modelnum = [];
-        foreach ($all_card_details as $card) {
-            if (!isset($unique_cards_by_modelnum[$card['modelnum']])) {
-                $unique_cards_by_modelnum[$card['modelnum']] = $card;
-            }
-        }
-        $unique_cards = array_values($unique_cards_by_modelnum);
-    } else {
-        $latest_cards_by_name = [];
-        foreach ($all_card_details as $card) {
-            $card_name = $card['card_name'];
-            if (!isset($latest_cards_by_name[$card_name]) || $card['release_date'] > $latest_cards_by_name[$card_name]['release_date']) {
-                $latest_cards_by_name[$card_name] = $card;
-            }
-        }
-        $unique_cards = array_values($latest_cards_by_name);
-    }
-    
-    $total = count($unique_cards);
-    if (!function_exists('get_civ_priority')) {
-        function get_civ_priority($card) {
-            $civ_count = $card['civ_count'] ?? 99;
-            $min_civ_id = $card['min_civ_id'] ?? 99;
-            if ($civ_count > 1) return 7;
-            if ($min_civ_id == 6) return 0;
-            if ($min_civ_id >= 1 && $min_civ_id <= 5) return $min_civ_id;
-            return 99;
-        }
-    }
-    usort($unique_cards, function($a, $b) use ($selected_sort) {
-        $rarity_cmp = ($b['rarity_id'] ?? 0) <=> ($a['rarity_id'] ?? 0);
-        $civ_cmp = get_civ_priority($a) <=> get_civ_priority($b);
-        $id_cmp = $a['card_id'] <=> $b['card_id'];
-        switch ($selected_sort) {
-            case 'release_old': $main_cmp = strcmp($a['release_date'], $b['release_date']); break;
-            case 'cost_desc': $main_cmp = ($b['cost'] ?? -1) <=> ($a['cost'] ?? -1); break;
-            case 'cost_asc': $main_cmp = ($a['cost'] ?? -1) <=> ($b['cost'] ?? -1); break;
-            case 'name_asc': $main_cmp = strcmp($a['reading'], $b['reading']); break;
-            case 'name_desc': $main_cmp = strcmp($b['reading'], $a['reading']); break;
-            case 'power_desc': $main_cmp = ($b['pow'] ?? -1) <=> ($a['pow'] ?? -1); break;
-            case 'power_asc': $main_cmp = ($a['pow'] ?? -1) <=> ($b['pow'] ?? -1); break;
-            default: $main_cmp = strcmp($b['release_date'], $a['release_date']); break;
-        }
-        return $main_cmp ?: $rarity_cmp ?: $civ_cmp ?: $id_cmp;
-    });
-
-    $cards_on_page = array_slice($unique_cards, $offset, $perPage);
-    if (!empty($cards_on_page)) {
-        $card_ids_on_page = array_column($cards_on_page, 'card_id');
-        $civ_placeholders = implode(',', array_fill(0, count($card_ids_on_page), '?'));
-        $civ_sql = "SELECT card_id, GROUP_CONCAT(DISTINCT civilization_id ORDER BY civilization_id ASC SEPARATOR '') AS civ_ids FROM card_civilization WHERE card_id IN ({$civ_placeholders}) GROUP BY card_id";
-        $stmt = $pdo->prepare($civ_sql);
-        $stmt->execute($card_ids_on_page);
-        $civ_map = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-        foreach ($cards_on_page as $card) {
-            $card['civ_ids'] = $civ_map[$card['card_id']] ?? '';
-            $cards[] = $card;
-        }
-    }
-}
-
-foreach ($cards as $key => &$card) {
-    $modelnum = $card['modelnum'];
-    $image_url = '';
-    if ($modelnum) {
-        $parts = explode('-', $modelnum);
-        $series_folder = strtolower($parts[0]);
-        $image_path = "card/" . $series_folder . "/" . $modelnum . ".webp";
-        $folder_path = "card/" . $series_folder . "/" . $modelnum;
-        if (!file_exists($image_path) || is_dir($folder_path)) {
-            $image_url = $folder_path . "/" . $modelnum . "a.webp";
-        } else {
-            $image_url = $image_path;
-        }
-    }
-    $card['image_url'] = $image_url;
-}
-unset($card);
-
-$totalPages = ceil($total / $perPage);
-$civ_stmt = $pdo->query("SELECT civilization_id, civilization_name FROM civilization ORDER BY civilization_id ASC");
-$civilization_list = $civ_stmt->fetchAll(PDO::FETCH_ASSOC);
-$char_stmt = $pdo->query("SELECT characteristics_id, characteristics_name FROM characteristics ORDER BY characteristics_id ASC");
-$characteristics_list = $char_stmt->fetchAll(PDO::FETCH_ASSOC);
-$type_stmt = $pdo->query("SELECT cardtype_id, cardtype_name FROM cardtype ORDER BY cardtype_id ASC");
-$cardtype_list = $type_stmt->fetchAll(PDO::FETCH_ASSOC);
-$race_stmt = $pdo->query("SELECT race_id, race_name, reading FROM race");
-$race_list = $race_stmt->fetchAll(PDO::FETCH_ASSOC);
-usort($race_list, 'customRaceSort');
-$rarity_stmt = $pdo->query("SELECT rarity_id, rarity_name FROM rarity ORDER BY rarity_id ASC");
-$rarity_list = $rarity_stmt->fetchAll(PDO::FETCH_ASSOC);
-$ability_stmt = $pdo->query("SELECT ability_id, ability_name, reading FROM ability ORDER BY reading COLLATE utf8mb4_unicode_ci ASC");
-$ability_list = $ability_stmt->fetchAll(PDO::FETCH_ASSOC);
-$treasure_stmt = $pdo->query("SELECT treasure_id, treasure_name FROM treasure ORDER BY treasure_id ASC");
-$treasure_list = $treasure_stmt->fetchAll(PDO::FETCH_ASSOC);
-$soul_stmt = $pdo->query("SELECT soul_id, soul_name FROM soul ORDER BY soul_id ASC");
-$soul_list = $soul_stmt->fetchAll(PDO::FETCH_ASSOC);
-$frame_stmt = $pdo->query("SELECT frame_id, frame_name FROM frame ORDER BY frame_id ASC");
-$frame_list = $frame_stmt->fetchAll(PDO::FETCH_ASSOC);
-if ($selected_goodstype_id > 0) {
-    $goods_stmt = $pdo->prepare("SELECT goods_id, goods_name FROM goods WHERE goodstype_id = ? ORDER BY goods_id ASC");
-    $goods_stmt->execute([$selected_goodstype_id]);
-} else {
-    $goods_stmt = $pdo->query("SELECT goods_id, goods_name FROM goods ORDER BY goods_id ASC");
-}
-$goods_list = $goods_stmt->fetchAll(PDO::FETCH_ASSOC);
-$goodstype_stmt = $pdo->query("SELECT goodstype_id, goodstype_name FROM goodstype ORDER BY goodstype_id ASC");
-$goodstype_list = $goodstype_stmt->fetchAll(PDO::FETCH_ASSOC);
-$illustrator_stmt = $pdo->query("SELECT illus_id, illus_name FROM illus ORDER BY reading COLLATE utf8mb4_unicode_ci ASC");
-$illustrator_list = $illustrator_stmt->fetchAll(PDO::FETCH_ASSOC);
-$others_stmt = $pdo->query("SELECT others_id, others_name FROM others ORDER BY others_id ASC");
-$others_list = $others_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-include 'template.html';
-?>
+        $c_cond = [];
+        if ($is_mono) $c_cond[] = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt = 1) OR card.card_id N
