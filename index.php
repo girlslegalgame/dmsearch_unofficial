@@ -73,7 +73,6 @@ if ($search !== '') {
     if ($kwd) $conditions[] = '(' . implode(' OR ', $kwd) . ')';
 }
 
-// 数値条件
 if ($cost_infinity) $conditions[] = 'card.cost = '.DM_INFINITY;
 elseif ($cost_zero) $conditions[] = 'card.cost IS NULL';
 else {
@@ -88,7 +87,6 @@ else {
 if (is_numeric($year_min)) { $conditions[] = "cd.release_date >= :y_min"; $params[':y_min'] = "$year_min-01-01"; }
 if (is_numeric($year_max)) { $conditions[] = "cd.release_date <= :y_max"; $params[':y_max'] = "$year_max-12-31"; }
 
-// 各種ID条件
 if ($selected_char_id > 0) { $joins[] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.characteristics_id = :char_id"; $params[':char_id'] = $selected_char_id; }
 if ($selected_cardtype_id > 0) { $joins[] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.cardtype_id = :type_id"; $params[':type_id'] = $selected_cardtype_id; }
 if ($selected_rarity_id > 0) { $joins[] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.rarity_id = :rarity_id"; $params[':rarity_id'] = $selected_rarity_id; }
@@ -101,7 +99,6 @@ if ($selected_regulation !== '0') { $regMap = ['1'=>'制限なし','2'=>'殿堂'
 if ($selected_mana !== 'all') { if ($selected_mana === '-1') $conditions[] = "cd.mana IS NULL"; else { $conditions[] = "cd.mana = :mana"; $params[':mana'] = intval($selected_mana); } }
 if ($selected_treasure_id != '0') { $joins[] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; if ($selected_treasure_id == '-1') $conditions[] = "card_rarity.treasure_id IS NULL"; else { $conditions[] = "card_rarity.treasure_id = :tr_id"; $params[':tr_id'] = intval($selected_treasure_id); } }
 
-// AND検索（種族、能力、ソウル、その他）
 foreach ([['ids'=>$selected_race_ids, 'mode'=>$race_search_mode, 'tbl'=>'card_race', 'col'=>'race_id'], ['ids'=>$selected_ability_ids, 'mode'=>$ability_search_mode, 'tbl'=>'card_ability', 'col'=>'ability_id'], ['ids'=>$selected_soul_ids, 'mode'=>$soul_search_mode, 'tbl'=>'card_soul', 'col'=>'soul_id'], ['ids'=>$selected_others_ids, 'mode'=>$others_search_mode, 'tbl'=>'card_others', 'col'=>'others_id']] as $group) {
     if (!$group['ids']) continue;
     $p_names = []; foreach ($group['ids'] as $i => $id) { $name = ":{$group['col']}_{$i}"; $p_names[] = $name; $params[$name] = $id; }
@@ -109,7 +106,6 @@ foreach ([['ids'=>$selected_race_ids, 'mode'=>$race_search_mode, 'tbl'=>'card_ra
     else { $joins[] = "LEFT JOIN {$group['tbl']} ON card.card_id = {$group['tbl']}.card_id"; $conditions[] = "{$group['tbl']}.{$group['col']} IN (".implode(',',$p_names).")"; }
 }
 
-// 文明ロジック
 $is_mono = ($mono_color_status == 1); $is_multi = ($multi_color_status == 1);
 if (!$cost_zero && !$cost_infinity && !($is_mono && $is_multi && !$selected_exclude_civs && !$selected_main_civs)) {
     $civ_sub = "(SELECT card_id, COUNT(civilization_id) as cnt FROM card_civilization WHERE civilization_id != 6 GROUP BY card_id)";
@@ -154,29 +150,40 @@ if ($ids) {
     $stmt->execute($ids);
     $details = $stmt->fetchAll();
 
-    // 重複排除
     $unique = [];
     if ($show_same_name) { foreach ($details as $c) if (!isset($unique[$c['modelnum']])) $unique[$c['modelnum']] = $c; }
     else { foreach ($details as $c) if (!isset($unique[$c['card_name']]) || $c['release_date'] > $unique[$c['card_name']]['release_date']) $unique[$c['card_name']] = $c; }
     $unique = array_values($unique);
     $total = count($unique);
 
-    // ソート
+    // ★★★ ソートロジック (ご指示通りの優先順位) ★★★
     usort($unique, function($a, $b) use ($selected_sort) {
+        // 1. メインのソート基準 (発売日、コスト、名前、パワー)
         switch ($selected_sort) {
             case 'release_old': $m = strcmp($a['release_date'], $b['release_date']); break;
-            case 'cost_desc': $m = ($b['cost']??-1) <=> ($a['cost']??-1); break;
-            case 'cost_asc': $m = ($a['cost']??-1) <=> ($b['cost']??-1); break;
-            case 'name_asc': $m = strcmp(get_sortable_reading($a['reading']), get_sortable_reading($b['reading'])); break;
-            case 'name_desc': $m = strcmp(get_sortable_reading($b['reading']), get_sortable_reading($a['reading'])); break;
-            case 'power_desc': $m = ($b['pow']??-1) <=> ($a['pow']??-1); break;
-            case 'power_asc': $m = ($a['pow']??-1) <=> ($b['pow']??-1); break;
-            default: $m = strcmp($b['release_date'], $a['release_date']); break;
+            case 'cost_desc':   $m = ($b['cost']??-1) <=> ($a['cost']??-1); break;
+            case 'cost_asc':    $m = ($a['cost']??-1) <=> ($b['cost']??-1); break;
+            case 'name_asc':    $m = strcmp(get_sortable_reading($a['reading']), get_sortable_reading($b['reading'])); break;
+            case 'name_desc':   $m = strcmp(get_sortable_reading($b['reading']), get_sortable_reading($a['reading'])); break;
+            case 'power_desc':  $m = ($b['pow']??-1) <=> ($a['pow']??-1); break;
+            case 'power_asc':   $m = ($a['pow']??-1) <=> ($b['pow']??-1); break;
+            default:            $m = strcmp($b['release_date'], $a['release_date']); break; // release_new
         }
-        return $m ?: ($b['rarity_id']??0 <=> $a['rarity_id']??0) ?: (get_civ_priority($a) <=> get_civ_priority($b)) ?: ($a['card_id'] <=> $b['card_id']);
+
+        if ($m !== 0) return $m; // 第一位で決まれば終了
+
+        // 2. レアリティIDの降順 (rarity_idが大きい＝レア度が高い)
+        $rarity_cmp = ($b['rarity_id'] ?? 0) <=> ($a['rarity_id'] ?? 0);
+        if ($rarity_cmp !== 0) return $rarity_cmp;
+
+        // 3. 文明優先度の昇順 (光1, 水2, 闇3, 火4, 自然5, 多色7, 無色0 など)
+        $civ_cmp = get_civ_priority($a) <=> get_civ_priority($b);
+        if ($civ_cmp !== 0) return $civ_cmp;
+
+        // 4. 型番 (modelnum) の昇順
+        return strcmp($a['modelnum'] ?? '', $b['modelnum'] ?? '');
     });
 
-    // ページ切り出しと画像パス
     $page_cards = array_slice($unique, $offset, $perPage);
     foreach ($page_cards as $c) {
         $c['image_url'] = get_card_image_url($c['modelnum']);
@@ -184,7 +191,7 @@ if ($ids) {
     }
 }
 
-// === テンプレート表示用データ ===
+// === 表示用データ ===
 $totalPages = ceil($total / $perPage);
 $civilization_list = $pdo->query("SELECT * FROM civilization ORDER BY civilization_id")->fetchAll();
 $characteristics_list = $pdo->query("SELECT * FROM characteristics ORDER BY characteristics_id")->fetchAll();
@@ -196,7 +203,6 @@ $treasure_list = $pdo->query("SELECT * FROM treasure ORDER BY treasure_id")->fet
 $soul_list = $pdo->query("SELECT * FROM soul ORDER BY soul_id")->fetchAll();
 $frame_list = $pdo->query("SELECT * FROM frame ORDER BY frame_id")->fetchAll();
 $goodstype_list = $pdo->query("SELECT * FROM goodstype ORDER BY goodstype_id")->fetchAll();
-$goods_list = ($selected_goodstype_id > 0) ? $pdo->prepare("SELECT * FROM goods WHERE goodstype_id = ?")->execute([$selected_goodstype_id]) : $pdo->query("SELECT * FROM goods ORDER BY goods_id");
 $goods_list = ($selected_goodstype_id > 0) ? (function($pdo, $id){ $s = $pdo->prepare("SELECT * FROM goods WHERE goodstype_id = ?"); $s->execute([$id]); return $s->fetchAll(); })($pdo, $selected_goodstype_id) : $pdo->query("SELECT * FROM goods ORDER BY goods_id")->fetchAll();
 $illustrator_list = $pdo->query("SELECT * FROM illus ORDER BY reading")->fetchAll();
 $others_list = $pdo->query("SELECT * FROM others ORDER BY others_id")->fetchAll();
