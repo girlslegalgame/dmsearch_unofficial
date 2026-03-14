@@ -1,118 +1,8 @@
 <?php
 header('Content-Type: application/json');
 require_once 'db_connect.php';
+require_once 'functions.php'; // 共通関数を読み込み
 
-// ★★★ ヘルパー関数 ★★★
-
-/**
- * モデル番号からシリーズフォルダ名を取得 (例: dm36-s01 -> dm36)
- */
-function get_series_folder_from_modelnum($modelnum) {
-    if (!$modelnum || strpos($modelnum, '-') === false) return '';
-    $parts = explode('-', $modelnum);
-    return strtolower($parts[0]);
-}
-
-/**
- * 特殊能力テキストおよびフレーバーテキストの整形
- */
-function format_text_for_display($raw_text, $is_ability) {
-    if (!$raw_text || trim($raw_text) === '') {
-        return $is_ability ? '（テキスト情報なし）' : null;
-    }
-    $icon_map = [
-        '{ST}' => '<img src="parts/card_list_strigger.webp" alt="S-Trigger" class="text-icon">',
-        '{BR}' => '<img src="parts/card_list_block.webp" alt="Blocker" class="text-icon">',
-        '{SV}' => '<img src="parts/card_list_survivor.webp" alt="Survivor" class="text-icon">',
-        '{TT}' => '<img src="parts/card_list_taptrigger.webp" alt="Tap-Trigger" class="text-icon">',
-        '{TR}' => '<img src="parts/card_list_turborush.webp" alt="Turbo-Rush" class="text-icon">',
-        '{SS}' => '<img src="parts/card_list_silentskill.webp" alt="Silent_Skill" class="text-icon">',
-        '{WS}' => '<img src="parts/card_list_wavestriker.webp" alt="Wave_Striker" class="text-icon">',
-        '{MM}' => '<img src="parts/card_list_metamorph.webp" alt="Metamorph" class="text-icon">',
-        '{AC}' => '<img src="parts/card_list_accel.webp" alt="Accel" class="text-icon">',
-        '{SB}' => '<img src="parts/card_list_strike_back.webp" alt="Strike-Back" class="text-icon">',
-        '{FE}' => '<img src="parts/card_list_fortenergy.webp" alt="Fort-Energy" class="text-icon">',
-        '{T3}' => '<img src="parts/card_list_thrillingthree.webp" alt="Thrilling-Three" class="text-icon">',
-        '{OD}' => '<img src="parts/card_list_overdrive.webp" alt="Over-Drive" class="text-icon">',
-        '{SF}' => '<img src="parts/card_list_shieldforce.webp" alt="Shield-Force" class="text-icon">',
-        '{KM}' => '<img src="parts/card_list_knightmagic.webp" alt="Knight-Magic" class="text-icon">',
-        '{BB}' => '<img src="parts/card_list_breakbonus.webp" alt="Break-Bonus" class="text-icon">',
-        '{HF}' => '<img src="parts/card_list_holyfield.webp" alt="Holy-Field" class="text-icon">',
-        '{SR}' => '<img src="parts/card_list_soulrecall.webp" alt="Soul-Recall" class="text-icon">',
-        '{MT}' => '<img src="parts/card_list_marshalltouch.webp" alt="Marshall-Touch" class="text-icon">',
-        '{HSO}' => '<img src="parts/card_list_holysoul.webp" alt="Holy-Soul" class="text-icon">',
-        '{MSO}' => '<img src="parts/card_list_magicsoul.webp" alt="Magic-Soul" class="text-icon">',
-        '{ESO}' => '<img src="parts/card_list_evilsoul.webp" alt="Evil-Soul" class="text-icon">',
-        '{KSO}' => '<img src="parts/card_list_kungfusoul.webp" alt="Kung-Fu-Soul" class="text-icon">',
-        '{WSO}' => '<img src="parts/card_list_wildsoul.webp" alt="Wild-Soul" class="text-icon">',
-        '{BSO}' => '<img src="parts/card_list_bloodysoul.webp" alt="Bloody-Soul" class="text-icon">',
-        '{NC}' => '<img src="parts/card_list_nochoice.webp" alt="No-Choice" class="text-icon">',
-        '{SD}' => '<img src="parts/card_list_solemnduty.webp" alt="Solemn-Duty" class="text-icon">',
-    ];
-    $lines = explode("\n", $raw_text);
-    $processed_lines = [];
-    foreach ($lines as $line) {
-        $trimmed_line = trim($line);
-        if (empty($trimmed_line)) continue;
-        
-        if ($is_ability) {
-            $prefix = '';
-            $wrapper_class = '';
-            $line_content = $trimmed_line;
-
-            // 行頭が {TAB} で始まるかチェック
-            if (str_starts_with(strtoupper($line_content), '{TAB}')) {
-                // {TAB} がある場合はインデント用のCSSクラスを付与
-                $wrapper_class = ' class="indented-text"';
-                $line_content = trim(substr($line_content, 5)); // {TAB} を削除してトリム
-                
-                $has_icon_after_tab = false;
-                // {TAB} の直後にアイコンタグがあるかチェック
-                foreach (array_keys($icon_map) as $icon_tag) {
-                    if (str_starts_with(strtoupper($line_content), strtoupper($icon_tag))) {
-                        $has_icon_after_tab = true;
-                        break;
-                    }
-                }
-
-                if (!$has_icon_after_tab) {
-                    // 直後にアイコンがない場合のみ「▶」を表示
-                    $prefix = '▶';
-                }
-            } else {
-                // 行頭が {TAB} でない場合
-                $startsWithIcon = false;
-                foreach (array_keys($icon_map) as $icon_tag) {
-                    if (str_starts_with(strtoupper($line_content), strtoupper($icon_tag))) {
-                        $startsWithIcon = true;
-                        break;
-                    }
-                }
-                $isParenthetical = str_starts_with($line_content, '(') && str_ends_with($line_content, ')');
-                
-                // アイコン始まりでもカッコ括りでもなければ ■ をつける
-                if (!$startsWithIcon && !$isParenthetical) {
-                    $prefix = '■';
-                }
-            }
-
-            // HTMLエンティティ化
-            $escaped_line = htmlspecialchars($line_content);
-            // アイコンタグを画像タグに置換
-            $formatted_line = str_ireplace(array_keys($icon_map), array_values($icon_map), $escaped_line);
-            
-            // spanタグにクラス（ある場合）とプレフィックスを含めて組み立て
-            $processed_lines[] = "<span{$wrapper_class}>{$prefix}{$formatted_line}</span>";
-        } else {
-            // フレーバーテキストの場合はそのまま
-            $processed_lines[] = htmlspecialchars($trimmed_line);
-        }
-    }
-    $final_text = implode('<br>', $processed_lines);
-    return $is_ability ? $final_text : nl2br($final_text);
-}
-
-// --- メイン処理 ---
 $card_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 if ($card_id === 0) {
     echo json_encode(['error' => 'Invalid ID']);
@@ -120,15 +10,13 @@ if ($card_id === 0) {
 }
 $response = [];
 
-// card_combination テーブルから combination_id を取得
+// 1. カード構成（ツインパクト等）の確認
 $stmt = $pdo->prepare("SELECT combination_id FROM card_combination WHERE card_id = ? LIMIT 1");
 $stmt->execute([$card_id]);
 $combination_info = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($combination_info) {
     $response['is_combination'] = true;
-    
-    // 紐付いているカードをすべて取得 (cardテーブルの情報を結合)
     $stmt = $pdo->prepare("
         SELECT c.*, cd.* 
         FROM card_combination cc 
@@ -139,25 +27,7 @@ if ($combination_info) {
     ");
     $stmt->execute([$combination_info['combination_id']]);
     $response['cards'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    if (!empty($response['cards'])) {
-        $modelnum = $response['cards'][0]['modelnum'] ?? null;
-        $series_folder = get_series_folder_from_modelnum($modelnum);
-        
-        // 全体のイメージURLリストを作成 (a.webp, b.webp...)
-        $image_urls = [];
-        if ($modelnum && $series_folder) {
-            $folder_path = "card/" . $series_folder . "/" . $modelnum;
-            foreach (range('a', 'z') as $char) {
-                $file_path = $folder_path . "/" . $modelnum . $char . ".webp";
-                if (file_exists($file_path)) { $image_urls[$char] = $file_path; } 
-                else { break; }
-            }
-        }
-        $response['image_urls'] = $image_urls;
-    }
 } else {
-    // 通常カードの処理
     $response['is_combination'] = false;
     $stmt = $pdo->prepare("SELECT c.*, cd.* FROM card c JOIN card_detail cd ON c.card_id = cd.card_id WHERE c.card_id = ?");
     $stmt->execute([$card_id]);
@@ -169,87 +39,60 @@ if ($combination_info) {
     $response['cards'] = [$card_data];
 }
 
-// --- 各カードの詳細情報をループ内で処理 ---
+// 2. 各カードの詳細情報を取得・整形
 foreach ($response['cards'] as $index => &$card) {
-    $current_card_id = $card['card_id'];
-    $modelnum = $card['modelnum'] ?? null;
-    $series_folder = get_series_folder_from_modelnum($modelnum);
+    $current_id = $card['card_id'];
+    $modelnum = $card['modelnum'];
+    $series = get_series_folder($modelnum);
+    $part_char = $response['is_combination'] ? chr(97 + $index) : ""; // a, b, c...
 
-    // 基本情報取得 (カードタイプ・文明・レアリティ・種族・イラストレーター)
+    // --- 基本情報（タイプ、文明、レアリティ、種族、イラスト） ---
     // タイプ
-    $stmt = $pdo->prepare("SELECT t.cardtype_name, c.characteristics_name, cc.characteristics_id FROM card_cardtype cc JOIN cardtype t ON cc.cardtype_id = t.cardtype_id LEFT JOIN characteristics c ON cc.characteristics_id = c.characteristics_id WHERE cc.card_id = ?");
-    $stmt->execute([$current_card_id]);
-    $type_info = $stmt->fetch(PDO::FETCH_ASSOC);
-    $type_parts = [];
-    if ($type_info && $type_info['characteristics_id'] != 1 && !empty($type_info['characteristics_name'])) { $type_parts[] = $type_info['characteristics_name']; }
-    if ($type_info && !empty($type_info['cardtype_name'])) { $type_parts[] = $type_info['cardtype_name']; }
-    $card['card_type'] = !empty($type_parts) ? implode('', $type_parts) : '---';
-    
-    // 文明
+    $stmt = $pdo->prepare("SELECT t.cardtype_name, c.characteristics_name FROM card_cardtype cc JOIN cardtype t ON cc.cardtype_id = t.cardtype_id LEFT JOIN characteristics c ON cc.characteristics_id = c.characteristics_id WHERE cc.card_id = ?");
+    $stmt->execute([$current_id]);
+    $ti = $stmt->fetch(PDO::FETCH_ASSOC);
+    $card['card_type'] = ($ti['characteristics_name'] ?? '') . ($ti['cardtype_name'] ?? '');
+
+    // 文明 / 種族 / イラストレーター
     $stmt = $pdo->prepare("SELECT c.civilization_name FROM card_civilization cc JOIN civilization c ON cc.civilization_id = c.civilization_id WHERE cc.card_id = ?");
-    $stmt->execute([$current_card_id]);
-    $card['civilization'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
-    
+    $stmt->execute([$current_id]);
+    $card['civilization'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN));
+
+    $stmt = $pdo->prepare("SELECT r.race_name FROM card_race cr JOIN race r ON cr.race_id = r.race_id WHERE cr.card_id = ?");
+    $stmt->execute([$current_id]);
+    $card['race'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN));
+
+    $stmt = $pdo->prepare("SELECT i.illus_name FROM card_illus ci JOIN illus i ON ci.illus_id = i.illus_id WHERE ci.card_id = ?");
+    $stmt->execute([$current_id]);
+    $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN));
+
     // レアリティ
     $stmt = $pdo->prepare("SELECT r.rarity_name FROM card_rarity cr JOIN rarity r ON cr.rarity_id = r.rarity_id WHERE cr.card_id = ? LIMIT 1");
-    $stmt->execute([$current_card_id]);
+    $stmt->execute([$current_id]);
     $card['rarity'] = $stmt->fetchColumn() ?: '---';
+
+    // --- テキスト整形 (functions.phpの関数を使用) ---
+    // 外部テキストファイルがあれば読み込み、なければDBから
+    $text_content = $card['text'] ?? '';
+    $flavor_content = $card['flavortext'] ?? '';
     
-    // 種族
-    $stmt = $pdo->prepare("SELECT r.race_name FROM card_race cr JOIN race r ON cr.race_id = r.race_id WHERE cr.card_id = ?");
-    $stmt->execute([$current_card_id]);
-    $card['race'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
+    $txt_path = "text/{$series}/{$modelnum}/{$modelnum}{$part_char}.txt";
+    if (file_exists($txt_path)) $text_content = file_get_contents($txt_path);
     
-    // イラストレーター
-    $stmt = $pdo->prepare("SELECT i.illus_name FROM card_illus ci JOIN illus i ON ci.illus_id = i.illus_id WHERE ci.card_id = ?");
-    $stmt->execute([$current_card_id]);
-    $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
+    $flv_path = "flavortext/{$series}/{$modelnum}/{$modelnum}{$part_char}.txt";
+    if (file_exists($flv_path)) $flavor_content = file_get_contents($flv_path);
 
-    // 能力テキスト・フレーバーテキスト処理
-    $text_from_file = null;
-    $flavor_from_file = null;
+    $card['text'] = format_card_text($text_content, true);
+    $card['flavortext'] = format_card_text($flavor_content, false);
 
-    if ($modelnum && $series_folder) {
-        $part_char = $response['is_combination'] ? chr(97 + $index) : "";
+    // --- 画像パス決定 (functions.phpの関数を使用) ---
+    $card['image_url'] = get_card_image_url($modelnum, $part_char);
 
-        // --- 能力テキスト (.txt) の検索 (画像と同仕様) ---
-        $text_base_path = "text/" . $series_folder . "/" . $modelnum . $part_char . ".txt";
-        $text_folder_path = "text/" . $series_folder . "/" . $modelnum;
-        
-        if (is_dir($text_folder_path)) {
-            $text_file_path = $text_folder_path . "/" . $modelnum . $part_char . ".txt";
-        } else {
-            $text_file_path = $text_base_path;
-        }
-
-        if (file_exists($text_file_path)) {
-            $text_from_file = file_get_contents($text_file_path);
-        }
-
-        // --- フレーバーテキスト (.txt) の検索 (画像と同仕様) ---
-        $flavor_base_path = "flavortext/" . $series_folder . "/" . $modelnum . $part_char . ".txt";
-        $flavor_folder_path = "flavortext/" . $series_folder . "/" . $modelnum;
-        
-        if (is_dir($flavor_folder_path)) {
-            $flavor_file_path = $flavor_folder_path . "/" . $modelnum . $part_char . ".txt";
-        } else {
-            $flavor_file_path = $flavor_base_path;
-        }
-
-        if (file_exists($flavor_file_path)) {
-            $flavor_from_file = file_get_contents($flavor_file_path);
-        }
-    }
-
-    $card['text'] = format_text_for_display($text_from_file ?: ($card['text'] ?? ''), true);
-    $card['flavortext'] = format_text_for_display($flavor_from_file ?: ($card['flavortext'] ?? ''), false);
-
-    // デバッグ用能力名リスト
-    $stmt_debug_ability = $pdo->prepare("SELECT a.ability_name FROM card_ability ca JOIN ability a ON ca.ability_id = a.ability_id WHERE ca.card_id = ? ORDER BY a.reading COLLATE utf8mb4_unicode_ci ASC");
-    $stmt_debug_ability->execute([$current_card_id]);
-    $card['ability_names_debug'] = $stmt_debug_ability->fetchAll(PDO::FETCH_COLUMN);
+    // --- デバッグ用 ---
+    $stmt = $pdo->prepare("SELECT a.ability_name FROM card_ability ca JOIN ability a ON ca.ability_id = a.ability_id WHERE ca.card_id = ?");
+    $stmt->execute([$current_id]);
+    $card['ability_names_debug'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 unset($card);
 
 echo json_encode($response);
-?>
