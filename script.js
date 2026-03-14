@@ -15,9 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsSummary = document.querySelector('.search-results-summary p');
     const sortAreaElement = document.getElementById('sort-area');
     
-    // 検索対象チェックボックス関連
+    // 検索対象
     const toggleBtn = document.getElementById('toggleBtn');
     const searchCheckboxes = document.querySelectorAll('.checkbox-container input[type="checkbox"]');
+
+    // 詳細設定開閉用
+    const advancedSearchArea = document.getElementById('advanced-search-area');
+    const toggleAdvancedBtn = document.getElementById('toggle-advanced-btn');
+    const advancedStateInput = document.getElementById('advanced-state');
 
     // 文明
     const monoColorBtn = document.querySelector('[data-target-input="mono_color"]');
@@ -37,10 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const powMaxInput = document.getElementById('pow_max_input');
     const powInfinityCheck = document.getElementById('pow_infinity_check');
 
-    // その他
-    const advancedSearchArea = document.getElementById('advanced-search-area');
-    const toggleAdvancedBtn = document.getElementById('toggle-advanced-btn');
-    const advancedStateInput = document.getElementById('advanced-state');
+    // その他プルダウン・ソート
     const goodsTypeSelect = document.querySelector('select[name="goodstype_id_filter"]');
     const goodsSelect = document.querySelector('select[name="goods_id_filter"]');
     const sortOrderSelect = document.getElementById('sort-order');
@@ -49,14 +51,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ② 制御ロジック ---
 
-    // 検索対象の全解除/全選択ボタンのテキスト更新
+    // 【復元】詳細設定エリアの開閉機能
+    if (toggleAdvancedBtn && advancedSearchArea) {
+        toggleAdvancedBtn.addEventListener('click', () => {
+            const isOpen = advancedSearchArea.classList.toggle('is-open');
+            toggleAdvancedBtn.textContent = isOpen ? '条件を隠す' : 'さらに条件をしぼる';
+            if (advancedStateInput) advancedStateInput.value = isOpen ? '1' : '0';
+        });
+    }
+
+    // 検索対象の全解除/全選択ラベル
     function updateToggleButtonLabel() {
         if (!toggleBtn) return;
         const anyChecked = Array.from(searchCheckboxes).some(cb => cb.checked);
         toggleBtn.textContent = anyChecked ? '全解除' : '全選択';
     }
 
-    // 検索対象ボタンのクリックイベント
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
             const anyChecked = Array.from(searchCheckboxes).some(cb => cb.checked);
@@ -64,11 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateToggleButtonLabel();
         });
     }
-
-    // 各チェックボックス変更時にラベル更新
     searchCheckboxes.forEach(cb => cb.addEventListener('change', updateToggleButtonLabel));
 
-    // コスト・パワー入力制限
+    // コスト・パワーの入力制限
     const setupCheckboxToggle = (check1, check2, input1, input2) => {
         const toggleInputs = () => {
             const disable = (check1 && check1.checked) || (check2 && check2.checked);
@@ -98,6 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.style.display = selectedMainCivIds.includes(civId) ? 'none' : 'block';
         });
     }
+
+    if (multiSearchTypeSelect) multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
 
     // 商品名の絞り込み
     if (goodsTypeSelect) {
@@ -164,12 +174,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ④ リセットボタンの挙動 ---
+    // --- ④ リセットボタンの挙動 (完全版) ---
     let resetModalStates = []; 
     resetButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             searchForm.reset();
-            // 検索対象の初期化
+            // 検索対象
             document.getElementsByName('search_name')[0].checked = true;
             document.getElementsByName('search_reading')[0].checked = true;
             document.getElementsByName('search_text')[0].checked = true;
@@ -178,11 +188,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementsByName('search_illus')[0].checked = false;
             updateToggleButtonLabel();
 
-            // 数値入力の有効化
-            costMinInput.disabled = false; costMaxInput.disabled = false;
-            powMinInput.disabled = false; powMaxInput.disabled = false;
+            // 数値入力の有効化とクリア
+            [costMinInput, costMaxInput, powMinInput, powMaxInput].forEach(inp => {
+                if(inp) { inp.disabled = false; inp.value = ''; }
+            });
 
-            // 各種セレクトボックスを「指定なし」へ
+            // セレクトボックス
             document.querySelectorAll('select.styled-select').forEach(s => {
                 if (s.name === 'mana_filter') s.value = 'all';
                 else s.value = '0';
@@ -190,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 商品名絞り込みの解除
             if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
 
-            // 文明ボタン（単色多色ON、それ以外OFF）
+            // 文明ボタン
             document.querySelectorAll('.civ-btn').forEach(b => {
                 const isType = b.dataset.targetInput === 'mono_color' || b.dataset.targetInput === 'multi_color';
                 b.classList.toggle('is-off', !isType);
@@ -203,13 +214,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sortOrderHiddenInput) sortOrderHiddenInput.value = 'release_new';
             showSameNameCheck.checked = true;
 
-            // モーダルデータのクリア
+            // 各種モーダルのクリア
             resetModalStates.forEach(f => f());
             updateCivilizationControls();
         });
     });
 
-    // --- ⑤ その他機能 ---
+    // --- ⑤ モーダル・共通機能 ---
     function getSortableString(str) { if (!str) return ''; return str.split('').map(char => CONFIG.SORT_MAP[char] || char).join(''); }
     
     function setupSearchModal(config) {
@@ -218,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById(`${modalType}-modal`);
         if (!selectBox || !modal) return;
         const listEl = document.getElementById(`${modalType}-modal-list`);
+        const searchInp = document.getElementById(`${modalType}-modal-search-input`);
         let allItems = [], selectedItems = new Map();
 
         const updateDisp = () => {
@@ -233,15 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const render = (items) => {
-            // ★修正: labelにflex-space-betweenを指定してチェックボックスを右寄せ
             listEl.innerHTML = items.sort((a,b) => getSortableString(a.reading).localeCompare(getSortableString(b.reading)))
-                .map(item => `
-                    <div class="race-list-item">
-                        <label style="display:flex; justify-content:space-between; align-items:center; width:100%; cursor:pointer;">
-                            <span>${item.name}</span>
-                            <input type="checkbox" data-id="${item.id}" data-name="${item.name}" ${selectedItems.has(String(item.id)) ? 'checked' : ''}>
-                        </label>
-                    </div>`).join('');
+                .map(item => `<div class="race-list-item"><label style="display:flex;justify-content:space-between;align-items:center;width:100%;cursor:pointer;"><span>${item.name}</span><input type="checkbox" data-id="${item.id}" data-name="${item.name}" ${selectedItems.has(String(item.id)) ? 'checked' : ''}></label></div>`).join('');
         };
 
         selectBox.addEventListener('click', () => {
@@ -249,6 +254,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (allItems.length === 0) fetch(`api.php?type=${modalType}`).then(res => res.json()).then(data => { allItems = data; render(data); });
             else render(allItems);
         });
+
+        if (searchInp) {
+            searchInp.addEventListener('input', (e) => {
+                const q = e.target.value.toLowerCase();
+                render(allItems.filter(i => i.name.toLowerCase().includes(q) || (i.reading && i.reading.toLowerCase().includes(q))));
+            });
+        }
 
         modal.addEventListener('change', (e) => {
             if (e.target.type === 'checkbox') {
@@ -268,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearchModal({ modalType: 'others', hiddenInputName: 'others_ids[]', displayClassName: 'selected-others-display' });
     setupSearchModal({ modalType: 'soul', hiddenInputName: 'soul_ids[]', displayClassName: 'selected-soul-display' });
 
+    // カード詳細モーダル
     let modalObserver = null;
     function openCardDetailModal(cardId) {
         const container = document.getElementById('modal-cards-container');
@@ -284,15 +297,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             data.cards.forEach(card => {
                 const clone = template.content.cloneNode(true);
-                const inst = clone.querySelector('.modal-card-instance');
-                inst.dataset.cardName = card.card_name;
+                clone.querySelector('.modal-card-instance').dataset.cardName = card.card_name;
                 clone.querySelector('.modal-card-type').textContent = card.card_type;
                 clone.querySelector('.modal-civilization').textContent = card.civilization;
                 clone.querySelector('.modal-rarity').textContent = card.rarity;
                 clone.querySelector('.modal-mana').textContent = card.mana ?? '---';
                 clone.querySelector('.modal-illustrator').textContent = card.illustrator;
-                clone.querySelector('.modal-power').textContent = card.pow == CONFIG.DM_INFINITY ? '∞' : (card.pow ?? '---');
-                clone.querySelector('.modal-cost').textContent = card.cost == CONFIG.DM_INFINITY ? '∞' : (card.cost ?? '---');
+                clone.querySelector('.modal-power').textContent = card.pow == 2147483647 ? '∞' : (card.pow ?? '---');
+                clone.querySelector('.modal-cost').textContent = card.cost == 2147483647 ? '∞' : (card.cost ?? '---');
                 clone.querySelector('.modal-race').textContent = card.race;
                 const dbg = clone.querySelector('.modal-debug-ability-names');
                 if (dbg) dbg.textContent = (card.ability_names_debug || []).join('、') || '（なし）';
@@ -300,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (card.text && card.text !== '（テキスト情報なし）') { clone.querySelector('.modal-text').innerHTML = card.text; clone.querySelector('.modal-ability-section').style.display = 'block'; }
                 if (card.flavortext) { clone.querySelector('.modal-flavortext').innerHTML = card.flavortext; clone.querySelector('.modal-flavor-section').style.display = 'block'; }
                 container.appendChild(clone);
-                modalObserver.observe(inst);
+                modalObserver.observe(container.lastElementChild);
             });
         });
     }
