@@ -12,7 +12,7 @@ function customRaceSort($a, $b) {
     static $charMap = null;
     if ($charMap === null) {
         $charMap = [
-            'ゔぁ'=>'03c01','ゔぃ'=>'03c02','ゔぇ'=>'03c04','ゔぉ'=>'03c05','ヴァ'=>'03c01','ヴィ'=>'03c02','ヴェ'=>'03c04','ヴォ'=>'03c05','ぁ'=>'01a','あ'=>'01b','ぃ'=>'02a','い'=>'02b','ぅ'=>'03a','う'=>'03b','ぇ'=>'04a','え'=>'04b','ぉ'=>'05a','お'=>'05b','か'=>'06a','が'=>'06b','き'=>'07a','ぎ'=>'07b','く'=>'08a','ぐ'=>'08b','け'=>'09a','げ'=>'09b','こ'=>'10a','ご'=>'10b','さ'=>'11a','ざ'=>'11b','し'=>'12a','じ'=>'12b','す'=>'13a','ず'=>'13b','せ'=>'14a','ぜ'=>'14b','そ'=>'15a','ぞ'=>'15b','た'=>'16a','だ'=>'16b','ち'=>'17a','ぢ'=>'17b','っ'=>'18a','つ'=>'18b','づ'=>'18b','て'=>'19a','で'=>'19b','と'=>'20a','ど'=>'20b','な'=>'21a','に'=>'22a','ぬ'=>'23a','ね'=>'24a','の'=>'25a','は'=>'26a','ば'=>'26b','ぱ'=>'26c','ひ'=>'27a','び'=>'27b','ぴ'=>'27c','ふ'=>'28a','ぶ'=>'28b','ぷ'=>'28c','へ'=>'29a','べ'=>'29b','ぺ'=>'29c','ほ'=>'30a','ぼ'=>'30b','ぽ'=>'30c','ま'=>'31a','み'=>'32a','む'=>'33a','め'=>'34a','も'=>'35a','ゃ'=>'36a','や'=>'36b','ゅ'=>'37a','ゆ'=>'37b','ょ'=>'38a','よ'=>'38b','ら'=>'39a','り'=>'40a','る'=>'41a','れ'=>'42a','ろ'=>'43a','わ'=>'44a','を'=>'45a','ん'=>'46a','ー'=>'47a','ゔ'=>'03c03', 'ヴ'=>'03c03','ァ'=>'01a','ア'=>'01b','ィ'=>'02a','イ'=>'02b','ゥ'=>'03a','ウ'=>'03b','ェ'=>'04a','エ'=>'04b','ォ'=>'05a','オ'=>'05b','カ'=>'06a','ガ'=>'06b','キ'=>'07a','ギ'=>'07b','ク'=>'08a','グ'=>'08b','ケ'=>'09a','ゲ'=>'09b','コ'=>'10a','ゴ'=>'10b','サ'=>'11a','ザ'=>'11b','シ'=>'12a','ジ'=>'12b','ス'=>'13a','ズ'=>'13b','セ'=>'14a','ゼ'=>'14b','ソ'=>'15a','ゾ'=>'15b','タ'=>'16a','ダ'=>'16b','チ'=>'17a','ヂ'=>'17b','ッ'=>'18a','ツ'=>'18b','ヅ'=>'18b','テ'=>'19a','デ'=>'19b','ト'=>'20a','ド'=>'20b','ナ'=>'21a','ニ'=>'22a','ヌ'=>'23a','ネ'=>'24a','ノ'=>'25a','ハ'=>'26a','バ'=>'26b','パ'=>'26c','ヒ'=>'27a','ビ'=>'27b','ピ'=>'27c','フ'=>'28a','ブ'=>'28b','プ'=>'28c','ヘ'=>'29a','ベ'=>'29b','ペ'=>'29c','ホ'=>'30a','ボ'=>'30b','ポ'=>'30c','マ'=>'31a','ミ'=>'32a','ム'=>'33a','メ'=>'34a','モ'=>'35a','ャ'=>'36a','ヤ'=>'36b','ュ'=>'37a','ユ'=>'37b','ョ'=>'38a','ヨ'=>'38b','ラ'=>'39a','リ'=>'40a','ル'=>'41a','レ'=>'42a','ロ'=>'43a','ワ'=>'44a','ヲ'=>'45a','ン'=>'46a',
+            'ゔぁ'=>'03c01','ゔぃ'=>'03c02','ゔぇ'=>'03c04','ゔぉ'=>'03c05','ヴァ'=>'03c01','ヴィ'=>'03c02','ヴェ'=>'03c04','ヴォ'=>'03c05','ぁ'=>'01a','あ'=>'01b','ぃ'=>'02a','い'=>'02b','ぅ'=>'03a','う'=>'03b','ぇ'=>'04a','え'=>'04b','ぉ'=>'05a','お'=>'05b','か'=>'06a','が'=>'06b','き'=>'07a','ぎ'=>'07b','く'=>'08a','ぐ'=>'08b','け'=>'09a','げ'=>'09b','こ'=>'10a','ご'=>'10b','さ'=>'11a','ざ'=>'11b','し'=>'12a','じ'=>'12b','す'=>'13a','ず'=>'13b','せ'=>'14a','ぜ'=>'14b','そ'=>'15a','ぞ'=>'15b','た'=>'16a','だ'=>'16b','ち'=>'17a','ぢ'=>'17b','っ'=>'18a','つ'=>'18b','づ'=>'18b','て'=>'19a','で'=>'19b','と'=>'20a','ど'=>'20b','な'=>'21a','に'=>'22a','ぬ'=>'23a','ね'=>'24a','の'=>'25a','は'=>'26a','ば'=>'26b','ぱ'=>'26c','ひ'=>'27a','び'=>'27b','ぴ'=>'27c','ふ'=>'28a','ぶ'=>'28b','ぷ'=>'28c','へ'=>'29a','べ'=>'29b','ぺ'=>'29c','ほ'=>'30a','ぼ'=>'30b','ぽ'=>'30c','ま'=>'31a','み'=>'32a','む'=>'33a','め'=>'34a','も'=>'35a','ゃ'=>'36a','や'=>'36b','ゅ'=>'37a','ゆ'=>'37b','ょ'=>'38a','よ'=>'38b','ら'=>'39a','り'=>'40a','る'=>'41a','れ'=>'42a','ろ'=>'43a','わ'=>'44a','を'=>'45a','ん'=>'46a','ー'=>'47a','ゔ'=>'03c03', 'ヴ'=>'03c03','ァ'=>'01a','ア'=>'01b','ィ'=>'02a','イ'=>'02b','ゥ'=>'03a','ウ'=>'03b','ェ'=>'04a','エ'=>'04b','ォ'=>'05a','オ'=>'05b','カ'=>'06a','ガ'=>'06b','キ'=>'07a','ギ'=>'07b','ク'=>'08a','グ'=>'08b','ケ'=>'09a','ゲ'=>'09b','コ'=>'10a','ゴ'=>'10b','さ'=>'11a','ざ'=>'11b','し'=>'12a','じ'=>'12b','す'=>'13a','ず'=>'13b','せ'=>'14a','ぜ'=>'14b','そ'=>'15a','ぞ'=>'15b','た'=>'16a','だ'=>'16b','ち'=>'17a','ヂ'=>'17b','ッ'=>'18a','ツ'=>'18b','ヅ'=>'18b','て'=>'19a','で'=>'19b','と'=>'20a','ど'=>'20b','な'=>'21a','に'=>'22a','ぬ'=>'23a','ね'=>'24a','ノ'=>'25a','ハ'=>'26a','バ'=>'26b','パ'=>'26c','ヒ'=>'27a','ビ'=>'27b','ピ'=>'27c','フ'=>'28a','ブ'=>'28b','プ'=>'28c','ヘ'=>'29a','ベ'=>'29b','ペ'=>'29c','ホ'=>'30a','ボ'=>'30b','ポ'=>'30c','マ'=>'31a','ミ'=>'32a','ム'=>'33a','メ'=>'34a','モ'=>'35a','ャ'=>'36a','ヤ'=>'36b','ュ'=>'37a','ユ'=>'37b','ョ'=>'38a','ヨ'=>'38b','ら'=>'39a','り'=>'40a','る'=>'41a','れ'=>'42a','ろ'=>'43a','わ'=>'44a','ヲ'=>'45a','ん'=>'46a',
         ];
     }
     $readingA_sortable = strtr($a['reading'], $charMap);
@@ -124,8 +124,9 @@ if ($year_min !== '' && is_numeric($year_min)) { $conditions[] = "cd.release_dat
 if ($year_max !== '' && is_numeric($year_max)) { $conditions[] = "cd.release_date <= :date_max"; $params[':date_max'] = $year_max . '-12-31'; }
 if ($selected_char_id > 0) { $joins['card_cardtype_char'] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.characteristics_id = :characteristics_id"; $params[':characteristics_id'] = $selected_char_id; }
 if ($selected_cardtype_id > 0) { $joins['card_cardtype_type'] = 'LEFT JOIN card_cardtype ON card.card_id = card_cardtype.card_id'; $conditions[] = "card_cardtype.cardtype_id = :cardtype_id"; $params[':cardtype_id'] = $selected_cardtype_id; }
+
+// --- 種族検索の最適化 ---
 if (!empty($selected_race_ids)) {
-    $joins['card_race_race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
     $race_placeholders = [];
     foreach ($selected_race_ids as $index => $race_id) {
         $placeholder = ':race_id_' . $index;
@@ -133,34 +134,35 @@ if (!empty($selected_race_ids)) {
         $params[$placeholder] = $race_id;
     }
     if ($race_search_mode === 'AND') {
-        $conditions[] = "(SELECT COUNT(DISTINCT race_id) FROM card_race WHERE card_id = card.card_id AND race_id IN (" . implode(',', $race_placeholders) . ")) = " . count($selected_race_ids);
+        $conditions[] = "card.card_id IN (SELECT card_id FROM card_race WHERE race_id IN (" . implode(',', $race_placeholders) . ") GROUP BY card_id HAVING COUNT(DISTINCT race_id) = " . count($selected_race_ids) . ")";
     } else {
+        $joins['card_race_race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id';
         $conditions[] = "card_race.race_id IN (" . implode(',', $race_placeholders) . ")";
     }
 }
+
 if ($selected_rarity_id > 0) { $joins['card_rarity_rarity'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.rarity_id = :rarity_id"; $params[':rarity_id'] = $selected_rarity_id; }
+
+// --- ソウル検索の最適化 ---
 if (!empty($selected_soul_ids)) {
-    // card_soul テーブルを結合
-    $joins['card_soul'] = 'LEFT JOIN card_soul ON card.card_id = card_soul.card_id';
-    
     $soul_placeholders = [];
     foreach ($selected_soul_ids as $index => $s_id) {
         $placeholder = ':soul_id_' . $index;
         $soul_placeholders[] = $placeholder;
         $params[$placeholder] = $s_id;
     }
-
     if ($soul_search_mode === 'AND') {
-        // AND検索: 指定したIDすべてを持っているかカウントで判定
-        $conditions[] = "(SELECT COUNT(DISTINCT soul_id) FROM card_soul WHERE card_id = card.card_id AND soul_id IN (" . implode(',', $soul_placeholders) . ")) = " . count($selected_soul_ids);
+        $conditions[] = "card.card_id IN (SELECT card_id FROM card_soul WHERE soul_id IN (" . implode(',', $soul_placeholders) . ") GROUP BY card_id HAVING COUNT(DISTINCT soul_id) = " . count($selected_soul_ids) . ")";
     } else {
-        // OR検索: いずれかを持っていればOK
+        $joins['card_soul'] = 'LEFT JOIN card_soul ON card.card_id = card_soul.card_id';
         $conditions[] = "card_soul.soul_id IN (" . implode(',', $soul_placeholders) . ")";
     }
 }
+
 if ($selected_frame_id > 0) { $conditions[] = "cd.frame_id = :frame_id"; $params[':frame_id'] = $selected_frame_id; }
+
+// --- 特殊能力検索の最適化 ---
 if (!empty($selected_ability_ids)) {
-    $joins['card_ability'] = 'LEFT JOIN card_ability ON card.card_id = card_ability.card_id';
     $ability_placeholders = [];
     foreach ($selected_ability_ids as $index => $ability_id) {
         $placeholder = ':ability_id_' . $index;
@@ -168,11 +170,13 @@ if (!empty($selected_ability_ids)) {
         $params[$placeholder] = $ability_id;
     }
     if ($ability_search_mode === 'AND') {
-        $conditions[] = "(SELECT COUNT(DISTINCT ability_id) FROM card_ability WHERE card_id = card.card_id AND ability_id IN (" . implode(',', $ability_placeholders) . ")) = " . count($selected_ability_ids);
+        $conditions[] = "card.card_id IN (SELECT card_id FROM card_ability WHERE ability_id IN (" . implode(',', $ability_placeholders) . ") GROUP BY card_id HAVING COUNT(DISTINCT ability_id) = " . count($selected_ability_ids) . ")";
     } else {
+        $joins['card_ability'] = 'LEFT JOIN card_ability ON card.card_id = card_ability.card_id';
         $conditions[] = "card_ability.ability_id IN (" . implode(',', $ability_placeholders) . ")";
     }
 }
+
 if ($selected_illus_id > 0) { $joins['card_illus_illus'] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id'; $conditions[] = "card_illus.illus_id = :illus_id"; $params[':illus_id'] = $selected_illus_id; }
 if ($selected_twinpact !== '0') { $conditions[] = "cd.twinpact = :twinpact"; $params[':twinpact'] = ($selected_twinpact === '1') ? 1 : 0; }
 if ($selected_treasure_id != '0') {
@@ -183,30 +187,29 @@ if ($selected_regulation !== '0') {
     $regulation_map = ['1' => '制限なし', '2' => '殿堂', '3' => 'プレミアム殿堂'];
     if (array_key_exists($selected_regulation, $regulation_map)) { $conditions[] = "cd.regulation = :regulation"; $params[':regulation'] = $regulation_map[$selected_regulation]; }
 }
+
+// --- その他検索の最適化 ---
 if (!empty($selected_others_ids)) {
-    // card_others テーブルを結合 (テーブル名は card_others、カラムは card_id, others_id と仮定)
-    $joins['card_others'] = 'LEFT JOIN card_others ON card.card_id = card_others.card_id';
-    
     $others_placeholders = [];
     foreach ($selected_others_ids as $index => $o_id) {
         $placeholder = ':others_id_' . $index;
         $others_placeholders[] = $placeholder;
         $params[$placeholder] = $o_id;
     }
-
     if ($others_search_mode === 'AND') {
-        // AND検索: 指定したIDすべてを持っているかカウントで判定
-        $conditions[] = "(SELECT COUNT(DISTINCT others_id) FROM card_others WHERE card_id = card.card_id AND others_id IN (" . implode(',', $others_placeholders) . ")) = " . count($selected_others_ids);
+        $conditions[] = "card.card_id IN (SELECT card_id FROM card_others WHERE others_id IN (" . implode(',', $others_placeholders) . ") GROUP BY card_id HAVING COUNT(DISTINCT others_id) = " . count($selected_others_ids) . ")";
     } else {
-        // OR検索: いずれかを持っていればOK
+        $joins['card_others'] = 'LEFT JOIN card_others ON card.card_id = card_others.card_id';
         $conditions[] = "card_others.others_id IN (" . implode(',', $others_placeholders) . ")";
     }
 }
+
 if ($selected_goods_id > 0) { $conditions[] = "cd.goods_id = :goods_id"; $params[':goods_id'] = $selected_goods_id; }
 if ($selected_goodstype_id > 0) { $joins['goods_goodstype'] = 'LEFT JOIN goods ON cd.goods_id = goods.goods_id'; $conditions[] = "goods.goodstype_id = :goodstype_id"; $params[':goodstype_id'] = $selected_goodstype_id; }
 if ($selected_mana !== 'all') {
     if ($selected_mana === '-1') { $conditions[] = "cd.mana IS NULL"; } else { $conditions[] = "cd.mana = :mana"; $params[':mana'] = intval($selected_mana); }
 }
+
 $civ_summary_subquery = "(SELECT card_id, COUNT(civilization_id) as civ_count FROM card_civilization WHERE civilization_id != 6 GROUP BY card_id)";
 $civ_type_conditions = [];
 
@@ -214,48 +217,37 @@ $civ_type_conditions = [];
 $is_mono_active = ($mono_color_status == 1);
 $is_multi_active = ($multi_color_status == 1);
 
-// コスト0/無限検索をしておらず、かつ「単色・多色の両方がON（デフォルト）で、除外指定もメイン指定もない」場合は条件なし
+// 文明ロジック
 if (!$cost_zero && !$cost_infinity) {
     if ($is_mono_active && $is_multi_active && empty($selected_exclude_civs) && empty($selected_main_civs)) {
-        // 何も条件を追加しない（全カードが対象になる）
+        // 条件なし
     } else {
-        
-        // --- 1. 文明が1つ以上選択されている場合 ---
         if (!empty($selected_main_civs)) {
             $civ_count = count($selected_main_civs);
             $exact_mode = ($multi_search_type === 'exact' && $civ_count >= 2);
-            
             $mono_cond = "";
             $multi_cond = "";
 
-            // 【単色ボタンがONの場合】
-            // 「選んだ文明のいずれかを持つ単色カード」を探す
             if ($is_mono_active) {
                 $mono_civ_ors = [];
                 foreach($selected_main_civs as $main_id) {
                     $mono_civ_ors[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
                 }
-                // (選んだ文明のどれかを持つ) AND (単色である)
                 $mono_cond = "((" . implode(' OR ', $mono_civ_ors) . ") AND card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1))";
             }
-
-            // 【多色ボタンがONの場合】
             if ($is_multi_active) {
                 if ($exact_mode) {
-                    // 「すべて含む」モード：選んだ文明をすべて持ち、かつ、他の文明を持たない（数が一致する）
                     $multi_and_conds = [];
                     foreach($selected_main_civs as $main_id) {
                         $multi_and_conds[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
                     }
                     $multi_cond = "((" . implode(' AND ', $multi_and_conds) . ") AND card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = {$civ_count}))";
                 } else {
-                    // 「いずれかを含む」モード：選んだ文明のどれかを持つ、多色カード（必要なら除外も適用）
                     $multi_or_conds = [];
                     foreach($selected_main_civs as $main_id) {
                         $multi_or_conds[] = "card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($main_id) . ")";
                     }
                     $multi_cond = "((" . implode(' OR ', $multi_or_conds) . ") AND card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count > 1))";
-                    
                     if(!empty($selected_exclude_civs)) {
                         foreach($selected_exclude_civs as $exclude_id) { 
                             $multi_cond .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = " . intval($exclude_id) . ")"; 
@@ -263,21 +255,11 @@ if (!$cost_zero && !$cost_infinity) {
                     }
                 }
             }
-
-            // 単色と多色の条件をガッチャンコする
-            if ($mono_cond && $multi_cond) {
-                $conditions[] = "(" . $mono_cond . " OR " . $multi_cond . ")";
-            } elseif ($mono_cond) {
-                $conditions[] = $mono_cond;
-            } elseif ($multi_cond) {
-                $conditions[] = $multi_cond;
-            } else {
-                $conditions[] = "1 = 0"; // どちらもOFFの場合は何も出さない
-            }
-
-        } 
-        // --- 2. 文明が1つも選択されていない（単色/多色のボタンのON/OFFのみ）場合 ---
-        else {
+            if ($mono_cond && $multi_cond) { $conditions[] = "(" . $mono_cond . " OR " . $multi_cond . ")"; } 
+            elseif ($mono_cond) { $conditions[] = $mono_cond; } 
+            elseif ($multi_cond) { $conditions[] = $multi_cond; } 
+            else { $conditions[] = "1 = 0"; }
+        } else {
             if ($is_mono_active) {
                 $civ_type_conditions[] = "card.card_id IN (SELECT card_id FROM {$civ_summary_subquery} AS civ_summary WHERE civ_summary.civ_count = 1) OR card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id != 6)";
             }
@@ -290,19 +272,16 @@ if (!$cost_zero && !$cost_infinity) {
                 }
                 $civ_type_conditions[] = $multi_cond;
             }
-            if (!empty($civ_type_conditions)) { 
-                $conditions[] = '(' . implode(' OR ', $civ_type_conditions) . ')'; 
-            } else {
-                $conditions[] = "1 = 0";
-            }
+            if (!empty($civ_type_conditions)) { $conditions[] = '(' . implode(' OR ', $civ_type_conditions) . ')'; } 
+            else { $conditions[] = "1 = 0"; }
         }
     }
 }
-// === SQLクエリの実行 (2段階取得アプローチ) ===
+
+// === SQLクエリの実行 ===
 $join_str = !empty($joins) ? implode(' ', array_unique($joins)) : '';
 $where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
-// --- ステップ1: 条件に合うcard_idを全て取得 ---
 $id_sql = "
     SELECT DISTINCT card.card_id
     FROM card
@@ -319,7 +298,6 @@ $cards = [];
 $total = 0;
 
 if (!empty($all_matching_card_ids)) {
-    // --- ステップ2: 取得したIDを元に、表示とソートに必要な全情報を取得 ---
     $placeholders = implode(',', array_fill(0, count($all_matching_card_ids), '?'));
     $details_sql = "
         SELECT 
@@ -337,7 +315,6 @@ if (!empty($all_matching_card_ids)) {
     $stmt->execute($all_matching_card_ids);
     $all_card_details = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // --- ステップ3: PHPで重複排除 ---
     $unique_cards = [];
     if ($show_same_name) {
         $unique_cards_by_modelnum = [];
@@ -358,15 +335,14 @@ if (!empty($all_matching_card_ids)) {
         $unique_cards = array_values($latest_cards_by_name);
     }
     
-    // --- ステップ4: 総件数の確定と、PHPでの高度なソート ---
     $total = count($unique_cards);
     if (!function_exists('get_civ_priority')) {
         function get_civ_priority($card) {
             $civ_count = $card['civ_count'] ?? 99;
             $min_civ_id = $card['min_civ_id'] ?? 99;
             if ($civ_count > 1) return 7;
-            if ($min_civ_id == 6) return 0; // 無色
-            if ($min_civ_id >= 1 && $min_civ_id <= 5) return $min_civ_id; // 光(1)から自然(5)
+            if ($min_civ_id == 6) return 0;
+            if ($min_civ_id >= 1 && $min_civ_id <= 5) return $min_civ_id;
             return 99;
         }
     }
@@ -387,7 +363,6 @@ if (!empty($all_matching_card_ids)) {
         return $main_cmp ?: $rarity_cmp ?: $civ_cmp ?: $id_cmp;
     });
 
-    // --- ステップ5: PHPでのページネーションと、表示用文明情報の後付け ---
     $cards_on_page = array_slice($unique_cards, $offset, $perPage);
     if (!empty($cards_on_page)) {
         $card_ids_on_page = array_column($cards_on_page, 'card_id');
@@ -403,7 +378,6 @@ if (!empty($all_matching_card_ids)) {
     }
 }
 
-// --- カード画像のパスを事前に処理する ---
 foreach ($cards as $key => &$card) {
     $modelnum = $card['modelnum'];
     $image_url = '';
@@ -422,7 +396,6 @@ foreach ($cards as $key => &$card) {
 }
 unset($card);
 
-// === テンプレート表示のための準備 ===
 $totalPages = ceil($total / $perPage);
 $civ_stmt = $pdo->query("SELECT civilization_id, civilization_name FROM civilization ORDER BY civilization_id ASC");
 $civilization_list = $civ_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -457,6 +430,5 @@ $illustrator_list = $illustrator_stmt->fetchAll(PDO::FETCH_ASSOC);
 $others_stmt = $pdo->query("SELECT others_id, others_name FROM others ORDER BY others_id ASC");
 $others_list = $others_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// === HTMLテンプレートの読み込み ===
 include 'template.html';
 ?>
