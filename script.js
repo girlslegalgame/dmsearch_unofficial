@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsSummary = document.querySelector('.search-results-summary p');
     const sortAreaElement = document.getElementById('sort-area');
     
-    // 検索対象
+    // 検索対象・全解除ボタン
     const toggleBtn = document.getElementById('toggleBtn');
     const searchCheckboxes = document.querySelectorAll('.checkbox-container input[type="checkbox"]');
 
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const multiSearchTypeSection = document.getElementById('multi-search-type-section');
     const multiSearchTypeSelect = document.getElementById('multi_search_type');
 
-    // 数値・入力制限用
+    // 数値入力・制限
     const costMinInput = document.getElementById('cost_min_input');
     const costMaxInput = document.getElementById('cost_max_input');
     const costZeroCheck = document.getElementById('cost_zero_check');
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const powMaxInput = document.getElementById('pow_max_input');
     const powInfinityCheck = document.getElementById('pow_infinity_check');
 
-    // その他プルダウン・ソート
+    // ならびかえ・商品名など
     const goodsTypeSelect = document.querySelector('select[name="goodstype_id_filter"]');
     const goodsSelect = document.querySelector('select[name="goods_id_filter"]');
     const sortOrderSelect = document.getElementById('sort-order');
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ② 制御ロジック ---
 
-    // 【復元】詳細設定エリアの開閉機能
+    // 詳細検索の開閉
     if (toggleAdvancedBtn && advancedSearchArea) {
         toggleAdvancedBtn.addEventListener('click', () => {
             const isOpen = advancedSearchArea.classList.toggle('is-open');
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 検索対象の全解除/全選択ラベル
+    // 検索対象ボタンのラベル・一括切り替え
     function updateToggleButtonLabel() {
         if (!toggleBtn) return;
         const anyChecked = Array.from(searchCheckboxes).some(cb => cb.checked);
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     searchCheckboxes.forEach(cb => cb.addEventListener('change', updateToggleButtonLabel));
 
-    // コスト・パワーの入力制限
+    // コスト・パワーの入力制限機能
     const setupCheckboxToggle = (check1, check2, input1, input2) => {
         const toggleInputs = () => {
             const disable = (check1 && check1.checked) || (check2 && check2.checked);
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCheckboxToggle(costZeroCheck, costInfinityCheck, costMinInput, costMaxInput);
     setupCheckboxToggle(powInfinityCheck, null, powMinInput, powMaxInput);
 
-    // 文明制御
+    // 文明UI制御
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
         const isMultiOn = !multiColorBtn.classList.contains('is-off');
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (multiSearchTypeSelect) multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
 
-    // 商品名の絞り込み
+    // 商品名絞り込み
     if (goodsTypeSelect) {
         goodsTypeSelect.addEventListener('change', () => {
             fetch(`api.php?type=goods&goodstype_id=${goodsTypeSelect.value}`)
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ③ 検索実行 ---
+    // --- ③ 検索実行・自動検索 ---
     function performSearch(url) {
         if (loadingOverlay) loadingOverlay.style.display = 'flex';
         if (resultsContainer) resultsContainer.style.opacity = '0.5';
@@ -137,12 +137,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 paginationContainer.innerHTML = newPagi ? newPagi.innerHTML : '';
                 paginationContainer.style.display = newPagi ? 'block' : 'none';
             }
-            (sortAreaElement || resultsContainer).scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const scrollTarget = sortAreaElement || resultsContainer;
+            scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }).finally(() => {
             if (loadingOverlay) loadingOverlay.style.display = 'none';
             if (resultsContainer) resultsContainer.style.opacity = '1';
         });
     }
+
+    const triggerSearch = () => {
+        if(searchForm) searchForm.dispatchEvent(new Event('submit', { cancelable: true }));
+    };
 
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
@@ -174,7 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ④ リセットボタンの挙動 (完全版) ---
+    // 【復元】ならびかえ・同名表示の自動検索
+    if (sortOrderSelect) {
+        sortOrderSelect.addEventListener('change', () => {
+            if (sortOrderHiddenInput) sortOrderHiddenInput.value = sortOrderSelect.value;
+            triggerSearch();
+        });
+    }
+    if (showSameNameCheck) {
+        showSameNameCheck.addEventListener('change', triggerSearch);
+    }
+
+    // --- ④ リセットボタンの挙動 (詳細指定版) ---
     let resetModalStates = []; 
     resetButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -193,12 +209,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(inp) { inp.disabled = false; inp.value = ''; }
             });
 
-            // セレクトボックス
+            // 各種セレクトボックスを初期値へ
             document.querySelectorAll('select.styled-select').forEach(s => {
                 if (s.name === 'mana_filter') s.value = 'all';
                 else s.value = '0';
             });
-            // 商品名絞り込みの解除
+            // 商品名絞り込みリセット
             if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
 
             // 文明ボタン
@@ -209,12 +225,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (input) input.value = isType ? '1' : '0';
             });
 
-            // ソート順と同名表示
+            // 並び替え・同名表示をリセット
             sortOrderSelect.value = 'release_new';
             if (sortOrderHiddenInput) sortOrderHiddenInput.value = 'release_new';
             showSameNameCheck.checked = true;
 
-            // 各種モーダルのクリア
+            // モーダル（種族等）のクリア
             resetModalStates.forEach(f => f());
             updateCivilizationControls();
         });
@@ -245,8 +261,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const render = (items) => {
+            // チェックボックスの右寄せ対応
             listEl.innerHTML = items.sort((a,b) => getSortableString(a.reading).localeCompare(getSortableString(b.reading)))
-                .map(item => `<div class="race-list-item"><label style="display:flex;justify-content:space-between;align-items:center;width:100%;cursor:pointer;"><span>${item.name}</span><input type="checkbox" data-id="${item.id}" data-name="${item.name}" ${selectedItems.has(String(item.id)) ? 'checked' : ''}></label></div>`).join('');
+                .map(item => `
+                    <div class="race-list-item">
+                        <label style="display:flex; justify-content:space-between; align-items:center; width:100%; cursor:pointer;">
+                            <span>${item.name}</span>
+                            <input type="checkbox" data-id="${item.id}" data-name="${item.name}" ${selectedItems.has(String(item.id)) ? 'checked' : ''}>
+                        </label>
+                    </div>`).join('');
         };
 
         selectBox.addEventListener('click', () => {
@@ -280,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearchModal({ modalType: 'others', hiddenInputName: 'others_ids[]', displayClassName: 'selected-others-display' });
     setupSearchModal({ modalType: 'soul', hiddenInputName: 'soul_ids[]', displayClassName: 'selected-soul-display' });
 
-    // カード詳細モーダル
+    // カード詳細モーダル表示
     let modalObserver = null;
     function openCardDetailModal(cardId) {
         const container = document.getElementById('modal-cards-container');
@@ -297,7 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             data.cards.forEach(card => {
                 const clone = template.content.cloneNode(true);
-                clone.querySelector('.modal-card-instance').dataset.cardName = card.card_name;
+                const instance = clone.querySelector('.modal-card-instance');
+                instance.dataset.cardName = card.card_name;
                 clone.querySelector('.modal-card-type').textContent = card.card_type;
                 clone.querySelector('.modal-civilization').textContent = card.civilization;
                 clone.querySelector('.modal-rarity').textContent = card.rarity;
@@ -312,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (card.text && card.text !== '（テキスト情報なし）') { clone.querySelector('.modal-text').innerHTML = card.text; clone.querySelector('.modal-ability-section').style.display = 'block'; }
                 if (card.flavortext) { clone.querySelector('.modal-flavortext').innerHTML = card.flavortext; clone.querySelector('.modal-flavor-section').style.display = 'block'; }
                 container.appendChild(clone);
-                modalObserver.observe(container.lastElementChild);
+                modalObserver.observe(instance);
             });
         });
     }
