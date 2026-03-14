@@ -413,10 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearchModal({ modalType: 'others', hiddenInputName: 'others_ids[]', displayClassName: 'selected-others-display' });
     setupSearchModal({ modalType: 'soul', hiddenInputName: 'soul_ids[]', displayClassName: 'selected-soul-display' });
 
-    // --- ⑧ カード詳細モーダル ---
-    const cardDetailModal = document.getElementById('card-modal');
-    let modalObserver = null;
-
+// --- ⑧ カード詳細モーダル ---
     function openCardDetailModal(cardId) {
         if (!cardId || !cardDetailModal) return;
         const modalCardsContainer = document.getElementById('modal-cards-container');
@@ -453,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cardInstance.dataset.cardName = cardInfo.card_name;
                     const part = String.fromCharCode(97 + index);
 
+                    // 基本情報
                     templateClone.querySelector('.modal-card-type').textContent = cardInfo.card_type;
                     templateClone.querySelector('.modal-civilization').textContent = cardInfo.civilization;
                     templateClone.querySelector('.modal-rarity').textContent = cardInfo.rarity;
@@ -462,12 +460,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-race').textContent = cardInfo.race;
                     templateClone.querySelector('.modal-illustrator').textContent = cardInfo.illustrator;
 
+                    // ★追加：デバッグ用能力名リストの反映
+                    const abilityNamesDebugEl = templateClone.querySelector('.modal-debug-ability-names');
+                    if (abilityNamesDebugEl) {
+                        abilityNamesDebugEl.textContent = (cardInfo.ability_names_debug && cardInfo.ability_names_debug.length > 0) 
+                            ? cardInfo.ability_names_debug.join('、') : '（なし）';
+                    }
+
+                    // 画像設定
                     if (cardInfo.modelnum) {
                         const parts = cardInfo.modelnum.split('-');
                         const series_folder = parts[0].toLowerCase();
-                        templateClone.querySelector('.modal-card-image').src = `card/${series_folder}/${cardInfo.modelnum}${data.is_combination ? part : ''}.webp`;
+                        // 複数枚（ツインパクト等）なら末尾に a, b.. を付与、単体ならそのまま
+                        const imgSuffix = (data.cards.length > 1) ? part : '';
+                        templateClone.querySelector('.modal-card-image').src = `card/${series_folder}/${cardInfo.modelnum}${imgSuffix}.webp`;
                     }
                     
+                    // テキスト設定
                     const textSection = templateClone.querySelector('.modal-ability-section');
                     if (cardInfo.text && cardInfo.text !== '（テキスト情報なし）') {
                         templateClone.querySelector('.modal-text').innerHTML = cardInfo.text;
@@ -487,14 +496,5 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Fetch Error:', error);
                 modalCardName.textContent = 'エラー';
             });
-    }
-
-    if (cardDetailModal) {
-        const closeModal = () => { 
-            cardDetailModal.style.display = 'none';
-            if (modalObserver) modalObserver.disconnect();
-        };
-        cardDetailModal.querySelector('.close-btn').addEventListener('click', closeModal);
-        cardDetailModal.addEventListener('click', (e) => { if (e.target === cardDetailModal) closeModal(); });
     }
 });
