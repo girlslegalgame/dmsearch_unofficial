@@ -108,27 +108,29 @@ foreach ([['ids'=>$selected_race_ids, 'mode'=>$race_search_mode, 'tbl'=>'card_ra
 
 $is_mono = ($mono_color_status == 1); $is_multi = ($multi_color_status == 1);
 if (!$cost_zero && !$cost_infinity && !($is_mono && $is_multi && !$selected_exclude_civs && !$selected_main_civs)) {
-    $civ_sub = "(SELECT card_id, COUNT(civilization_id) as cnt FROM card_civilization WHERE civilization_id != 6 GROUP BY card_id)";
+    // 【SQLエラー修正】エイリアス 'AS temp_civ' を追加
+    $civ_sub = "(SELECT card_id, COUNT(civilization_id) as cnt FROM card_civilization WHERE civilization_id != 6 GROUP BY card_id) AS temp_civ";
+    
     if ($selected_main_civs) {
         $mc = count($selected_main_civs); $exact = ($multi_search_type === 'exact' && $mc >= 2);
         $mono_q = ""; $multi_q = "";
         $in_sql = "SELECT card_id FROM card_civilization WHERE civilization_id IN (".implode(',', array_map('intval', $selected_main_civs)).")";
-        if ($is_mono) $mono_q = "(card.card_id IN ($in_sql) AND card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt = 1))";
+        if ($is_mono) $mono_q = "(card.card_id IN ($in_sql) AND card.card_id IN (SELECT card_id FROM $civ_sub WHERE temp_civ.cnt = 1))";
         if ($is_multi) {
             if ($exact) {
-                $multi_q = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt = $mc)";
+                $multi_q = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE temp_civ.cnt = $mc)";
                 foreach($selected_main_civs as $id) $multi_q .= " AND card.card_id IN (SELECT card_id FROM card_civilization WHERE civilization_id = ".intval($id).")";
             } else {
-                $multi_q = "(card.card_id IN ($in_sql) AND card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt > 1))";
+                $multi_q = "(card.card_id IN ($in_sql) AND card.card_id IN (SELECT card_id FROM $civ_sub WHERE temp_civ.cnt > 1))";
                 foreach($selected_exclude_civs as $id) $multi_q .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = ".intval($id).")";
             }
         }
         if ($mono_q && $multi_q) $conditions[] = "($mono_q OR $multi_q)"; else $conditions[] = $mono_q ?: ($multi_q ?: "1=0");
     } else {
         $c_cond = [];
-        if ($is_mono) $c_cond[] = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt = 1) OR card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id != 6)";
+        if ($is_mono) $c_cond[] = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE temp_civ.cnt = 1) OR card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id != 6)";
         if ($is_multi) {
-            $mq = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE cnt > 1)";
+            $mq = "card.card_id IN (SELECT card_id FROM $civ_sub WHERE temp_civ.cnt > 1)";
             foreach($selected_exclude_civs as $id) $mq .= " AND card.card_id NOT IN (SELECT card_id FROM card_civilization WHERE civilization_id = ".intval($id).")";
             $c_cond[] = $mq;
         }
@@ -156,9 +158,9 @@ if ($ids) {
     $unique = array_values($unique);
     $total = count($unique);
 
-    // ★★★ ソートロジック (ご指示通りの優先順位) ★★★
+    // ★★★ ソートロジック (指示通りの4段階優先順位) ★★★
     usort($unique, function($a, $b) use ($selected_sort) {
-        // 1. メインのソート基準 (発売日、コスト、名前、パワー)
+        // 1. メイン基準 (発売日、コスト、名前、パワー)
         switch ($selected_sort) {
             case 'release_old': $m = strcmp($a['release_date'], $b['release_date']); break;
             case 'cost_desc':   $m = ($b['cost']??-1) <=> ($a['cost']??-1); break;
@@ -169,18 +171,17 @@ if ($ids) {
             case 'power_asc':   $m = ($a['pow']??-1) <=> ($b['pow']??-1); break;
             default:            $m = strcmp($b['release_date'], $a['release_date']); break; // release_new
         }
+        if ($m !== 0) return $m;
 
-        if ($m !== 0) return $m; // 第一位で決まれば終了
-
-        // 2. レアリティIDの降順 (rarity_idが大きい＝レア度が高い)
+        // 2. rarity_idの降順
         $rarity_cmp = ($b['rarity_id'] ?? 0) <=> ($a['rarity_id'] ?? 0);
         if ($rarity_cmp !== 0) return $rarity_cmp;
 
-        // 3. 文明優先度の昇順 (光1, 水2, 闇3, 火4, 自然5, 多色7, 無色0 など)
+        // 3. 【修正】文明の独自ソート順 (6 → 1〜5 → 多色)
         $civ_cmp = get_civ_priority($a) <=> get_civ_priority($b);
         if ($civ_cmp !== 0) return $civ_cmp;
 
-        // 4. 型番 (modelnum) の昇順
+        // 4. modelnumの昇順
         return strcmp($a['modelnum'] ?? '', $b['modelnum'] ?? '');
     });
 
@@ -203,7 +204,11 @@ $treasure_list = $pdo->query("SELECT * FROM treasure ORDER BY treasure_id")->fet
 $soul_list = $pdo->query("SELECT * FROM soul ORDER BY soul_id")->fetchAll();
 $frame_list = $pdo->query("SELECT * FROM frame ORDER BY frame_id")->fetchAll();
 $goodstype_list = $pdo->query("SELECT * FROM goodstype ORDER BY goodstype_id")->fetchAll();
-$goods_list = ($selected_goodstype_id > 0) ? (function($pdo, $id){ $s = $pdo->prepare("SELECT * FROM goods WHERE goodstype_id = ?"); $s->execute([$id]); return $s->fetchAll(); })($pdo, $selected_goodstype_id) : $pdo->query("SELECT * FROM goods ORDER BY goods_id")->fetchAll();
+
+$goods_list = ($selected_goodstype_id > 0) ? 
+    (function($pdo, $id){ $s = $pdo->prepare("SELECT * FROM goods WHERE goodstype_id = ? ORDER BY goods_id"); $s->execute([$id]); return $s->fetchAll(); })($pdo, $selected_goodstype_id) : 
+    $pdo->query("SELECT * FROM goods ORDER BY goods_id")->fetchAll();
+
 $illustrator_list = $pdo->query("SELECT * FROM illus ORDER BY reading")->fetchAll();
 $others_list = $pdo->query("SELECT * FROM others ORDER BY others_id")->fetchAll();
 
