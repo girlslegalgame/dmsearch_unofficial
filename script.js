@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleBtn = document.getElementById('toggleBtn');
     const searchCheckboxes = document.querySelectorAll('.checkbox-container input[type="checkbox"]');
     
-    // ローディングオーバーレイ（UI改善案②）
+    // ローディングオーバーレイ
     const loadingOverlay = document.getElementById('loading-overlay');
 
     // 文明検索用
@@ -86,10 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * 非同期検索実行（ローディング表示付き）
+     * 非同期検索実行
      */
     function performSearch(url) {
-        // 1. ローディング開始
         if (loadingOverlay) loadingOverlay.style.display = 'flex';
         if (resultsContainer) resultsContainer.style.opacity = '0.5';
 
@@ -128,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             })
             .finally(() => {
-                // 2. ローディング終了
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
             });
     }
@@ -413,7 +411,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearchModal({ modalType: 'others', hiddenInputName: 'others_ids[]', displayClassName: 'selected-others-display' });
     setupSearchModal({ modalType: 'soul', hiddenInputName: 'soul_ids[]', displayClassName: 'selected-soul-display' });
 
-// --- ⑧ カード詳細モーダル ---
+    // --- ⑧ カード詳細モーダル ---
+    const cardDetailModal = document.getElementById('card-modal');
+    let modalObserver = null;
+
     function openCardDetailModal(cardId) {
         if (!cardId || !cardDetailModal) return;
         const modalCardsContainer = document.getElementById('modal-cards-container');
@@ -450,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cardInstance.dataset.cardName = cardInfo.card_name;
                     const part = String.fromCharCode(97 + index);
 
-                    // 基本情報
+                    // 基本項目
                     templateClone.querySelector('.modal-card-type').textContent = cardInfo.card_type;
                     templateClone.querySelector('.modal-civilization').textContent = cardInfo.civilization;
                     templateClone.querySelector('.modal-rarity').textContent = cardInfo.rarity;
@@ -460,23 +461,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateClone.querySelector('.modal-race').textContent = cardInfo.race;
                     templateClone.querySelector('.modal-illustrator').textContent = cardInfo.illustrator;
 
-                    // ★追加：デバッグ用能力名リストの反映
+                    // ★追加：デバッグ用能力名リストの表示★
                     const abilityNamesDebugEl = templateClone.querySelector('.modal-debug-ability-names');
                     if (abilityNamesDebugEl) {
                         abilityNamesDebugEl.textContent = (cardInfo.ability_names_debug && cardInfo.ability_names_debug.length > 0) 
                             ? cardInfo.ability_names_debug.join('、') : '（なし）';
                     }
 
-                    // 画像設定
-                    if (cardInfo.modelnum) {
+                    // 画像パス設定
+                    let imageUrl = '';
+                    if (data.image_urls && data.image_urls[part]) {
+                        imageUrl = data.image_urls[part];
+                    } else if (cardInfo.modelnum) {
                         const parts = cardInfo.modelnum.split('-');
                         const series_folder = parts[0].toLowerCase();
-                        // 複数枚（ツインパクト等）なら末尾に a, b.. を付与、単体ならそのまま
-                        const imgSuffix = (data.cards.length > 1) ? part : '';
-                        templateClone.querySelector('.modal-card-image').src = `card/${series_folder}/${cardInfo.modelnum}${imgSuffix}.webp`;
+                        imageUrl = `card/${series_folder}/${cardInfo.modelnum}.webp`;
                     }
-                    
-                    // テキスト設定
+                    templateClone.querySelector('.modal-card-image').src = imageUrl;
+
                     const textSection = templateClone.querySelector('.modal-ability-section');
                     if (cardInfo.text && cardInfo.text !== '（テキスト情報なし）') {
                         templateClone.querySelector('.modal-text').innerHTML = cardInfo.text;
@@ -496,5 +498,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Fetch Error:', error);
                 modalCardName.textContent = 'エラー';
             });
+    }
+
+    if (cardDetailModal) {
+        const closeModal = () => { 
+            cardDetailModal.style.display = 'none';
+            if (modalObserver) modalObserver.disconnect();
+        };
+        cardDetailModal.querySelector('.close-btn').addEventListener('click', closeModal);
+        cardDetailModal.addEventListener('click', (e) => { if (e.target === cardDetailModal) closeModal(); });
     }
 });
