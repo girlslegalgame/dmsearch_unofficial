@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsSummary = document.querySelector('.search-results-summary p');
     const sortAreaElement = document.getElementById('sort-area');
     
+    // 検索対象チェックボックス関連
+    const toggleBtn = document.getElementById('toggleBtn');
+    const searchCheckboxes = document.querySelectorAll('.checkbox-container input[type="checkbox"]');
+
     // 文明
     const monoColorBtn = document.querySelector('[data-target-input="mono_color"]');
     const multiColorBtn = document.querySelector('[data-target-input="multi_color"]');
@@ -24,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const multiSearchTypeSection = document.getElementById('multi-search-type-section');
     const multiSearchTypeSelect = document.getElementById('multi_search_type');
 
-    // 数値・チェックボックス
+    // 数値・入力制限用
     const costMinInput = document.getElementById('cost_min_input');
     const costMaxInput = document.getElementById('cost_max_input');
     const costZeroCheck = document.getElementById('cost_zero_check');
@@ -43,7 +47,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortOrderHiddenInput = document.getElementById('sort-order-hidden');
     const showSameNameCheck = document.getElementById('show-same-name-check');
 
-    // --- ② 制御ロジック（コスト・パワー入力制限） ---
+    // --- ② 制御ロジック ---
+
+    // 検索対象の全解除/全選択ボタンのテキスト更新
+    function updateToggleButtonLabel() {
+        if (!toggleBtn) return;
+        const anyChecked = Array.from(searchCheckboxes).some(cb => cb.checked);
+        toggleBtn.textContent = anyChecked ? '全解除' : '全選択';
+    }
+
+    // 検索対象ボタンのクリックイベント
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const anyChecked = Array.from(searchCheckboxes).some(cb => cb.checked);
+            searchCheckboxes.forEach(cb => cb.checked = !anyChecked);
+            updateToggleButtonLabel();
+        });
+    }
+
+    // 各チェックボックス変更時にラベル更新
+    searchCheckboxes.forEach(cb => cb.addEventListener('change', updateToggleButtonLabel));
+
+    // コスト・パワー入力制限
     const setupCheckboxToggle = (check1, check2, input1, input2) => {
         const toggleInputs = () => {
             const disable = (check1 && check1.checked) || (check2 && check2.checked);
@@ -74,17 +99,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 商品名の絞り込み機能
+    // 商品名の絞り込み
     if (goodsTypeSelect) {
         goodsTypeSelect.addEventListener('change', () => {
             fetch(`api.php?type=goods&goodstype_id=${goodsTypeSelect.value}`)
                 .then(res => res.json())
                 .then(data => {
                     if (goodsSelect) {
-                        const currentVal = goodsSelect.value;
                         goodsSelect.innerHTML = '<option value="0">指定なし</option>';
                         data.forEach(g => goodsSelect.add(new Option(g.name, g.id)));
-                        goodsSelect.value = "0"; // リセット時などは0にする
+                        goodsSelect.value = "0";
                     }
                 });
         });
@@ -140,24 +164,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ④ リセットボタンの挙動 (詳細指定) ---
+    // --- ④ リセットボタンの挙動 ---
     let resetModalStates = []; 
     resetButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             searchForm.reset();
-            // 検索対象
+            // 検索対象の初期化
             document.getElementsByName('search_name')[0].checked = true;
             document.getElementsByName('search_reading')[0].checked = true;
             document.getElementsByName('search_text')[0].checked = true;
             document.getElementsByName('search_race')[0].checked = false;
             document.getElementsByName('search_flavortext')[0].checked = false;
             document.getElementsByName('search_illus')[0].checked = false;
+            updateToggleButtonLabel(); // ボタンの文字を更新
 
             // 数値入力の有効化
             costMinInput.disabled = false; costMaxInput.disabled = false;
             powMinInput.disabled = false; powMaxInput.disabled = false;
 
-            // セレクトボックス
+            // 各種セレクトボックスを「指定なし」へ
             document.querySelectorAll('select.styled-select').forEach(s => {
                 if (s.name === 'mana_filter') s.value = 'all';
                 else s.value = '0';
@@ -165,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 商品名絞り込みの解除
             if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
 
-            // 文明ボタン
+            // 文明ボタン（単色多色ON、それ以外OFF）
             document.querySelectorAll('.civ-btn').forEach(b => {
                 const isType = b.dataset.targetInput === 'mono_color' || b.dataset.targetInput === 'multi_color';
                 b.classList.toggle('is-off', !isType);
@@ -173,18 +198,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (input) input.value = isType ? '1' : '0';
             });
 
-            // ソートと同名表示
+            // ソート順と同名表示
             sortOrderSelect.value = 'release_new';
             if (sortOrderHiddenInput) sortOrderHiddenInput.value = 'release_new';
             showSameNameCheck.checked = true;
 
-            // モーダル（種族等）のクリア
+            // モーダルデータのクリア
             resetModalStates.forEach(f => f());
             updateCivilizationControls();
         });
     });
 
-    // --- ⑤ その他機能 (モーダル・詳細表示) ---
+    // --- ⑤ その他機能 ---
     function getSortableString(str) { if (!str) return ''; return str.split('').map(char => CONFIG.SORT_MAP[char] || char).join(''); }
     
     function setupSearchModal(config) {
@@ -284,5 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    updateToggleButtonLabel();
     updateCivilizationControls();
 });
