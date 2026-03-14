@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementsByName('search_race')[0].checked = false;
             document.getElementsByName('search_flavortext')[0].checked = false;
             document.getElementsByName('search_illus')[0].checked = false;
-            updateToggleButtonLabel(); // ボタンの文字を更新
+            updateToggleButtonLabel();
 
             // 数値入力の有効化
             costMinInput.disabled = false; costMaxInput.disabled = false;
@@ -233,8 +233,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const render = (items) => {
+            // ★修正: labelにflex-space-betweenを指定してチェックボックスを右寄せ
             listEl.innerHTML = items.sort((a,b) => getSortableString(a.reading).localeCompare(getSortableString(b.reading)))
-                .map(item => `<div class="race-list-item"><label style="flex-grow:1;cursor:pointer;">${item.name}<input type="checkbox" data-id="${item.id}" data-name="${item.name}" ${selectedItems.has(String(item.id)) ? 'checked' : ''}></label></div>`).join('');
+                .map(item => `
+                    <div class="race-list-item">
+                        <label style="display:flex; justify-content:space-between; align-items:center; width:100%; cursor:pointer;">
+                            <span>${item.name}</span>
+                            <input type="checkbox" data-id="${item.id}" data-name="${item.name}" ${selectedItems.has(String(item.id)) ? 'checked' : ''}>
+                        </label>
+                    </div>`).join('');
         };
 
         selectBox.addEventListener('click', () => {
