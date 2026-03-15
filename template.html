@@ -25,6 +25,12 @@
     <!-- ▼▼▼ 中央揃えにしたい要素のコンテナ ▼▼▼ -->
     <div class="main-form-container">
         <input type="text" name="search" placeholder="検索ワード" value="<?= htmlspecialchars($search) ?>">
+        <div class="and-or-toggle" style="margin-top: 5px;">
+            <input type="radio" id="keyword-and" name="keyword_mode" value="AND" <?= ($keyword_mode === 'AND') ? 'checked' : '' ?>>
+            <label for="keyword-and">AND検索</label>
+            <input type="radio" id="keyword-or" name="keyword_mode" value="OR" <?= ($keyword_mode === 'OR') ? 'checked' : '' ?>>
+            <label for="keyword-or">OR検索</label>
+        </div>
         <input type="hidden" id="advanced-state" name="advanced_open" value="<?= $is_advanced_open ? '1' : '0' ?>">
         <br>
         
