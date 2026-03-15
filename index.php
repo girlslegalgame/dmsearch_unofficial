@@ -9,7 +9,7 @@ $offset = ($page - 1) * $perPage;
 
 // === GET入力の整理 ===
 $get_params_for_check = $_GET;
-unset($get_params_for_check['page'], $get_params_for_check['_t']); // キャッシュバスターも除外
+unset($get_params_for_check['page'], $get_params_for_check['_t']); 
 $is_submitted = count($get_params_for_check) > 0;
 
 $search = $_GET['search'] ?? '';
@@ -65,15 +65,28 @@ if ($is_submitted) {
 // === SQL構築 ===
 $conditions = []; $params = []; $joins = [];
 
+// ★新機能：スペース区切りAND検索
 if ($search !== '') {
-    $kwd = [];
-    if ($search_name) { $kwd[] = 'card.card_name LIKE :s_name'; $params[':s_name'] = "%$search%"; }
-    if ($search_reading) { $kwd[] = 'card.reading LIKE :s_read'; $params[':s_read'] = "%$search%"; }
-    if ($search_text) { $kwd[] = 'card.text LIKE :s_text'; $params[':s_text'] = "%$search%"; }
-    if ($search_flavortext) { $kwd[] = 'card.flavortext LIKE :s_flavor'; $params[':s_flavor'] = "%$search%"; }
-    if ($search_race) { $joins[] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id LEFT JOIN race ON card_race.race_id = race.race_id'; $kwd[] = 'race.race_name LIKE :s_race'; $params[':s_race'] = "%$search%"; }
-    if ($search_illus) { $joins[] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id LEFT JOIN illus ON card_illus.illus_id = illus.illus_id'; $kwd[] = 'illus.illus_name LIKE :s_illus'; $params[':s_illus'] = "%$search%"; }
-    if ($kwd) $conditions[] = '(' . implode(' OR ', $kwd) . ')';
+    // 全角・半角スペースでワードを分割
+    $words = preg_split('/[\s　]+/u', $search, -1, PREG_SPLIT_NO_EMPTY);
+    foreach ($words as $idx => $word) {
+        $kwd_parts = [];
+        $p_suffix = "_{$idx}"; // プレースホルダー名が重複しないように接尾辞を付ける
+        
+        if ($search_name) { $kwd_parts[] = "card.card_name LIKE :s_name{$p_suffix}"; $params[":s_name{$p_suffix}"] = "%$word%"; }
+        if ($search_reading) { $kwd_parts[] = "card.reading LIKE :s_read{$p_suffix}"; $params[":s_read{$p_suffix}"] = "%$word%"; }
+        if ($search_text) { $kwd_parts[] = "card.text LIKE :s_text{$p_suffix}"; $params[":s_text{$p_suffix}"] = "%$word%"; }
+        if ($search_flavortext) { $kwd_parts[] = "card.flavortext LIKE :s_flavor{$p_suffix}"; $params[":s_flavor{$p_suffix}"] = "%$word%"; }
+        if ($search_race) { 
+            $joins['race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id LEFT JOIN race ON card_race.race_id = race.race_id'; 
+            $kwd_parts[] = "race.race_name LIKE :s_race{$p_suffix}"; $params[":s_race{$p_suffix}"] = "%$word%"; 
+        }
+        if ($search_illus) { 
+            $joins['illus'] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id LEFT JOIN illus ON card_illus.illus_id = illus.illus_id'; 
+            $kwd_parts[] = "illus.illus_name LIKE :s_illus{$p_suffix}"; $params[":s_illus{$p_suffix}"] = "%$word%"; 
+        }
+        if ($kwd_parts) $conditions[] = '(' . implode(' OR ', $kwd_parts) . ')';
+    }
 }
 
 if ($cost_infinity) $conditions[] = 'card.cost = '.DM_INFINITY;
