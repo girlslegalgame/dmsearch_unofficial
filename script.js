@@ -193,6 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
     resetButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             searchForm.reset();
+            const keywordAnd = document.getElementById('keyword-and');
+            if (keywordAnd) keywordAnd.checked = true;
+            document.getElementsByName('search_name')[0].checked = true;
             document.getElementsByName('search_name')[0].checked = true;
             document.getElementsByName('search_reading')[0].checked = true;
             document.getElementsByName('search_text')[0].checked = true;
