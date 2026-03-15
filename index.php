@@ -8,7 +8,11 @@ $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $perPage;
 
 // === GET入力の整理 ===
-$is_submitted = count($_GET) > 0;
+// ★修正：page以外のパラメータがあるかチェックして、本当の検索送信かどうかを判定する
+$get_params_for_check = $_GET;
+unset($get_params_for_check['page']);
+$is_submitted = count($get_params_for_check) > 0;
+
 $search = $_GET['search'] ?? '';
 $cost_min = $_GET['cost_min'] ?? '';
 $cost_max = $_GET['cost_max'] ?? '';
@@ -138,7 +142,7 @@ if (!$cost_zero && !$cost_infinity && !($is_mono && $is_multi && !$selected_excl
     }
 }
 
-// === データ取得とソート ===
+// === データ取得 ===
 $where = $conditions ? 'WHERE '.implode(' AND ', $conditions) : '';
 $join_str = $joins ? implode(' ', array_unique($joins)) : '';
 $stmt = $pdo->prepare("SELECT DISTINCT card.card_id FROM card JOIN card_detail cd ON card.card_id = cd.card_id $join_str $where");
@@ -158,9 +162,7 @@ if ($ids) {
     $unique = array_values($unique);
     $total = count($unique);
 
-    // ★★★ ソートロジック (指示通りの4段階優先順位) ★★★
     usort($unique, function($a, $b) use ($selected_sort) {
-        // 1. メイン基準 (発売日、コスト、名前、パワー)
         switch ($selected_sort) {
             case 'release_old': $m = strcmp($a['release_date'], $b['release_date']); break;
             case 'cost_desc':   $m = ($b['cost']??-1) <=> ($a['cost']??-1); break;
@@ -169,20 +171,13 @@ if ($ids) {
             case 'name_desc':   $m = strcmp(get_sortable_reading($b['reading']), get_sortable_reading($a['reading'])); break;
             case 'power_desc':  $m = ($b['pow']??-1) <=> ($a['pow']??-1); break;
             case 'power_asc':   $m = ($a['pow']??-1) <=> ($b['pow']??-1); break;
-            default:            $m = strcmp($b['release_date'], $a['release_date']); break; // release_new
+            default:            $m = strcmp($b['release_date'], $a['release_date']); break;
         }
         if ($m !== 0) return $m;
-
-        // 2. rarity_idの降順
         $rarity_cmp = ($b['rarity_id'] ?? 0) <=> ($a['rarity_id'] ?? 0);
         if ($rarity_cmp !== 0) return $rarity_cmp;
-
-        // 3. 【修正】文明の独自ソート順 (6 → 1〜5 → 多色)
         $civ_cmp = get_civ_priority($a) <=> get_civ_priority($b);
-        if ($civ_cmp !== 0) return $civ_cmp;
-
-        // 4. modelnumの昇順
-        return strcmp($a['modelnum'] ?? '', $b['modelnum'] ?? '');
+        return $civ_cmp ?: strcmp($a['modelnum'] ?? '', $b['modelnum'] ?? '');
     });
 
     $page_cards = array_slice($unique, $offset, $perPage);
@@ -193,11 +188,10 @@ if ($ids) {
 }
 
 // === 表示用データ ===
-$totalPages = ceil($total / $perPage);
 $civilization_list = $pdo->query("SELECT * FROM civilization ORDER BY civilization_id")->fetchAll();
 $characteristics_list = $pdo->query("SELECT * FROM characteristics ORDER BY characteristics_id")->fetchAll();
 $cardtype_list = $pdo->query("SELECT * FROM cardtype ORDER BY cardtype_id")->fetchAll();
-$race_list = $pdo->query("SELECT * FROM race")->fetchAll(); usort($race_list, function($a,$b){ return strcmp(get_sortable_reading($a['reading']), get_sortable_reading($b['reading'])); });
+$race_list = $pdo->query("SELECT * FROM race")->fetchAll(); usort($race_list, 'compare_by_reading');
 $rarity_list = $pdo->query("SELECT * FROM rarity ORDER BY rarity_id")->fetchAll();
 $ability_list = $pdo->query("SELECT * FROM ability ORDER BY reading")->fetchAll();
 $treasure_list = $pdo->query("SELECT * FROM treasure ORDER BY treasure_id")->fetchAll();
@@ -211,5 +205,6 @@ $goods_list = ($selected_goodstype_id > 0) ?
 
 $illustrator_list = $pdo->query("SELECT * FROM illus ORDER BY reading")->fetchAll();
 $others_list = $pdo->query("SELECT * FROM others ORDER BY others_id")->fetchAll();
+$totalPages = ceil($total / $perPage);
 
 include 'template.html';
