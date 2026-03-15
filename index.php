@@ -8,7 +8,6 @@ $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $perPage;
 
 // === GET入力の整理 ===
-// ★修正：page以外のパラメータがあるかチェックして、本当の検索送信かどうかを判定する
 $get_params_for_check = $_GET;
 unset($get_params_for_check['page']);
 $is_submitted = count($get_params_for_check) > 0;
@@ -112,9 +111,7 @@ foreach ([['ids'=>$selected_race_ids, 'mode'=>$race_search_mode, 'tbl'=>'card_ra
 
 $is_mono = ($mono_color_status == 1); $is_multi = ($multi_color_status == 1);
 if (!$cost_zero && !$cost_infinity && !($is_mono && $is_multi && !$selected_exclude_civs && !$selected_main_civs)) {
-    // 【SQLエラー修正】エイリアス 'AS temp_civ' を追加
     $civ_sub = "(SELECT card_id, COUNT(civilization_id) as cnt FROM card_civilization WHERE civilization_id != 6 GROUP BY card_id) AS temp_civ";
-    
     if ($selected_main_civs) {
         $mc = count($selected_main_civs); $exact = ($multi_search_type === 'exact' && $mc >= 2);
         $mono_q = ""; $multi_q = "";
