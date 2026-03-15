@@ -4,28 +4,20 @@ const CONFIG = {
     SORT_MAP: {'ぁ':'01a','あ':'01b','ぃ':'02a','い':'02b','ぅ':'03a','う':'03b','ぇ':'04a','え':'04b','ぉ':'05a','お':'05b','か':'06a','が':'06b','き':'07a','ぎ':'07b','く':'08a','ぐ':'08b','け':'09a','げ':'09b','こ':'10a','ご':'10b','さ':'11a','ざ':'11b','し':'12a','じ':'12b','す':'13a','ず':'13b','せ':'14a','ぜ':'14b','そ':'15a','ぞ':'15b','た':'16a','だ':'16b','ち':'17a','ぢ':'17b','っ':'18a','つ':'18b','づ':'18b','て':'19a','で':'19b','と':'20a','ど':'20b','な':'21a','に':'22a','ぬ':'23a','ね':'24a','の':'25a','は':'26a','ば':'26b','ぱ':'26c','ひ':'27a','び':'27b','ぴ':'27c','ふ':'28a','ぶ':'28b','ぷ':'28c','へ':'29a','べ':'29b','ぺ':'29c','ほ':'30a','ぼ':'30b','ぽ':'30c','ま':'31a','み':'32a','む':'33a','め':'34a','も':'35a','ゃ':'36a','や':'36b','ゅ':'37a','ゆ':'37b','ょ':'38a','よ':'38b','ら':'39a','り':'40a','る':'41a','れ':'42a','ろ':'43a','わ':'44a','を':'45a','ん':'46a','ー':'47a'}
 };
 
-// 【セキュリティ対策】HTMLエスケープ関数
 function escapeHTML(str) {
     if (!str) return "";
     return str.replace(/[&<>"']/g, function(m) {
-        return {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-        }[m];
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[m];
     });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- ① 要素の取得 ---
     const searchForm = document.getElementById('searchForm');
     const resetButtons = document.querySelectorAll('.reset-button');
     const loadingOverlay = document.getElementById('loading-overlay');
     const resultsContainer = document.querySelector('.container');
-    const paginationContainer = document.querySelector('.pagination');
+    const paginationWrapper = document.getElementById('pagination-wrapper'); // 変更
     const resultsSummary = document.querySelector('.search-results-summary p');
     const sortAreaElement = document.getElementById('sort-area');
     
@@ -40,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainCivButtons = document.querySelectorAll('#main-civs-buttons .civ-btn');
     const excludeSection = document.getElementById('exclude-civs-section');
     const excludeCivWrappers = document.querySelectorAll('.exclude-civ-wrapper');
-    const multiSearchTypeSection = document.getElementById('multi-search-type-section');
     const multiSearchTypeSelect = document.getElementById('multi_search_type');
 
     const costMinInput = document.getElementById('cost_min_input');
@@ -56,8 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortOrderSelect = document.getElementById('sort-order');
     const sortOrderHiddenInput = document.getElementById('sort-order-hidden');
     const showSameNameCheck = document.getElementById('show-same-name-check');
-
-    // --- ② 制御ロジック ---
 
     if (toggleAdvancedBtn && advancedSearchArea) {
         toggleAdvancedBtn.addEventListener('click', () => {
@@ -127,24 +116,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ③ 検索実行 ---
     function performSearch(url) {
         if (loadingOverlay) loadingOverlay.style.display = 'flex';
         if (resultsContainer) resultsContainer.style.opacity = '0.5';
-        fetch(url).then(res => res.text()).then(html => {
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            if (resultsSummary) resultsSummary.innerHTML = doc.querySelector('.search-results-summary p').innerHTML;
-            if (resultsContainer) resultsContainer.innerHTML = doc.querySelector('.container').innerHTML;
-            if (paginationContainer) {
-                const newPagi = doc.querySelector('.pagination');
-                paginationContainer.innerHTML = newPagi ? newPagi.innerHTML : '';
-                paginationContainer.style.display = newPagi ? 'block' : 'none';
-            }
-            (sortAreaElement || resultsContainer).scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }).finally(() => {
-            if (loadingOverlay) loadingOverlay.style.display = 'none';
-            if (resultsContainer) resultsContainer.style.opacity = '1';
-        });
+
+        // キャッシュバスターを追加 (時間による不具合対策)
+        const fetchUrl = new URL(url, window.location.origin);
+        fetchUrl.searchParams.set('_t', Date.now());
+
+        fetch(fetchUrl)
+            .then(response => response.text())
+            .then(html => {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                if (resultsSummary) resultsSummary.innerHTML = doc.querySelector('.search-results-summary p').innerHTML;
+                if (resultsContainer) resultsContainer.innerHTML = doc.querySelector('.container').innerHTML;
+                
+                // ページネーションの更新 (wrapperごと入れ替え)
+                if (paginationWrapper) {
+                    const newPagiWrapper = doc.getElementById('pagination-wrapper');
+                    paginationWrapper.innerHTML = newPagiWrapper ? newPagiWrapper.innerHTML : '';
+                }
+                
+                const scrollTarget = sortAreaElement || resultsContainer;
+                scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            })
+            .finally(() => {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                if (resultsContainer) resultsContainer.style.opacity = '1';
+            });
     }
 
     const triggerSearch = () => {
@@ -156,7 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const formData = new FormData(searchForm);
             formData.set('page', '1');
-            const newUrl = `${window.location.pathname}?${new URLSearchParams(formData).toString()}`;
+            const params = new URLSearchParams(formData);
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
             history.pushState({path: newUrl}, '', newUrl);
             performSearch(newUrl);
         });
@@ -189,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (showSameNameCheck) showSameNameCheck.addEventListener('change', triggerSearch);
 
-    // --- ④ リセットボタンの挙動 ---
     let resetModalStates = []; 
     resetButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -228,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- ⑤ モーダル・共通機能 ---
     function getSortableString(str) { if (!str) return ''; return str.split('').map(char => CONFIG.SORT_MAP[char] || char).join(''); }
     
     function setupSearchModal(config) {
@@ -253,7 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const render = (items) => {
-            // 【セキュリティ修正】escapeHTMLを使用してXSSを防止
             listEl.innerHTML = items.sort((a,b) => getSortableString(a.reading).localeCompare(getSortableString(b.reading)))
                 .map(item => `
                     <div class="race-list-item">
@@ -311,15 +308,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             data.cards.forEach(card => {
                 const clone = template.content.cloneNode(true);
-                const instance = clone.querySelector('.modal-card-instance');
-                instance.dataset.cardName = card.card_name;
+                clone.querySelector('.modal-card-instance').dataset.cardName = card.card_name;
                 clone.querySelector('.modal-card-type').textContent = card.card_type;
                 clone.querySelector('.modal-civilization').textContent = card.civilization;
                 clone.querySelector('.modal-rarity').textContent = card.rarity;
                 clone.querySelector('.modal-mana').textContent = card.mana ?? '---';
                 clone.querySelector('.modal-illustrator').textContent = card.illustrator;
-                clone.querySelector('.modal-power').textContent = card.pow == CONFIG.DM_INFINITY ? '∞' : (card.pow ?? '---');
-                clone.querySelector('.modal-cost').textContent = card.cost == CONFIG.DM_INFINITY ? '∞' : (card.cost ?? '---');
+                clone.querySelector('.modal-power').textContent = card.pow == 2147483647 ? '∞' : (card.pow ?? '---');
+                clone.querySelector('.modal-cost').textContent = card.cost == 2147483647 ? '∞' : (card.cost ?? '---');
                 clone.querySelector('.modal-race').textContent = card.race;
                 const dbg = clone.querySelector('.modal-debug-ability-names');
                 if (dbg) dbg.textContent = (card.ability_names_debug || []).join('、') || '（なし）';
@@ -327,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (card.text && card.text !== '（テキスト情報なし）') { clone.querySelector('.modal-text').innerHTML = card.text; clone.querySelector('.modal-ability-section').style.display = 'block'; }
                 if (card.flavortext) { clone.querySelector('.modal-flavortext').innerHTML = card.flavortext; clone.querySelector('.modal-flavor-section').style.display = 'block'; }
                 container.appendChild(clone);
-                modalObserver.observe(instance);
+                modalObserver.observe(container.lastElementChild);
             });
         });
     }
