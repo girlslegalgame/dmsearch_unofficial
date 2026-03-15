@@ -9,7 +9,7 @@ $offset = ($page - 1) * $perPage;
 
 // === GET入力の整理 ===
 $get_params_for_check = $_GET;
-unset($get_params_for_check['page']);
+unset($get_params_for_check['page'], $get_params_for_check['_t']); // キャッシュバスターも除外
 $is_submitted = count($get_params_for_check) > 0;
 
 $search = $_GET['search'] ?? '';
@@ -195,11 +195,7 @@ $treasure_list = $pdo->query("SELECT * FROM treasure ORDER BY treasure_id")->fet
 $soul_list = $pdo->query("SELECT * FROM soul ORDER BY soul_id")->fetchAll();
 $frame_list = $pdo->query("SELECT * FROM frame ORDER BY frame_id")->fetchAll();
 $goodstype_list = $pdo->query("SELECT * FROM goodstype ORDER BY goodstype_id")->fetchAll();
-
-$goods_list = ($selected_goodstype_id > 0) ? 
-    (function($pdo, $id){ $s = $pdo->prepare("SELECT * FROM goods WHERE goodstype_id = ? ORDER BY goods_id"); $s->execute([$id]); return $s->fetchAll(); })($pdo, $selected_goodstype_id) : 
-    $pdo->query("SELECT * FROM goods ORDER BY goods_id")->fetchAll();
-
+$goods_list = ($selected_goodstype_id > 0) ? (function($pdo, $id){ $s = $pdo->prepare("SELECT * FROM goods WHERE goodstype_id = ? ORDER BY goods_id"); $s->execute([$id]); return $s->fetchAll(); })($pdo, $selected_goodstype_id) : $pdo->query("SELECT * FROM goods ORDER BY goods_id")->fetchAll();
 $illustrator_list = $pdo->query("SELECT * FROM illus ORDER BY reading")->fetchAll();
 $others_list = $pdo->query("SELECT * FROM others ORDER BY others_id")->fetchAll();
 $totalPages = ceil($total / $perPage);
