@@ -390,36 +390,38 @@
 <!-- ▲▲▲ CARD LIST END ▲▲▲ -->
 
 <!-- ▼▼▼ PAGINATION ▼▼▼ -->
-<?php if ($totalPages > 1): ?>
-<div class="pagination">
-    <?php
-    $range = 5;
-    $start = max(1, $page - floor($range / 2));
-    $end = min($totalPages, $start + $range - 1);
-    if ($end - $start < $range - 1) { $start = max(1, $end - $range + 1); }
-    $queryParams = $_GET;
-    if ($page > 1) {
-        $queryParams['page'] = 1;
-        echo '<a href="index.php?' . http_build_query($queryParams) . '">最初へ</a>';
-    }
-    if ($start > 1) { echo '<span class="ellipsis">...</span>'; }
-    for ($i = $start; $i <= $end; $i++) {
-        $queryParams['page'] = $i;
-        $url = 'index.php?' . http_build_query($queryParams);
-        if ($i == $page) {
-            echo '<a href="#" class="current-page" onclick="return false;">' . $i . '</a>';
-        } else {
-            echo '<a href="' . htmlspecialchars($url) . '">' . $i . '</a>';
+<div id="pagination-wrapper">
+    <?php if ($totalPages > 1): ?>
+    <div class="pagination">
+        <?php
+        $range = 5;
+        $start = max(1, $page - floor($range / 2));
+        $end = min($totalPages, $start + $range - 1);
+        if ($end - $start < $range - 1) { $start = max(1, $end - $range + 1); }
+        $queryParams = $_GET;
+        if ($page > 1) {
+            $queryParams['page'] = 1;
+            echo '<a href="index.php?' . http_build_query($queryParams) . '">最初へ</a>';
         }
-    }
-    if ($end < $totalPages) { echo '<span class="ellipsis">...</span>'; }
-    if ($page < $totalPages) {
-        $queryParams['page'] = $totalPages;
-        echo '<a href="index.php?' . http_build_query($queryParams) . '">最後へ</a>';
-    }
-    ?>
+        if ($start > 1) { echo '<span class="ellipsis">...</span>'; }
+        for ($i = $start; $i <= $end; $i++) {
+            $queryParams['page'] = $i;
+            $url = 'index.php?' . http_build_query($queryParams);
+            if ($i == $page) {
+                echo '<a href="#" class="current-page" onclick="return false;">' . $i . '</a>';
+            } else {
+                echo '<a href="' . htmlspecialchars($url) . '">' . $i . '</a>';
+            }
+        }
+        if ($end < $totalPages) { echo '<span class="ellipsis">...</span>'; }
+        if ($page < $totalPages) {
+            $queryParams['page'] = $totalPages;
+            echo '<a href="index.php?' . http_build_query($queryParams) . '">最後へ</a>';
+        }
+        ?>
+    </div>
+    <?php endif; ?>
 </div>
-<?php endif; ?>
 <!-- ▲▲▲ PAGINATION END ▲▲▲ -->
 
 <div id="card-modal" class="modal-overlay" style="display: none;">
