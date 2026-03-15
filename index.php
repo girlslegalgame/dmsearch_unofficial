@@ -13,6 +13,7 @@ unset($get_params_for_check['page'], $get_params_for_check['_t']);
 $is_submitted = count($get_params_for_check) > 0;
 
 $search = $_GET['search'] ?? '';
+$keyword_mode = $_GET['keyword_mode'] ?? 'AND'; // ★新機能：モード取得
 $cost_min = $_GET['cost_min'] ?? '';
 $cost_max = $_GET['cost_max'] ?? '';
 $cost_zero = isset($_GET['cost_zero']);
@@ -65,13 +66,14 @@ if ($is_submitted) {
 // === SQL構築 ===
 $conditions = []; $params = []; $joins = [];
 
-// ★新機能：スペース区切りAND検索
+// ★新機能：スペース区切り AND/OR 検索
 if ($search !== '') {
-    // 全角・半角スペースでワードを分割
     $words = preg_split('/[\s　]+/u', $search, -1, PREG_SPLIT_NO_EMPTY);
+    $all_word_conditions = [];
+    
     foreach ($words as $idx => $word) {
         $kwd_parts = [];
-        $p_suffix = "_{$idx}"; // プレースホルダー名が重複しないように接尾辞を付ける
+        $p_suffix = "_{$idx}";
         
         if ($search_name) { $kwd_parts[] = "card.card_name LIKE :s_name{$p_suffix}"; $params[":s_name{$p_suffix}"] = "%$word%"; }
         if ($search_reading) { $kwd_parts[] = "card.reading LIKE :s_read{$p_suffix}"; $params[":s_read{$p_suffix}"] = "%$word%"; }
@@ -85,7 +87,15 @@ if ($search !== '') {
             $joins['illus'] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id LEFT JOIN illus ON card_illus.illus_id = illus.illus_id'; 
             $kwd_parts[] = "illus.illus_name LIKE :s_illus{$p_suffix}"; $params[":s_illus{$p_suffix}"] = "%$word%"; 
         }
-        if ($kwd_parts) $conditions[] = '(' . implode(' OR ', $kwd_parts) . ')';
+        if ($kwd_parts) {
+            $all_word_conditions[] = '(' . implode(' OR ', $kwd_parts) . ')';
+        }
+    }
+    
+    if ($all_word_conditions) {
+        // AND/OR モードによって結合文字を変える
+        $glue = ($keyword_mode === 'OR') ? ' OR ' : ' AND ';
+        $conditions[] = '(' . implode($glue, $all_word_conditions) . ')';
     }
 }
 
@@ -197,7 +207,7 @@ if ($ids) {
     }
 }
 
-// === 表示用データ ===
+// === 表示用データ取得 ===
 $civilization_list = $pdo->query("SELECT * FROM civilization ORDER BY civilization_id")->fetchAll();
 $characteristics_list = $pdo->query("SELECT * FROM characteristics ORDER BY characteristics_id")->fetchAll();
 $cardtype_list = $pdo->query("SELECT * FROM cardtype ORDER BY cardtype_id")->fetchAll();
