@@ -20,7 +20,7 @@
 <form method="get" id="searchForm">
 
     <div class="main-form-container">
-        <!-- 検索入力エリア（右上にAND/ORスイッチ） -->
+        <!-- 検索入力エリア -->
         <div style="position: relative; max-width: 960px; margin: 0 auto;">
             <div class="and-or-toggle" style="position: absolute; right: 0; bottom: 100%; margin-bottom: 5px; border-radius: 10px;">
                 <input type="radio" id="keyword-and" name="keyword_mode" value="AND" <?= ($keyword_mode === 'AND') ? 'checked' : '' ?>>
@@ -471,6 +471,11 @@
         </div>
     </div>
 </template>
+
+<!-- ▼▼▼ 追記：ページトップへ戻るボタン ▼▼▼ -->
+<button id="back-to-top" class="back-to-top" title="トップへ戻る">
+    <i class="fa fa-chevron-up"></i>
+</button>
 
 <script src="script.js"></script>
 
