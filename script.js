@@ -17,9 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetButtons = document.querySelectorAll('.reset-button');
     const loadingOverlay = document.getElementById('loading-overlay');
     const resultsContainer = document.querySelector('.container');
-    const paginationWrapper = document.getElementById('pagination-wrapper'); // 変更
+    const paginationWrapper = document.getElementById('pagination-wrapper');
     const resultsSummary = document.querySelector('.search-results-summary p');
     const sortAreaElement = document.getElementById('sort-area');
+    const backToTopBtn = document.getElementById('back-to-top'); // 追記
     
     const toggleBtn = document.getElementById('toggleBtn');
     const searchCheckboxes = document.querySelectorAll('.checkbox-container input[type="checkbox"]');
@@ -48,6 +49,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortOrderHiddenInput = document.getElementById('sort-order-hidden');
     const showSameNameCheck = document.getElementById('show-same-name-check');
 
+    // --- ① ページトップへ戻る制御 ---
+    if (backToTopBtn) {
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopBtn.style.display = 'flex';
+            } else {
+                backToTopBtn.style.display = 'none';
+            }
+        });
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    // --- ② 共通UI制御 ---
     if (toggleAdvancedBtn && advancedSearchArea) {
         toggleAdvancedBtn.addEventListener('click', () => {
             const isOpen = advancedSearchArea.classList.toggle('is-open');
@@ -120,7 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loadingOverlay) loadingOverlay.style.display = 'flex';
         if (resultsContainer) resultsContainer.style.opacity = '0.5';
 
-        // キャッシュバスターを追加 (時間による不具合対策)
         const fetchUrl = new URL(url, window.location.origin);
         fetchUrl.searchParams.set('_t', Date.now());
 
@@ -130,13 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const doc = new DOMParser().parseFromString(html, 'text/html');
                 if (resultsSummary) resultsSummary.innerHTML = doc.querySelector('.search-results-summary p').innerHTML;
                 if (resultsContainer) resultsContainer.innerHTML = doc.querySelector('.container').innerHTML;
-                
-                // ページネーションの更新 (wrapperごと入れ替え)
                 if (paginationWrapper) {
                     const newPagiWrapper = doc.getElementById('pagination-wrapper');
                     paginationWrapper.innerHTML = newPagiWrapper ? newPagiWrapper.innerHTML : '';
                 }
-                
                 const scrollTarget = sortAreaElement || resultsContainer;
                 scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
             })
@@ -195,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchForm.reset();
             const keywordAnd = document.getElementById('keyword-and');
             if (keywordAnd) keywordAnd.checked = true;
-            document.getElementsByName('search_name')[0].checked = true;
+
             document.getElementsByName('search_name')[0].checked = true;
             document.getElementsByName('search_reading')[0].checked = true;
             document.getElementsByName('search_text')[0].checked = true;
@@ -311,14 +323,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             data.cards.forEach(card => {
                 const clone = template.content.cloneNode(true);
-                clone.querySelector('.modal-card-instance').dataset.cardName = card.card_name;
+                const instance = clone.querySelector('.modal-card-instance');
+                instance.dataset.cardName = card.card_name;
                 clone.querySelector('.modal-card-type').textContent = card.card_type;
                 clone.querySelector('.modal-civilization').textContent = card.civilization;
                 clone.querySelector('.modal-rarity').textContent = card.rarity;
                 clone.querySelector('.modal-mana').textContent = card.mana ?? '---';
                 clone.querySelector('.modal-illustrator').textContent = card.illustrator;
-                clone.querySelector('.modal-power').textContent = card.pow == 2147483647 ? '∞' : (card.pow ?? '---');
-                clone.querySelector('.modal-cost').textContent = card.cost == 2147483647 ? '∞' : (card.cost ?? '---');
+                clone.querySelector('.modal-power').textContent = card.pow == CONFIG.DM_INFINITY ? '∞' : (card.pow ?? '---');
+                clone.querySelector('.modal-cost').textContent = card.cost == CONFIG.DM_INFINITY ? '∞' : (card.cost ?? '---');
                 clone.querySelector('.modal-race').textContent = card.race;
                 const dbg = clone.querySelector('.modal-debug-ability-names');
                 if (dbg) dbg.textContent = (card.ability_names_debug || []).join('、') || '（なし）';
@@ -326,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (card.text && card.text !== '（テキスト情報なし）') { clone.querySelector('.modal-text').innerHTML = card.text; clone.querySelector('.modal-ability-section').style.display = 'block'; }
                 if (card.flavortext) { clone.querySelector('.modal-flavortext').innerHTML = card.flavortext; clone.querySelector('.modal-flavor-section').style.display = 'block'; }
                 container.appendChild(clone);
-                modalObserver.observe(container.lastElementChild);
+                modalObserver.observe(instance);
             });
         });
     }
