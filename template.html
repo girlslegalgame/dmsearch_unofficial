@@ -8,9 +8,11 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- ▼▼▼ ローディング表示（UX改善） ▼▼▼ -->
 <div id="loading-overlay" style="display: none;">
     <div class="spinner"></div>
 </div>
+
 <h2 style="text-align:center;">カード一覧</h2>
 
 <!-- ▼▼▼ 検索結果件数表示 ▼▼▼ -->
@@ -25,14 +27,17 @@
     <!-- ▼▼▼ 中央揃えにしたい要素のコンテナ ▼▼▼ -->
     <div class="main-form-container">
         <input type="text" name="search" placeholder="検索ワード" value="<?= htmlspecialchars($search) ?>">
-        <div class="and-or-toggle" style="margin-top: 5px;">
+        
+        <!-- ▼▼▼ 追加：キーワード検索のAND/OR切り替え ▼▼▼ -->
+        <div class="and-or-toggle" style="margin-top: 5px; margin-bottom: 10px;">
             <input type="radio" id="keyword-and" name="keyword_mode" value="AND" <?= ($keyword_mode === 'AND') ? 'checked' : '' ?>>
             <label for="keyword-and">AND検索</label>
             <input type="radio" id="keyword-or" name="keyword_mode" value="OR" <?= ($keyword_mode === 'OR') ? 'checked' : '' ?>>
             <label for="keyword-or">OR検索</label>
         </div>
+        <!-- ▲▲▲ 追加 END ▲▲▲ -->
+
         <input type="hidden" id="advanced-state" name="advanced_open" value="<?= $is_advanced_open ? '1' : '0' ?>">
-        <br>
         
         <div class="checkbox-container">
             <span class="checkbox-label">検索対象</span>
@@ -50,14 +55,14 @@
         <br>
         <button type="button" class="reset-button">リセット</button>
         <br>
+        
         <!-- ▼▼▼ 「さらに条件をしぼる」ボタン ▼▼▼ -->
         <p class="detailBtn" id="toggle-advanced-btn">
             <?= $is_advanced_open ? '条件を隠す' : 'さらに条件をしぼる' ?>
         </p>
         
-        <!-- ▼▼▼ 詳細検索エリアを、ボタンの直下に移動 ▼▼▼ -->
+        <!-- ▼▼▼ 詳細検索エリア ▼▼▼ -->
         <div id="advanced-search-area" class="<?= $is_advanced_open ? 'is-open' : '' ?>">
-            <!-- (中略: 文明検索からイラストレーター検索までの .search-group-container は、この中にそのまま入ります) -->
             <div class="search-group-container">
                 <label class="search-label left-align-label">文明</label><br>
                 <div class="search-group">
@@ -209,7 +214,6 @@
                         </select>
                     </div>
                     <div class="select-group">
-                        <!-- ヘッダー：ラベルとAND/ORスイッチを横並びかつコンパクトに -->
                         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
                             <label class="search-label" style="min-width: auto;">その他</label>
                             <div class="and-or-toggle">
@@ -219,8 +223,6 @@
                                 <label for="others-or" style="padding: 2px 8px; font-size: 0.75em;">OR</label>
                             </div>
                         </div>
-                        
-                        <!-- 選択ボックス：他のプルダウンと同じスタイル(styled-select)を適用 -->
                         <div id="others-select-box" class="race-select-box styled-select" style="min-width: 180px; padding: 8px 12px; height: auto; display: flex; align-items: center; position: relative;">
                             <span class="placeholder">指定なし</span>
                             <div class="selected-others-display" style="position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
@@ -228,7 +230,6 @@
                     </div>
                 </div>
                 <div class="search-group">
-                    <!-- 種族ブロック -->
                     <div class="race-select-group">
                         <div class="race-search-header">
                             <label class="search-label">種族</label>
@@ -244,15 +245,13 @@
                             <div class="selected-races-display"></div>
                         </div>
                     </div>
-                
-                    <!-- 特殊能力ブロック -->
                     <div class="ability-select-group">
                         <div class="ability-search-header">
                             <label class="search-label">特殊能力</label>
                             <div class="and-or-toggle">
-                                <input type="radio" id="ability-and" name="ability_search_mode" value="AND" checked>
+                                <input type="radio" id="ability-and" name="ability_search_mode" value="AND" <?= $ability_search_mode === 'AND' ? 'checked' : '' ?>>
                                 <label for="ability-and">AND</label>
-                                <input type="radio" id="ability-or" name="ability_search_mode" value="OR">
+                                <input type="radio" id="ability-or" name="ability_search_mode" value="OR" <?= $ability_search_mode === 'OR' ? 'checked' : '' ?>>
                                 <label for="ability-or">OR</label>
                             </div>
                         </div>
@@ -293,7 +292,6 @@
                         </select>
                     </div>
                     <div class="select-group">
-                        <!-- ヘッダー：ラベルとAND/ORスイッチ -->
                         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
                             <label class="search-label" style="min-width: auto;">ソウル</label>
                             <div class="and-or-toggle">
@@ -303,8 +301,6 @@
                                 <label for="soul-or" style="padding: 2px 8px; font-size: 0.75em;">OR</label>
                             </div>
                         </div>
-                        
-                        <!-- 選択ボックス -->
                         <div id="soul-select-box" class="race-select-box styled-select" style="min-width: 180px; padding: 8px 12px; height: auto; display: flex; align-items: center; position: relative;">
                             <span class="placeholder">指定なし</span>
                             <div class="selected-soul-display" style="position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
@@ -430,15 +426,14 @@
 </div>
 <!-- ▲▲▲ PAGINATION END ▲▲▲ -->
 
+<!-- ▼▼▼ MODALS ▼▼▼ -->
 <div id="card-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
             <h3 id="modal-card-name">カード名</h3>
             <span id="modal-close-btn" class="close-btn">×</span>
         </div>
-        <div id="modal-cards-container" class="modal-body-scrollable">
-            <!-- JavaScriptでカード情報が挿入される -->
-        </div>
+        <div id="modal-cards-container" class="modal-body-scrollable"></div>
     </div>
 </div>
 
@@ -470,20 +465,14 @@
                 </table>                
                 <table class="detail-table">
                     <tbody>
-                        <tr>
-                            <th>イラストレーター</th><td class="modal-illustrator"></td>
-                        </tr>
+                        <tr><th>イラストレーター</th><td class="modal-illustrator"></td></tr>
                     </tbody>
                 </table>
-                <!-- ===== デバッグ用ここから (不要になったらこのテーブルごと削除) ===== -->
                 <table class="detail-table">
                     <tbody>
-                        <tr>
-                            <th>設定特殊能力リスト</th><td class="modal-debug-ability-names"></td>
-                        </tr>
+                        <tr><th>設定特殊能力リスト</th><td class="modal-debug-ability-names"></td></tr>
                     </tbody>
                 </table>
-                <!-- ===== デバッグ用ここまで ===== -->
                 <div class="modal-ability-section ability-section" style="display: none;">
                     <h4>特殊能力</h4>
                     <div class="modal-text ability-text"></div>
@@ -506,15 +495,10 @@
             <span id="race-modal-clear-btn" class="modal-clear-btn">クリア</span>
         </div>
         <div class="race-modal-body">
-            <div class="race-modal-search-bar" style="display:none;"> 
-                <input type="text" id="others-modal-search-input" placeholder="検索">
-            </div>
             <div class="race-modal-search-bar">
                 <input type="text" id="race-modal-search-input" placeholder="&#xF002; 種族名">
             </div>
-            <div id="race-modal-list" class="race-modal-list">
-                <!-- ここにJavaScriptで種族リストが挿入される -->
-            </div>
+            <div id="race-modal-list" class="race-modal-list"></div>
         </div>
         <div class="modal-footer">
             <button type="button" id="race-modal-cancel-btn" class="btn-secondary">キャンセル</button>
@@ -533,9 +517,7 @@
             <div class="race-modal-search-bar">
                 <input type="text" id="ability-modal-search-input" placeholder="&#xF002; 特殊能力名">
             </div>
-            <div id="ability-modal-list" class="race-modal-list">
-                <!-- ここにJavaScriptで特殊能力リストが挿入される -->
-            </div>
+            <div id="ability-modal-list" class="race-modal-list"></div>
         </div>
         <div class="modal-footer">
             <button type="button" id="ability-modal-cancel-btn" class="btn-secondary">キャンセル</button>
@@ -544,7 +526,6 @@
     </div>
 </div>
 
-<!-- その他選択モーダル -->
 <div id="others-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content race-modal-content">
         <div class="modal-header">
@@ -552,9 +533,7 @@
             <span id="others-modal-clear-btn" class="modal-clear-btn">クリア</span>
         </div>
         <div class="race-modal-body">
-            <div id="others-modal-list" class="race-modal-list">
-                <!-- JavaScriptでリストが挿入される -->
-            </div>
+            <div id="others-modal-list" class="race-modal-list"></div>
         </div>
         <div class="modal-footer">
             <button type="button" id="others-modal-cancel-btn" class="btn-secondary">キャンセル</button>
@@ -562,7 +541,7 @@
         </div>
     </div>
 </div>
-<!-- ソウル選択モーダル -->
+
 <div id="soul-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content race-modal-content">
         <div class="modal-header">
@@ -570,12 +549,7 @@
             <span id="soul-modal-clear-btn" class="modal-clear-btn">クリア</span>
         </div>
         <div class="race-modal-body">
-            <div class="race-modal-search-bar" style="display:none;">
-                <input type="text" id="soul-modal-search-input" placeholder="検索">
-            </div>
-            <div id="soul-modal-list" class="race-modal-list">
-                <!-- JavaScriptでリストが挿入される -->
-            </div>
+            <div id="soul-modal-list" class="race-modal-list"></div>
         </div>
         <div class="modal-footer">
             <button type="button" id="soul-modal-cancel-btn" class="btn-secondary">キャンセル</button>
