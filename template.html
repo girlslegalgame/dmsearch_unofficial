@@ -8,36 +8,31 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- ▼▼▼ ローディング表示（UX改善） ▼▼▼ -->
 <div id="loading-overlay" style="display: none;">
     <div class="spinner"></div>
 </div>
-
 <h2 style="text-align:center;">カード一覧</h2>
 
-<!-- ▼▼▼ 検索結果件数表示 ▼▼▼ -->
 <div class="search-results-summary">
     <p><?= htmlspecialchars($total) ?>枚</p>
 </div>
-<!-- ▲▲▲ 検索結果件数表示 END ▲▲▲ -->
 
-<!-- ▼▼▼ FORM ▼▼▼ -->
 <form method="get" id="searchForm">
 
-    <!-- ▼▼▼ 中央揃えにしたい要素のコンテナ ▼▼▼ -->
     <div class="main-form-container">
-        <input type="text" name="search" placeholder="検索ワード" value="<?= htmlspecialchars($search) ?>">
-        
-        <!-- ▼▼▼ 追加：キーワード検索のAND/OR切り替え ▼▼▼ -->
-        <div class="and-or-toggle" style="margin-top: 5px; margin-bottom: 10px;">
-            <input type="radio" id="keyword-and" name="keyword_mode" value="AND" <?= ($keyword_mode === 'AND') ? 'checked' : '' ?>>
-            <label for="keyword-and">AND検索</label>
-            <input type="radio" id="keyword-or" name="keyword_mode" value="OR" <?= ($keyword_mode === 'OR') ? 'checked' : '' ?>>
-            <label for="keyword-or">OR検索</label>
+        <!-- 検索入力エリア（右上にAND/ORスイッチ） -->
+        <div style="position: relative; max-width: 960px; margin: 0 auto;">
+            <div class="and-or-toggle" style="position: absolute; right: 0; bottom: 100%; margin-bottom: 5px; border-radius: 10px;">
+                <input type="radio" id="keyword-and" name="keyword_mode" value="AND" <?= ($keyword_mode === 'AND') ? 'checked' : '' ?>>
+                <label for="keyword-and" style="padding: 2px 10px; font-size: 0.75em;">AND</label>
+                <input type="radio" id="keyword-or" name="keyword_mode" value="OR" <?= ($keyword_mode === 'OR') ? 'checked' : '' ?>>
+                <label for="keyword-or" style="padding: 2px 10px; font-size: 0.75em;">OR</label>
+            </div>
+            <input type="text" name="search" placeholder="検索ワード" value="<?= htmlspecialchars($search) ?>">
         </div>
-        <!-- ▲▲▲ 追加 END ▲▲▲ -->
 
         <input type="hidden" id="advanced-state" name="advanced_open" value="<?= $is_advanced_open ? '1' : '0' ?>">
+        <br>
         
         <div class="checkbox-container">
             <span class="checkbox-label">検索対象</span>
@@ -55,13 +50,10 @@
         <br>
         <button type="button" class="reset-button">リセット</button>
         <br>
-        
-        <!-- ▼▼▼ 「さらに条件をしぼる」ボタン ▼▼▼ -->
         <p class="detailBtn" id="toggle-advanced-btn">
             <?= $is_advanced_open ? '条件を隠す' : 'さらに条件をしぼる' ?>
         </p>
         
-        <!-- ▼▼▼ 詳細検索エリア ▼▼▼ -->
         <div id="advanced-search-area" class="<?= $is_advanced_open ? 'is-open' : '' ?>">
             <div class="search-group-container">
                 <label class="search-label left-align-label">文明</label><br>
@@ -371,9 +363,7 @@
         </div>
     </div>
 </form>
-<!-- ▲▲▲ FORM END ▲▲▲ -->
 
-<!-- ▼▼▼ CARD LIST ▼▼▼ -->
 <div class="container">
     <?php if ($total > 0): ?>
         <div class="card-grid">
@@ -389,9 +379,7 @@
         </div>
     <?php endif; ?>
 </div>
-<!-- ▲▲▲ CARD LIST END ▲▲▲ -->
 
-<!-- ▼▼▼ PAGINATION ▼▼▼ -->
 <div id="pagination-wrapper">
     <?php if ($totalPages > 1): ?>
     <div class="pagination">
@@ -424,9 +412,7 @@
     </div>
     <?php endif; ?>
 </div>
-<!-- ▲▲▲ PAGINATION END ▲▲▲ -->
 
-<!-- ▼▼▼ MODALS ▼▼▼ -->
 <div id="card-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
