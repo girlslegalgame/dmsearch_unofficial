@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ② メイン制御関数 ---
 
     /**
-     * 【復元】文明検索UIの連動制御（表示・非表示・矛盾リセット）
+     * 【復元】文明検索UIの連動制御（多色カードの検索対象ドロップダウン含む）
      */
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
@@ -73,12 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedCount = selectedMainCivIds.length;
         const isExactMode = (multiSearchTypeSelect && multiSearchTypeSelect.value === 'exact');
 
-        // 1. 多色検索対象ドロップダウンの表示
+        // 1. 【復元】多色検索対象ドロップダウンの表示制御
         if (multiSearchTypeSection) {
             multiSearchTypeSection.style.display = (isMultiOn && selectedCount >= 2) ? 'block' : 'none';
         }
 
-        // 2. 「多色に含めない文明」セクションの表示
+        // 2. 【復元】「多色に含めない文明」セクションの表示制御
         if (excludeSection) {
             if (isMultiOn && selectedCount >= 1 && (selectedCount < 2 || !isExactMode)) {
                 excludeSection.style.display = 'block';
@@ -87,13 +87,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. 個別の除外文明ボタンの表示（メインで選ばれているものは隠す）
+        // 3. 除外文明ボタンの表示制御
         excludeCivWrappers.forEach(wrapper => {
             const civId = wrapper.id.replace('exclude-wrapper-', '');
             wrapper.style.display = selectedMainCivIds.includes(civId) ? 'none' : 'block';
         });
     }
 
+    // 【復元】多色検索対象ドロップダウンの変更を監視
     if (multiSearchTypeSelect) {
         multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
     }
@@ -146,7 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!button) return;
             const isTurningOff = !button.classList.contains('is-off');
             
-            // 単色・多色の排他制御
             if (button === monoColorBtn && isTurningOff && multiColorBtn.classList.contains('is-off')) return;
             if (button === multiColorBtn && isTurningOff && monoColorBtn.classList.contains('is-off')) return;
             
@@ -158,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 targetInput.value = isNowOn ? (button.dataset.civId || '1') : '0';
             }
 
-            // 【重要】メイン文明がONになったら、対応する除外文明を強制OFFにする
             if (isNowOn && button.closest('#main-civs-buttons')) {
                 const civId = button.dataset.civId;
                 const excludeInput = document.getElementById(`exclude_civ_${civId}`);
@@ -166,12 +165,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (excludeInput) excludeInput.value = '0';
                 if (excludeButton) excludeButton.classList.add('is-off');
             }
-
             updateCivilizationControls();
         });
     }
 
-    // 詳細開閉
     if (toggleAdvancedBtn && advancedSearchArea) {
         toggleAdvancedBtn.addEventListener('click', () => {
             const isOpen = advancedSearchArea.classList.toggle('is-open');
@@ -180,7 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 検索対象ボタン
     function updateToggleButtonLabel() {
         if (!toggleBtn) return;
         const anyChecked = Array.from(searchCheckboxes).some(cb => cb.checked);
@@ -195,7 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     searchCheckboxes.forEach(cb => cb.addEventListener('change', updateToggleButtonLabel));
 
-    // 入力制限
     const setupCheckboxToggle = (check1, check2, input1, input2) => {
         const toggleInputs = () => {
             const disable = (check1 && check1.checked) || (check2 && check2.checked);
@@ -209,7 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCheckboxToggle(costZeroCheck, costInfinityCheck, costMinInput, costMaxInput);
     setupCheckboxToggle(powInfinityCheck, null, powMinInput, powMaxInput);
 
-    // 商品名絞り込み
     if (goodsTypeSelect) {
         goodsTypeSelect.addEventListener('change', () => {
             fetch(`api.php?type=goods&goodstype_id=${goodsTypeSelect.value}`)
@@ -224,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 並び替え・同名
     if (sortOrderSelect) {
         sortOrderSelect.addEventListener('change', () => {
             if (sortOrderHiddenInput) sortOrderHiddenInput.value = sortOrderSelect.value;
@@ -250,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             [costMinInput, costMaxInput, powMinInput, powMaxInput].forEach(inp => { if(inp) { inp.disabled = false; inp.value = ''; } });
             document.querySelectorAll('select.styled-select').forEach(s => { if (s.name === 'mana_filter') s.value = 'all'; else s.value = '0'; });
             if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
+            if (multiSearchTypeSelect) multiSearchTypeSelect.value = 'or'; // 【復元】ドロップダウンリセット
             document.querySelectorAll('.civ-btn').forEach(b => {
                 const isType = b.dataset.targetInput === 'mono_color' || b.dataset.targetInput === 'multi_color';
                 b.classList.toggle('is-off', !isType);
@@ -264,11 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ページトップボタン
     if (backToTopBtn) {
-        window.addEventListener('scroll', () => {
-            backToTopBtn.style.display = (window.scrollY > 300) ? 'flex' : 'none';
-        });
+        window.addEventListener('scroll', () => { backToTopBtn.style.display = (window.scrollY > 300) ? 'flex' : 'none'; });
         backToTopBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
     }
 
@@ -339,7 +330,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearchModal({ modalType: 'others', hiddenInputName: 'others_ids[]', displayClassName: 'selected-others-display' });
     setupSearchModal({ modalType: 'soul', hiddenInputName: 'soul_ids[]', displayClassName: 'selected-soul-display' });
 
-    // カード詳細モーダル
     let modalObserver = null;
     function openCardDetailModal(cardId) {
         const container = document.getElementById('modal-cards-container');
