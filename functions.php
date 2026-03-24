@@ -55,6 +55,7 @@ function format_card_text($raw, $is_ability = true) {
         '{NC}' => '<img src="parts/card_list_nochoice.webp" alt="No-Choice" class="text-icon">',
         '{SD}' => '<img src="parts/card_list_solemnduty.webp" alt="Solemn-Duty" class="text-icon">',
         '{VIC}' => '<img src="parts/card_list_victory.webp" alt="Victory" class="text-icon">',
+        '{SC}' => '<img src="parts/card_list_spacecharge.webp" alt="Space-Charge" class="text-icon">',
     ];
     $lines = explode("\n", $raw);
     $res = [];
