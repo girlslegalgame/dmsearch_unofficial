@@ -13,7 +13,6 @@ function escapeHTML(str) {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- ① 要素の取得 ---
     const searchForm = document.getElementById('searchForm');
     const resetButtons = document.querySelectorAll('.reset-button');
     const loadingOverlay = document.getElementById('loading-overlay');
@@ -53,17 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortOrderHiddenInput = document.getElementById('sort-order-hidden');
     const showSameNameCheck = document.getElementById('show-same-name-check');
 
-    // --- ② メイン制御関数 ---
-
     /**
-     * 【復元】文明検索UIの連動制御（多色カードの検索対象ドロップダウン含む）
+     * 文明検索UIの連動制御
      */
     function updateCivilizationControls() {
         if (!multiColorBtn || mainCivButtons.length === 0) return;
-
         const isMultiOn = !multiColorBtn.classList.contains('is-off');
-        
-        // メイン文明（無色除く）の選択状況
         const selectedMainCivIds = [];
         mainCivButtons.forEach(btn => {
             if (!btn.classList.contains('is-off') && btn.dataset.civId !== '6') {
@@ -73,38 +67,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedCount = selectedMainCivIds.length;
         const isExactMode = (multiSearchTypeSelect && multiSearchTypeSelect.value === 'exact');
 
-        // 1. 【復元】多色検索対象ドロップダウンの表示制御
-        if (multiSearchTypeSection) {
-            multiSearchTypeSection.style.display = (isMultiOn && selectedCount >= 2) ? 'block' : 'none';
-        }
-
-        // 2. 【復元】「多色に含めない文明」セクションの表示制御
-        if (excludeSection) {
-            if (isMultiOn && selectedCount >= 1 && (selectedCount < 2 || !isExactMode)) {
-                excludeSection.style.display = 'block';
-            } else {
-                excludeSection.style.display = 'none';
-            }
-        }
-
-        // 3. 除外文明ボタンの表示制御
+        if (multiSearchTypeSection) multiSearchTypeSection.style.display = (isMultiOn && selectedCount >= 2) ? 'block' : 'none';
+        if (excludeSection) excludeSection.style.display = (isMultiOn && selectedCount >= 1 && (selectedCount < 2 || !isExactMode)) ? 'block' : 'none';
         excludeCivWrappers.forEach(wrapper => {
             const civId = wrapper.id.replace('exclude-wrapper-', '');
             wrapper.style.display = selectedMainCivIds.includes(civId) ? 'none' : 'block';
         });
     }
 
-    // 【復元】多色検索対象ドロップダウンの変更を監視
-    if (multiSearchTypeSelect) {
-        multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
-    }
-
-    // --- ③ 検索・UI処理 ---
+    if (multiSearchTypeSelect) multiSearchTypeSelect.addEventListener('change', updateCivilizationControls);
 
     function performSearch(url) {
         if (loadingOverlay) loadingOverlay.style.display = 'flex';
         if (resultsContainer) resultsContainer.style.opacity = '0.5';
-
         const fetchUrl = new URL(url, window.location.origin);
         fetchUrl.searchParams.set('_t', Date.now());
 
@@ -146,17 +121,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const button = e.target.closest('.civ-btn');
             if (!button) return;
             const isTurningOff = !button.classList.contains('is-off');
-            
             if (button === monoColorBtn && isTurningOff && multiColorBtn.classList.contains('is-off')) return;
             if (button === multiColorBtn && isTurningOff && monoColorBtn.classList.contains('is-off')) return;
             
             const targetInput = document.getElementById(button.dataset.targetInput);
             button.classList.toggle('is-off');
             const isNowOn = !button.classList.contains('is-off');
-
-            if (targetInput) {
-                targetInput.value = isNowOn ? (button.dataset.civId || '1') : '0';
-            }
+            if (targetInput) targetInput.value = isNowOn ? (button.dataset.civId || '1') : '0';
 
             if (isNowOn && button.closest('#main-civs-buttons')) {
                 const civId = button.dataset.civId;
@@ -226,11 +197,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (showSameNameCheck) showSameNameCheck.addEventListener('change', triggerSearch);
 
-    // --- ④ リセット・共通 ---
+    // --- ④ リセットボタン ---
     let resetModalStates = []; 
     resetButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             searchForm.reset();
+            
+            // ★修正：検索ワード欄を明示的に空にする
+            const searchInput = document.querySelector('input[name="search"]');
+            if (searchInput) searchInput.value = '';
+
             const keywordAnd = document.getElementById('keyword-and');
             if (keywordAnd) keywordAnd.checked = true;
             document.getElementsByName('search_name')[0].checked = true;
@@ -243,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             [costMinInput, costMaxInput, powMinInput, powMaxInput].forEach(inp => { if(inp) { inp.disabled = false; inp.value = ''; } });
             document.querySelectorAll('select.styled-select').forEach(s => { if (s.name === 'mana_filter') s.value = 'all'; else s.value = '0'; });
             if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
-            if (multiSearchTypeSelect) multiSearchTypeSelect.value = 'or'; // 【復元】ドロップダウンリセット
+            if (multiSearchTypeSelect) multiSearchTypeSelect.value = 'or'; 
             document.querySelectorAll('.civ-btn').forEach(b => {
                 const isType = b.dataset.targetInput === 'mono_color' || b.dataset.targetInput === 'multi_color';
                 b.classList.toggle('is-off', !isType);
@@ -289,13 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const render = (items) => {
             listEl.innerHTML = items.sort((a,b) => getSortableString(a.reading).localeCompare(getSortableString(b.reading)))
-                .map(item => `
-                    <div class="race-list-item">
-                        <label style="display:flex; justify-content:space-between; align-items:center; width:100%; cursor:pointer;">
-                            <span>${escapeHTML(item.name)}</span>
-                            <input type="checkbox" data-id="${item.id}" data-name="${escapeHTML(item.name)}" ${selectedItems.has(String(item.id)) ? 'checked' : ''}>
-                        </label>
-                    </div>`).join('');
+                .map(item => `<div class="race-list-item"><label style="display:flex;justify-content:space-between;align-items:center;width:100%;cursor:pointer;"><span>${escapeHTML(item.name)}</span><input type="checkbox" data-id="${item.id}" data-name="${escapeHTML(item.name)}" ${selectedItems.has(String(item.id)) ? 'checked' : ''}></label></div>`).join('');
         };
 
         selectBox.addEventListener('click', () => {
@@ -378,5 +348,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     updateToggleButtonLabel();
-    updateCivilizationControls(); // 初期化
+    updateCivilizationControls();
 });
