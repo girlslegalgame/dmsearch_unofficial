@@ -67,8 +67,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedCount = selectedMainCivIds.length;
         const isExactMode = (multiSearchTypeSelect && multiSearchTypeSelect.value === 'exact');
 
-        if (multiSearchTypeSection) multiSearchTypeSection.style.display = (isMultiOn && selectedCount >= 2) ? 'block' : 'none';
-        if (excludeSection) excludeSection.style.display = (isMultiOn && selectedCount >= 1 && (selectedCount < 2 || !isExactMode)) ? 'block' : 'none';
+        if (multiSearchTypeSection) {
+            multiSearchTypeSection.style.display = (isMultiOn && selectedCount >= 2) ? 'block' : 'none';
+        }
+        if (excludeSection) {
+            if (isMultiOn && selectedCount >= 1 && (selectedCount < 2 || !isExactMode)) {
+                excludeSection.style.display = 'block';
+            } else {
+                excludeSection.style.display = 'none';
+            }
+        }
         excludeCivWrappers.forEach(wrapper => {
             const civId = wrapper.id.replace('exclude-wrapper-', '');
             wrapper.style.display = selectedMainCivIds.includes(civId) ? 'none' : 'block';
@@ -197,16 +205,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (showSameNameCheck) showSameNameCheck.addEventListener('change', triggerSearch);
 
-    // --- ④ リセットボタン ---
     let resetModalStates = []; 
     resetButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             searchForm.reset();
-            
-            // ★修正：検索ワード欄を明示的に空にする
             const searchInput = document.querySelector('input[name="search"]');
             if (searchInput) searchInput.value = '';
-
             const keywordAnd = document.getElementById('keyword-and');
             if (keywordAnd) keywordAnd.checked = true;
             document.getElementsByName('search_name')[0].checked = true;
@@ -239,7 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
         backToTopBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
     }
 
-    // --- ⑤ モーダル関連 ---
     function getSortableString(str) { if (!str) return ''; return str.split('').map(char => CONFIG.SORT_MAP[char] || char).join(''); }
     
     function setupSearchModal(config) {
@@ -301,22 +304,35 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearchModal({ modalType: 'soul', hiddenInputName: 'soul_ids[]', displayClassName: 'selected-soul-display' });
 
     let modalObserver = null;
+    const cardDetailModal = document.getElementById('card-modal');
+
     function openCardDetailModal(cardId) {
         const container = document.getElementById('modal-cards-container');
         const title = document.getElementById('modal-card-name');
+        const readingEl = document.getElementById('modal-card-reading'); // 追記
         const template = document.getElementById('modal-card-template');
-        document.getElementById('card-modal').style.display = 'flex';
+        cardDetailModal.style.display = 'flex';
         container.innerHTML = ''; title.textContent = '読み込み中...';
+        if (readingEl) readingEl.textContent = ''; // 追記
+
         if (modalObserver) modalObserver.disconnect();
 
         fetch(`get_card_details.php?id=${cardId}`).then(res => res.json()).then(data => {
             modalObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => { if (entry.isIntersecting && entry.intersectionRatio >= 0.5) title.textContent = entry.target.dataset.cardName; });
+                entries.forEach(entry => { 
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                        title.textContent = entry.target.dataset.cardName;
+                        if (readingEl) readingEl.textContent = entry.target.dataset.cardReading; // 追記
+                    }
+                });
             }, { root: container, threshold: 0.5 });
 
             data.cards.forEach(card => {
                 const clone = template.content.cloneNode(true);
-                clone.querySelector('.modal-card-instance').dataset.cardName = card.card_name;
+                const instance = clone.querySelector('.modal-card-instance');
+                instance.dataset.cardName = card.card_name;
+                instance.dataset.cardReading = card.reading; // 追記
+                
                 clone.querySelector('.modal-card-type').textContent = card.card_type;
                 clone.querySelector('.modal-civilization').textContent = card.civilization;
                 clone.querySelector('.modal-rarity').textContent = card.rarity;
@@ -331,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (card.text && card.text !== '（テキスト情報なし）') { clone.querySelector('.modal-text').innerHTML = card.text; clone.querySelector('.modal-ability-section').style.display = 'block'; }
                 if (card.flavortext) { clone.querySelector('.modal-flavortext').innerHTML = card.flavortext; clone.querySelector('.modal-flavor-section').style.display = 'block'; }
                 container.appendChild(clone);
-                modalObserver.observe(container.lastElementChild);
+                modalObserver.observe(instance);
             });
         });
     }
