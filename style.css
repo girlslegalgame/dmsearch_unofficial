@@ -1,11 +1,11 @@
-/* Google Fonts から必要なフォントを読み込み */
+/* Google Fonts 読み込み */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Zen+Kaku+Gothic+New:wght@700;900&family=Montserrat:wght@600;700&display=swap');
 
-/* 全体の基本設定（スタイリッシュ・読みやすさ重視） */
+/* 全体の基本設定：文字色をハッキリした黒に変更 */
 body {
     font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
-    color: #333;
+    color: #000000; /* 真っ黒 */
 }
 
 /* === 1. カード名・主要見出し・強調要素（太く、見やすい） === */
@@ -19,44 +19,49 @@ h2,
 button[type="submit"] {
     font-family: "Zen Kaku Gothic New", sans-serif;
     font-weight: 700;
-    letter-spacing: 0.03em; /* わずかに文字間を広げて視認性アップ */
+    color: #000000;
+    letter-spacing: 0.02em;
 }
 
 /* === 2. カード詳細・説明文（読みやすく、スッキリ） === */
+/* モーダル内の文字や能力文を確実に真っ黒にする */
 .detail-table td, 
 .ability-text, 
+.modal-text,
+.modal-flavortext,
 .race-list-item, 
 .styled-select, 
 input[type="text"], 
 .pagination a {
     font-family: "Noto Sans JP", sans-serif;
     font-weight: 400;
-    line-height: 1.7; /* 行間を広めに取って読みやすく */
+    color: #000000; /* 真っ黒 */
+    line-height: 1.6;
 }
 
 /* === 3. 数値・枚数表示（数字をよりスタイリッシュに） === */
 .modal-power, 
 .modal-cost, 
 .modal-mana, 
-.search-results-summary p, 
 .rangenum-input {
     font-family: "Montserrat", "Zen Kaku Gothic New", sans-serif;
     font-weight: 700;
+    color: #000000;
 }
 
-/* モーダル内の特殊能力見出しを少し調整 */
+/* 特殊能力の枠内などの背景を少し調整して視認性を確保 */
 .ability-section h4 {
     font-family: "Zen Kaku Gothic New", sans-serif;
     font-weight: 700;
-    background-color: #f1f3f5;
-    color: #495057;
+    background-color: #f8f9fa;
+    color: #000000;
 }
 
-/* フレーバーテキストは少し柔らかい印象に */
+/* フレーバーテキストも読みやすさ重視で黒に */
 .modal-flavortext {
     font-weight: 400;
-    color: #666;
-    border-left: 3px solid #dee2e6; /* 引用風のライン */
+    color: #000000;
+    border-left: 3px solid #000000;
     padding-left: 10px;
 }
 
