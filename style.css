@@ -1,3 +1,65 @@
+/* Google Fonts から必要なフォントを読み込み */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Zen+Kaku+Gothic+New:wght@700;900&family=Montserrat:wght@600;700&display=swap');
+
+/* 全体の基本設定（スタイリッシュ・読みやすさ重視） */
+body {
+    font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #333;
+}
+
+/* === 1. カード名・主要見出し・強調要素（太く、見やすい） === */
+h2, 
+#modal-card-name, 
+.search-results-summary p, 
+.checkbox-label, 
+.search-label, 
+.detailBtn, 
+.detail-table th, 
+button[type="submit"] {
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.03em; /* わずかに文字間を広げて視認性アップ */
+}
+
+/* === 2. カード詳細・説明文（読みやすく、スッキリ） === */
+.detail-table td, 
+.ability-text, 
+.race-list-item, 
+.styled-select, 
+input[type="text"], 
+.pagination a {
+    font-family: "Noto Sans JP", sans-serif;
+    font-weight: 400;
+    line-height: 1.7; /* 行間を広めに取って読みやすく */
+}
+
+/* === 3. 数値・枚数表示（数字をよりスタイリッシュに） === */
+.modal-power, 
+.modal-cost, 
+.modal-mana, 
+.search-results-summary p, 
+.rangenum-input {
+    font-family: "Montserrat", "Zen Kaku Gothic New", sans-serif;
+    font-weight: 700;
+}
+
+/* モーダル内の特殊能力見出しを少し調整 */
+.ability-section h4 {
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-weight: 700;
+    background-color: #f1f3f5;
+    color: #495057;
+}
+
+/* フレーバーテキストは少し柔らかい印象に */
+.modal-flavortext {
+    font-weight: 400;
+    color: #666;
+    border-left: 3px solid #dee2e6; /* 引用風のライン */
+    padding-left: 10px;
+}
+
 @import url(https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css);
 
 .container {
