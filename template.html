@@ -416,7 +416,12 @@
 <div id="card-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="modal-card-name">カード名</h3>
+            <!-- ▼▼▼ 修正：読み(reading)を表示するエリアを追加 ▼▼▼ -->
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                <div id="modal-card-reading" style="font-size: 0.6em; color: #ccc; line-height: 1.2;">読み</div>
+                <h3 id="modal-card-name" style="margin: 0;">カード名</h3>
+            </div>
+            <!-- ▲▲▲ 修正 END ▲▲▲ -->
             <span id="modal-close-btn" class="close-btn">×</span>
         </div>
         <div id="modal-cards-container" class="modal-body-scrollable"></div>
@@ -472,7 +477,6 @@
     </div>
 </template>
 
-<!-- ▼▼▼ 追記：ページトップへ戻るボタン ▼▼▼ -->
 <button id="back-to-top" class="back-to-top" title="トップへ戻る">
     <i class="fa fa-chevron-up"></i>
 </button>
