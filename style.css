@@ -1,37 +1,53 @@
-/* Google Fonts 読み込み（情報のスタイリッシュさと数値用） */
+/* Google Fonts 読み込み */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Montserrat:wght@600;700&display=swap');
 
-/* 全体の基本設定：基本はすべて真っ黒 */
+/* 全体の基本設定：基本の文字色は黒 */
 body {
-    font-family: "Noto Sans JP", "メイリオ", Meiryo, "Hiragino Kaku Gothic ProN", sans-serif;
+    font-family: "Noto Sans JP", "メイリオ", Meiryo, sans-serif;
     -webkit-font-smoothing: antialiased;
-    color: #000000; /* 基本の文字色は黒 */
+    color: #000000;
 }
 
-/* === 1. モーダルのカード名（ここだけ白、メイリオ太字） === */
-#modal-card-name {
+/* === 1. 文字色が【白 (#FFFFFF)】、フォントが【メイリオ太字】の要素 === */
+/* モーダル内のカード名、およびすべての操作ボタン */
+#modal-card-name, 
+button, 
+.detailBtn, 
+.back-to-top, 
+.btn-primary, 
+.btn-secondary,
+.modal-clear-btn {
     font-family: "メイリオ", Meiryo, sans-serif;
     font-weight: Bold;
-    color: #FFFFFF !important;
-    letter-spacing: 0.05em;
+    color: #FFFFFF !important; /* 文字色は白 */
 }
 
-/* === 2. 強調要素（メイリオ太字、色は黒） === */
-/* ページタイトル、表の見出し、チェックボックスラベルなど */
+/* ボタン背景色の設定（白文字を読みやすくするため） */
+button[type="submit"], .btn-primary, .back-to-top {
+    background-color: #007bff; /* 青 */
+    border: none;
+}
+.reset-button, #toggleBtn, .detailBtn, .btn-secondary {
+    background-color: #6c757d; /* 落ち着いたグレー */
+    border: none;
+}
+.modal-clear-btn {
+    color: #FFFFFF; /* クリアボタンも白文字に */
+}
+
+/* === 2. 文字色が【黒 (#000000)】、フォントが【メイリオ太字】の要素 === */
 h2, 
 .search-results-summary p, 
 .checkbox-label, 
 .search-label, 
-.detailBtn, 
 .detail-table th, 
-.ability-section h4,
-button {
+.ability-section h4 {
     font-family: "メイリオ", Meiryo, sans-serif;
     font-weight: Bold;
     color: #000000;
 }
 
-/* === 3. カード情報・テキスト（読みやすく、色は黒） === */
+/* === 3. 文字色が【黒 (#000000)】、フォントが【Noto Sans JP】の要素 === */
 .detail-table td, 
 .ability-text, 
 .modal-text,
@@ -46,7 +62,7 @@ input[type="text"],
     line-height: 1.6;
 }
 
-/* === 4. 数値表示（スタイリッシュな数字、色は黒） === */
+/* === 4. 文字色が【黒 (#000000)】、フォントが【Montserrat】の数値要素 === */
 .modal-power, 
 .modal-cost, 
 .modal-mana, 
@@ -56,11 +72,12 @@ input[type="text"],
     color: #000000;
 }
 
-/* フレーバーテキストの装飾（線も黒に） */
+/* フレーバーテキストの装飾 */
 .modal-flavortext {
     border-left: 3px solid #000000;
     padding-left: 10px;
 }
+
 @import url(https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css);
 
 .container {
