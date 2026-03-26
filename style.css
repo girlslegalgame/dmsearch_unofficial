@@ -1,31 +1,37 @@
-/* Google Fonts 読み込み */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Zen+Kaku+Gothic+New:wght@700;900&family=Montserrat:wght@600;700&display=swap');
+/* Google Fonts 読み込み（情報のスタイリッシュさと数値用） */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Montserrat:wght@600;700&display=swap');
 
-/* 全体の基本設定：情報は読みやすく、ハッキリした黒 */
+/* 全体の基本設定：基本はすべて真っ黒 */
 body {
-    font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: "Noto Sans JP", "メイリオ", Meiryo, "Hiragino Kaku Gothic ProN", sans-serif;
     -webkit-font-smoothing: antialiased;
-    color: #000000; /* 情報テキストは黒 */
+    color: #000000; /* 基本の文字色は黒 */
 }
 
-/* === 1. カード名の部分（太く、見やすいフォント、色は白） === */
-/* モーダル内のカード名と、ページタイトルの色設定 */
-#modal-card-name, 
-h2 {
-    font-family: "Zen Kaku Gothic New", sans-serif;
-    font-weight: 700;
-    color: #FFFFFF !important; /* カード名は白 */
+/* === 1. モーダルのカード名（ここだけ白、メイリオ太字） === */
+#modal-card-name {
+    font-family: "メイリオ", Meiryo, sans-serif;
+    font-weight: Bold;
+    color: #FFFFFF !important;
     letter-spacing: 0.05em;
 }
 
-/* ページタイトル(h2)が白で見えない場合に備え、背景を付ける例（不要なら削除してください） */
-h2 {
-    background-color: #212529; /* モーダルヘッダーと合わせた濃いグレー */
-    padding: 15px 0;
-    margin-top: 0;
+/* === 2. 強調要素（メイリオ太字、色は黒） === */
+/* ページタイトル、表の見出し、チェックボックスラベルなど */
+h2, 
+.search-results-summary p, 
+.checkbox-label, 
+.search-label, 
+.detailBtn, 
+.detail-table th, 
+.ability-section h4,
+button {
+    font-family: "メイリオ", Meiryo, sans-serif;
+    font-weight: Bold;
+    color: #000000;
 }
 
-/* === 2. カード情報・テキスト（スタイリッシュなフォント、色は黒） === */
+/* === 3. カード情報・テキスト（読みやすく、色は黒） === */
 .detail-table td, 
 .ability-text, 
 .modal-text,
@@ -33,43 +39,28 @@ h2 {
 .race-list-item, 
 .styled-select, 
 input[type="text"], 
-.pagination a,
-.checkbox-container,
-.search-label {
+.pagination a {
     font-family: "Noto Sans JP", sans-serif;
     font-weight: 400;
-    color: #000000; /* 情報は黒 */
+    color: #000000;
     line-height: 1.6;
 }
 
-/* === 3. 数値（数字をよりスタイリッシュに、色は黒） === */
+/* === 4. 数値表示（スタイリッシュな数字、色は黒） === */
 .modal-power, 
 .modal-cost, 
 .modal-mana, 
-.rangenum-input,
-.search-results-summary p {
+.rangenum-input {
     font-family: "Montserrat", sans-serif;
     font-weight: 700;
-    color: #000000; /* 数字も黒 */
-}
-
-/* モーダル内の項目ラベル（表の左側など） */
-.detail-table th, 
-.checkbox-label, 
-.search-label,
-.ability-section h4 {
-    font-family: "Zen Kaku Gothic New", sans-serif;
-    font-weight: 700;
     color: #000000;
-    background-color: #f8f9fa; /* ラベル背景は薄いグレー */
 }
 
-/* フレーバーテキスト */
+/* フレーバーテキストの装飾（線も黒に） */
 .modal-flavortext {
     border-left: 3px solid #000000;
     padding-left: 10px;
 }
-
 @import url(https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css);
 
 .container {
