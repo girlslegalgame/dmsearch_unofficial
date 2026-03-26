@@ -1,30 +1,31 @@
 /* Google Fonts 読み込み */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Zen+Kaku+Gothic+New:wght@700;900&family=Montserrat:wght@600;700&display=swap');
 
-/* 全体の基本設定：文字色をハッキリした黒に変更 */
+/* 全体の基本設定：情報は読みやすく、ハッキリした黒 */
 body {
     font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
-    color: #000000; /* 真っ黒 */
+    color: #000000; /* 情報テキストは黒 */
 }
 
-/* === 1. カード名・主要見出し・強調要素（太く、見やすい） === */
-h2, 
+/* === 1. カード名の部分（太く、見やすいフォント、色は白） === */
+/* モーダル内のカード名と、ページタイトルの色設定 */
 #modal-card-name, 
-.search-results-summary p, 
-.checkbox-label, 
-.search-label, 
-.detailBtn, 
-.detail-table th, 
-button[type="submit"] {
+h2 {
     font-family: "Zen Kaku Gothic New", sans-serif;
     font-weight: 700;
-    color: #000000;
-    letter-spacing: 0.02em;
+    color: #FFFFFF !important; /* カード名は白 */
+    letter-spacing: 0.05em;
 }
 
-/* === 2. カード詳細・説明文（読みやすく、スッキリ） === */
-/* モーダル内の文字や能力文を確実に真っ黒にする */
+/* ページタイトル(h2)が白で見えない場合に備え、背景を付ける例（不要なら削除してください） */
+h2 {
+    background-color: #212529; /* モーダルヘッダーと合わせた濃いグレー */
+    padding: 15px 0;
+    margin-top: 0;
+}
+
+/* === 2. カード情報・テキスト（スタイリッシュなフォント、色は黒） === */
 .detail-table td, 
 .ability-text, 
 .modal-text,
@@ -32,35 +33,39 @@ button[type="submit"] {
 .race-list-item, 
 .styled-select, 
 input[type="text"], 
-.pagination a {
+.pagination a,
+.checkbox-container,
+.search-label {
     font-family: "Noto Sans JP", sans-serif;
     font-weight: 400;
-    color: #000000; /* 真っ黒 */
+    color: #000000; /* 情報は黒 */
     line-height: 1.6;
 }
 
-/* === 3. 数値・枚数表示（数字をよりスタイリッシュに） === */
+/* === 3. 数値（数字をよりスタイリッシュに、色は黒） === */
 .modal-power, 
 .modal-cost, 
 .modal-mana, 
-.rangenum-input {
-    font-family: "Montserrat", "Zen Kaku Gothic New", sans-serif;
+.rangenum-input,
+.search-results-summary p {
+    font-family: "Montserrat", sans-serif;
     font-weight: 700;
-    color: #000000;
+    color: #000000; /* 数字も黒 */
 }
 
-/* 特殊能力の枠内などの背景を少し調整して視認性を確保 */
+/* モーダル内の項目ラベル（表の左側など） */
+.detail-table th, 
+.checkbox-label, 
+.search-label,
 .ability-section h4 {
     font-family: "Zen Kaku Gothic New", sans-serif;
     font-weight: 700;
-    background-color: #f8f9fa;
     color: #000000;
+    background-color: #f8f9fa; /* ラベル背景は薄いグレー */
 }
 
-/* フレーバーテキストも読みやすさ重視で黒に */
+/* フレーバーテキスト */
 .modal-flavortext {
-    font-weight: 400;
-    color: #000000;
     border-left: 3px solid #000000;
     padding-left: 10px;
 }
