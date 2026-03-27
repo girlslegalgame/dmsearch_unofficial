@@ -2,10 +2,12 @@
 require_once 'db_connect.php';
 require_once 'functions.php';
 
+// === 設定とページネーション ===
 $perPage = 50;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $perPage;
 
+// === GET入力の整理 ===
 $get_params_for_check = $_GET;
 unset($get_params_for_check['page'], $get_params_for_check['_t']); 
 $is_submitted = count($get_params_for_check) > 0;
@@ -22,7 +24,7 @@ $pow_infinity = isset($_GET['pow_infinity']);
 $year_min = $_GET['year_min'] ?? '';
 $year_max = $_GET['year_max'] ?? '';
 
-// ★修正：特殊タイプとカードタイプを配列として取得
+// 特殊タイプとカードタイプ（複数選択）
 $selected_char_ids = isset($_GET['characteristics_ids']) ? array_map('intval', $_GET['characteristics_ids']) : [];
 $char_search_mode = ($_GET['char_search_mode'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
 $selected_cardtype_ids = isset($_GET['cardtype_ids']) ? array_map('intval', $_GET['cardtype_ids']) : [];
@@ -65,9 +67,10 @@ if ($is_submitted) {
     $selected_main_civs = $selected_exclude_civs = [];
 }
 
+// === SQL構築 ===
 $conditions = []; $params = []; $joins = [];
 
-// キーワード検索 (AND/OR)
+// キーワード検索
 if ($search !== '') {
     $words = preg_split('/[\s　]+/u', $search, -1, PREG_SPLIT_NO_EMPTY);
     $all_word_conditions = [];
@@ -77,14 +80,20 @@ if ($search !== '') {
         if ($search_reading) { $kwd_parts[] = "card.reading LIKE :s_read{$p_suffix}"; $params[":s_read{$p_suffix}"] = "%$word%"; }
         if ($search_text) { $kwd_parts[] = "card.text LIKE :s_text{$p_suffix}"; $params[":s_text{$p_suffix}"] = "%$word%"; }
         if ($search_flavortext) { $kwd_parts[] = "card.flavortext LIKE :s_flavor{$p_suffix}"; $params[":s_flavor{$p_suffix}"] = "%$word%"; }
-        if ($search_race) { $joins['race'] = 'LEFT JOIN card_race ON card.card_id = card_race.card_id LEFT JOIN race ON card_race.race_id = race.race_id'; $kwd_parts[] = "race.race_name LIKE :s_race{$p_suffix}"; $params[":s_race{$p_suffix}"] = "%$word%"; }
-        if ($search_illus) { $joins['illus'] = 'LEFT JOIN card_illus ON card.card_id = card_illus.card_id LEFT JOIN illus ON card_illus.illus_id = illus.illus_id'; $kwd_parts[] = "illus.illus_name LIKE :s_illus{$p_suffix}"; $params[":s_illus{$p_suffix}"] = "%$word%"; }
+        if ($search_race) { 
+            $joins['kw_race'] = 'LEFT JOIN card_race AS kw_cr ON card.card_id = kw_cr.card_id LEFT JOIN race AS kw_r ON kw_cr.race_id = kw_r.race_id'; 
+            $kwd_parts[] = "kw_r.race_name LIKE :s_race{$p_suffix}"; $params[":s_race{$p_suffix}"] = "%$word%"; 
+        }
+        if ($search_illus) { 
+            $joins['kw_illus'] = 'LEFT JOIN card_illus AS kw_ci ON card.card_id = kw_ci.card_id LEFT JOIN illus AS kw_i ON kw_ci.illus_id = kw_i.illus_id'; 
+            $kwd_parts[] = "kw_i.illus_name LIKE :s_illus{$p_suffix}"; $params[":s_illus{$p_suffix}"] = "%$word%"; 
+        }
         if ($kwd_parts) $all_word_conditions[] = '(' . implode(' OR ', $kwd_parts) . ')';
     }
     if ($all_word_conditions) { $glue = ($keyword_mode === 'OR') ? ' OR ' : ' AND '; $conditions[] = '(' . implode($glue, $all_word_conditions) . ')'; }
 }
 
-// 数値・発売年
+// 数値条件
 if ($cost_infinity) $conditions[] = 'card.cost = '.DM_INFINITY;
 elseif ($cost_zero) $conditions[] = 'card.cost IS NULL';
 else {
@@ -99,7 +108,7 @@ else {
 if (is_numeric($year_min)) { $conditions[] = "cd.release_date >= :y_min"; $params[':y_min'] = "$year_min-01-01"; }
 if (is_numeric($year_max)) { $conditions[] = "cd.release_date <= :y_max"; $params[':y_max'] = "$year_max-12-31"; }
 
-// ★新機能：特殊タイプ(Characteristics)とカードタイプ(CardType)の複数選択AND/OR
+// 特殊・カードタイプ・種族・能力・ソウル・その他の複数選択
 $multi_groups = [
     ['ids'=>$selected_char_ids, 'mode'=>$char_search_mode, 'tbl'=>'card_characteristics', 'col'=>'characteristics_id'],
     ['ids'=>$selected_cardtype_ids, 'mode'=>$cardtype_search_mode, 'tbl'=>'card_cardtype', 'col'=>'cardtype_id'],
@@ -110,17 +119,24 @@ $multi_groups = [
 ];
 
 foreach ($multi_groups as $g) {
-    if (!$g['ids']) continue;
-    $p_names = []; foreach ($g['ids'] as $i => $id) { $name = ":{$g['col']}_{$i}"; $p_names[] = $name; $params[$name] = $id; }
+    if (empty($g['ids'])) continue;
+    $p_names = []; 
+    foreach ($g['ids'] as $i => $id) { 
+        $p_name = ":{$g['col']}_{$i}"; 
+        $p_names[] = $p_name; 
+        $params[$p_name] = $id; 
+    }
     if ($g['mode'] === 'AND') {
         $conditions[] = "card.card_id IN (SELECT card_id FROM {$g['tbl']} WHERE {$g['col']} IN (".implode(',',$p_names).") GROUP BY card_id HAVING COUNT(DISTINCT {$g['col']}) = ".count($g['ids']).")";
     } else {
-        $joins[$g['tbl']] = "LEFT JOIN {$g['tbl']} ON card.card_id = {$g['tbl']}.card_id";
-        $conditions[] = "{$g['tbl']}.{$g['col']} IN (".implode(',',$p_names).")";
+        // ORモード：単純に結合してIN句。エイリアスを付けて衝突回避
+        $alias = "filter_" . $g['tbl'];
+        $joins[$alias] = "LEFT JOIN {$g['tbl']} AS {$alias} ON card.card_id = {$alias}.card_id";
+        $conditions[] = "{$alias}.{$g['col']} IN (".implode(',',$p_names).")";
     }
 }
 
-// 共通条件
+// 単一選択系
 if ($selected_rarity_id > 0) { $joins['rarity'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.rarity_id = :rarity_id"; $params[':rarity_id'] = $selected_rarity_id; }
 if ($selected_frame_id > 0) $conditions[] = "cd.frame_id = :frame_id"; $params[':frame_id'] = $selected_frame_id;
 if ($selected_goods_id > 0) $conditions[] = "cd.goods_id = :goods_id"; $params[':goods_id'] = $selected_goods_id;
@@ -161,8 +177,9 @@ if (!$cost_zero && !$cost_infinity && !($is_mono && $is_multi && !$selected_excl
     }
 }
 
+// === データ取得 ===
 $where = $conditions ? 'WHERE '.implode(' AND ', $conditions) : '';
-$join_str = $joins ? implode(' ', array_unique($joins)) : '';
+$join_str = $joins ? implode(' ', array_values($joins)) : ''; // 重複はキー指定で回避済み
 $stmt = $pdo->prepare("SELECT DISTINCT card.card_id FROM card JOIN card_detail cd ON card.card_id = cd.card_id $join_str $where");
 $stmt->execute($params);
 $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -199,6 +216,7 @@ if ($ids) {
     foreach ($page_cards as $c) { $c['image_url'] = get_card_image_url($c['modelnum']); $cards[] = $c; }
 }
 
+// === 表示用データ取得 ===
 $civilization_list = $pdo->query("SELECT * FROM civilization ORDER BY civilization_id")->fetchAll();
 $rarity_list = $pdo->query("SELECT * FROM rarity ORDER BY rarity_id")->fetchAll();
 $treasure_list = $pdo->query("SELECT * FROM treasure ORDER BY treasure_id")->fetchAll();
