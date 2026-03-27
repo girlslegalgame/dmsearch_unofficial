@@ -8,19 +8,23 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- ▼▼▼ ローディング表示 ▼▼▼ -->
 <div id="loading-overlay" style="display: none;">
     <div class="spinner"></div>
 </div>
+
 <h2 style="text-align:center;">カード一覧</h2>
 
+<!-- ▼▼▼ 検索結果件数表示 ▼▼▼ -->
 <div class="search-results-summary">
     <p><?= htmlspecialchars($total) ?>枚</p>
 </div>
 
+<!-- ▼▼▼ FORM ▼▼▼ -->
 <form method="get" id="searchForm">
 
     <div class="main-form-container">
-        <!-- 検索入力エリア -->
+        <!-- 検索入力エリア（右上にAND/ORスイッチ） -->
         <div style="position: relative; max-width: 960px; margin: 0 auto;">
             <div class="and-or-toggle" style="position: absolute; right: 0; bottom: 100%; margin-bottom: 5px; border-radius: 10px;">
                 <input type="radio" id="keyword-and" name="keyword_mode" value="AND" <?= ($keyword_mode === 'AND') ? 'checked' : '' ?>>
@@ -158,24 +162,40 @@
             </div>
             <div class="search-group-container">
                 <div class="search-group">
-                    <div class="select-group">
-                        <label class="search-label">特殊タイプ</label>
-                        <select name="characteristics_id" class="styled-select">
-                            <option value="0" <?= ($selected_char_id == 0) ? 'selected' : '' ?>>指定なし</option>
-                            <?php foreach ($characteristics_list as $char): ?>
-                                <option value="<?= $char['characteristics_id'] ?>" <?= ($char['characteristics_id'] == $selected_char_id) ? 'selected' : '' ?>><?= htmlspecialchars($char['characteristics_name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                    <!-- 特殊タイプブロック (モーダル化) -->
+                    <div class="race-select-group">
+                        <div class="race-search-header">
+                            <label class="search-label">特殊タイプ</label>
+                            <div class="and-or-toggle">
+                                <input type="radio" id="char-and" name="char_search_mode" value="AND" <?= ($char_search_mode === 'AND') ? 'checked' : '' ?>>
+                                <label for="char-and" style="padding: 2px 8px; font-size: 0.75em;">AND</label>
+                                <input type="radio" id="char-or" name="char_search_mode" value="OR" <?= ($char_search_mode === 'OR') ? 'checked' : '' ?>>
+                                <label for="char-or" style="padding: 2px 8px; font-size: 0.75em;">OR</label>
+                            </div>
+                        </div>
+                        <div id="characteristics-select-box" class="race-select-box styled-select">
+                            <span class="placeholder">指定なし</span>
+                            <div class="selected-char-display" style="position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                        </div>
                     </div>
-                    <div class="select-group">
-                        <label class="search-label">カードタイプ</label>
-                        <select name="cardtype_id" class="styled-select">
-                            <option value="0" <?= ($selected_cardtype_id == 0) ? 'selected' : '' ?>>指定なし</option>
-                            <?php foreach ($cardtype_list as $type): ?>
-                                <option value="<?= $type['cardtype_id'] ?>" <?= ($type['cardtype_id'] == $selected_cardtype_id) ? 'selected' : '' ?>><?= htmlspecialchars($type['cardtype_name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+
+                    <!-- カードタイプブロック (モーダル化) -->
+                    <div class="race-select-group">
+                        <div class="race-search-header">
+                            <label class="search-label">カードタイプ</label>
+                            <div class="and-or-toggle">
+                                <input type="radio" id="cardtype-and" name="cardtype_search_mode" value="AND" <?= ($cardtype_search_mode === 'AND') ? 'checked' : '' ?>>
+                                <label for="cardtype-and" style="padding: 2px 8px; font-size: 0.75em;">AND</label>
+                                <input type="radio" id="cardtype-or" name="cardtype_search_mode" value="OR" <?= ($cardtype_search_mode === 'OR') ? 'checked' : '' ?>>
+                                <label for="cardtype-or" style="padding: 2px 8px; font-size: 0.75em;">OR</label>
+                            </div>
+                        </div>
+                        <div id="cardtype-select-box" class="race-select-box styled-select">
+                            <span class="placeholder">指定なし</span>
+                            <div class="selected-cardtype-display" style="position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                        </div>
                     </div>
+
                     <div class="select-group">
                         <label class="search-label">ツインパクト</label>
                         <select name="twinpact_filter" class="styled-select">
@@ -413,15 +433,14 @@
     <?php endif; ?>
 </div>
 
+<!-- ▼▼▼ 詳細モーダル ▼▼▼ -->
 <div id="card-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
-            <!-- ▼▼▼ 修正：読み(reading)を表示するエリアを追加 ▼▼▼ -->
             <div style="display: flex; flex-direction: column; align-items: flex-start;">
                 <div id="modal-card-reading" style="font-size: 0.75em; color: #FFFFFF; line-height: 1.2;">読み</div>
                 <h3 id="modal-card-name" style="margin: 0;">カード名</h3>
             </div>
-            <!-- ▲▲▲ 修正 END ▲▲▲ -->
             <span id="modal-close-btn" class="close-btn">×</span>
         </div>
         <div id="modal-cards-container" class="modal-body-scrollable"></div>
@@ -483,6 +502,29 @@
 
 <script src="script.js"></script>
 
+<!-- ▼▼▼ 選択用モーダル群 ▼▼▼ -->
+<div id="characteristics-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content race-modal-content">
+        <div class="modal-header"><h3>特殊タイプ選択</h3><span class="modal-clear-btn">クリア</span></div>
+        <div class="race-modal-body"><div id="characteristics-modal-list" class="race-modal-list"></div></div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary">キャンセル</button>
+            <button type="button" class="btn-primary">決定</button>
+        </div>
+    </div>
+</div>
+
+<div id="cardtype-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content race-modal-content">
+        <div class="modal-header"><h3>カードタイプ選択</h3><span class="modal-clear-btn">クリア</span></div>
+        <div class="race-modal-body"><div id="cardtype-modal-list" class="race-modal-list"></div></div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary">キャンセル</button>
+            <button type="button" class="btn-primary">決定</button>
+        </div>
+    </div>
+</div>
+    
 <div id="race-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content race-modal-content">
         <div class="modal-header">
