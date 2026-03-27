@@ -16,7 +16,19 @@ try {
     exit;
 }
 
-switch ($type) {
+switch ($type) {        
+    case 'characteristics': // 追加
+            $sql = "SELECT characteristics_id AS id, characteristics_name AS name FROM characteristics ORDER BY characteristics_id ASC";
+            $stmt = $pdo->query($sql);
+            $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            break;
+
+    case 'cardtype': // 追加
+            $sql = "SELECT cardtype_id AS id, cardtype_name AS name FROM cardtype ORDER BY cardtype_id ASC";
+            $stmt = $pdo->query($sql);
+            $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            break;
+    
     case 'race':
         // readingカラムの有無で、SELECT句とWHERE句を動的に変更
         $select_reading = $has_reading_column ? ', reading' : ', NULL AS reading';
