@@ -46,25 +46,22 @@ foreach ($response['cards'] as $index => &$card) {
     $series = get_series_folder($modelnum);
     $part_char = $response['is_combination'] ? chr(97 + $index) : "";
 
-    // --- 基本情報 ---
-    // タイプ
-    $stmt = $pdo->prepare("SELECT t.cardtype_name, c.characteristics_name, cc.characteristics_id FROM card_cardtype cc JOIN cardtype t ON cc.cardtype_id = t.cardtype_id LEFT JOIN characteristics c ON cc.characteristics_id = c.characteristics_id WHERE cc.card_id = ?");
+    // --- 【修正箇所】カードの種類 (card_cardtypeテーブルのtypenameを取得) ---
+    $stmt = $pdo->prepare("SELECT typename FROM card_cardtype WHERE card_id = ? LIMIT 1");
     $stmt->execute([$current_id]);
-    $ti = $stmt->fetch(PDO::FETCH_ASSOC);
-    $type_parts = [];
-    if ($ti && ($ti['characteristics_id'] ?? 0) != 1) $type_parts[] = $ti['characteristics_name'];
-    if ($ti) $type_parts[] = $ti['cardtype_name'];
-    $card['card_type'] = implode('', $type_parts) ?: '---';
+    $card['card_type'] = $stmt->fetchColumn() ?: '---';
 
-    // 文明 / 種族 / イラストレーター
+    // 文明
     $stmt = $pdo->prepare("SELECT c.civilization_name FROM card_civilization cc JOIN civilization c ON cc.civilization_id = c.civilization_id WHERE cc.card_id = ?");
     $stmt->execute([$current_id]);
     $card['civilization'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
+    // 種族
     $stmt = $pdo->prepare("SELECT r.race_name FROM card_race cr JOIN race r ON cr.race_id = r.race_id WHERE cr.card_id = ?");
     $stmt->execute([$current_id]);
     $card['race'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
 
+    // イラストレーター
     $stmt = $pdo->prepare("SELECT i.illus_name FROM card_illus ci JOIN illus i ON ci.illus_id = i.illus_id WHERE ci.card_id = ?");
     $stmt->execute([$current_id]);
     $card['illustrator'] = implode(' / ', $stmt->fetchAll(PDO::FETCH_COLUMN)) ?: '---';
@@ -74,17 +71,15 @@ foreach ($response['cards'] as $index => &$card) {
     $stmt->execute([$current_id]);
     $card['rarity'] = $stmt->fetchColumn() ?: '---';
 
-    // --- 外部テキスト読み込みロジック (再強化) ---
+    // --- 外部テキスト読み込み ---
     $text_content = $card['text'] ?? '';
     $flavor_content = $card['flavortext'] ?? '';
     
-    // 能力テキストのパス判定 (シリーズ/型番/型番a.txt or シリーズ/型番a.txt)
     $path1 = "text/{$series}/{$modelnum}/{$modelnum}{$part_char}.txt";
     $path2 = "text/{$series}/{$modelnum}{$part_char}.txt";
     if (file_exists($path1)) $text_content = file_get_contents($path1);
     elseif (file_exists($path2)) $text_content = file_get_contents($path2);
 
-    // フレーバーのパス判定
     $fpath1 = "flavortext/{$series}/{$modelnum}/{$modelnum}{$part_char}.txt";
     $fpath2 = "flavortext/{$series}/{$modelnum}{$part_char}.txt";
     if (file_exists($fpath1)) $flavor_content = file_get_contents($fpath1);
