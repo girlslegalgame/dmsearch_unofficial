@@ -2,12 +2,12 @@
 require_once 'db_connect.php';
 require_once 'functions.php';
 
-// === 設定とページネーション ===
+// === 1. 設定とページネーション ===
 $perPage = 50;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $perPage;
 
-// === GET入力の整理 ===
+// === 2. GET入力の整理 ===
 $get_params_for_check = $_GET;
 unset($get_params_for_check['page'], $get_params_for_check['_t']); 
 $is_submitted = count($get_params_for_check) > 0;
@@ -24,7 +24,7 @@ $pow_infinity = isset($_GET['pow_infinity']);
 $year_min = $_GET['year_min'] ?? '';
 $year_max = $_GET['year_max'] ?? '';
 
-// 特殊タイプとカードタイプ（複数選択）
+// 特殊タイプとカードタイプ（複数選択モーダル対応）
 $selected_char_ids = isset($_GET['characteristics_ids']) ? array_map('intval', $_GET['characteristics_ids']) : [];
 $char_search_mode = ($_GET['char_search_mode'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
 $selected_cardtype_ids = isset($_GET['cardtype_ids']) ? array_map('intval', $_GET['cardtype_ids']) : [];
@@ -67,10 +67,10 @@ if ($is_submitted) {
     $selected_main_civs = $selected_exclude_civs = [];
 }
 
-// === SQL構築 ===
+// === 3. SQL構築 ===
 $conditions = []; $params = []; $joins = [];
 
-// キーワード検索
+// キーワード検索 (スペース区切り)
 if ($search !== '') {
     $words = preg_split('/[\s　]+/u', $search, -1, PREG_SPLIT_NO_EMPTY);
     $all_word_conditions = [];
@@ -108,7 +108,7 @@ else {
 if (is_numeric($year_min)) { $conditions[] = "cd.release_date >= :y_min"; $params[':y_min'] = "$year_min-01-01"; }
 if (is_numeric($year_max)) { $conditions[] = "cd.release_date <= :y_max"; $params[':y_max'] = "$year_max-12-31"; }
 
-// 特殊・カードタイプ・種族・能力・ソウル・その他の複数選択
+// ★複数選択グループの一括処理（特殊・カードタイプ・種族・能力・ソウル・その他）
 $multi_groups = [
     ['ids'=>$selected_char_ids, 'mode'=>$char_search_mode, 'tbl'=>'card_characteristics', 'col'=>'characteristics_id'],
     ['ids'=>$selected_cardtype_ids, 'mode'=>$cardtype_search_mode, 'tbl'=>'card_cardtype', 'col'=>'cardtype_id'],
@@ -122,15 +122,14 @@ foreach ($multi_groups as $g) {
     if (empty($g['ids'])) continue;
     $p_names = []; 
     foreach ($g['ids'] as $i => $id) { 
-        $p_name = ":{$g['col']}_{$i}"; 
+        $p_name = ":fltr_{$g['col']}_{$i}"; // プレースホルダー名の重複を避ける接頭辞
         $p_names[] = $p_name; 
         $params[$p_name] = $id; 
     }
     if ($g['mode'] === 'AND') {
         $conditions[] = "card.card_id IN (SELECT card_id FROM {$g['tbl']} WHERE {$g['col']} IN (".implode(',',$p_names).") GROUP BY card_id HAVING COUNT(DISTINCT {$g['col']}) = ".count($g['ids']).")";
     } else {
-        // ORモード：単純に結合してIN句。エイリアスを付けて衝突回避
-        $alias = "filter_" . $g['tbl'];
+        $alias = "f_" . $g['tbl'];
         $joins[$alias] = "LEFT JOIN {$g['tbl']} AS {$alias} ON card.card_id = {$alias}.card_id";
         $conditions[] = "{$alias}.{$g['col']} IN (".implode(',',$p_names).")";
     }
@@ -177,9 +176,9 @@ if (!$cost_zero && !$cost_infinity && !($is_mono && $is_multi && !$selected_excl
     }
 }
 
-// === データ取得 ===
+// === 4. データ取得 ===
 $where = $conditions ? 'WHERE '.implode(' AND ', $conditions) : '';
-$join_str = $joins ? implode(' ', array_values($joins)) : ''; // 重複はキー指定で回避済み
+$join_str = $joins ? implode(' ', array_values($joins)) : '';
 $stmt = $pdo->prepare("SELECT DISTINCT card.card_id FROM card JOIN card_detail cd ON card.card_id = cd.card_id $join_str $where");
 $stmt->execute($params);
 $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -216,7 +215,7 @@ if ($ids) {
     foreach ($page_cards as $c) { $c['image_url'] = get_card_image_url($c['modelnum']); $cards[] = $c; }
 }
 
-// === 表示用データ取得 ===
+// === 5. マスターデータ取得 ===
 $civilization_list = $pdo->query("SELECT * FROM civilization ORDER BY civilization_id")->fetchAll();
 $rarity_list = $pdo->query("SELECT * FROM rarity ORDER BY rarity_id")->fetchAll();
 $treasure_list = $pdo->query("SELECT * FROM treasure ORDER BY treasure_id")->fetchAll();
@@ -224,6 +223,7 @@ $frame_list = $pdo->query("SELECT * FROM frame ORDER BY frame_id")->fetchAll();
 $goodstype_list = $pdo->query("SELECT * FROM goodstype ORDER BY goodstype_id")->fetchAll();
 $goods_list = ($selected_goodstype_id > 0) ? (function($pdo, $id){ $s = $pdo->prepare("SELECT * FROM goods WHERE goodstype_id = ? ORDER BY goods_id"); $s->execute([$id]); return $s->fetchAll(); })($pdo, $selected_goodstype_id) : $pdo->query("SELECT * FROM goods ORDER BY goods_id")->fetchAll();
 $illustrator_list = $pdo->query("SELECT * FROM illus ORDER BY reading")->fetchAll();
+$others_list = $pdo->query("SELECT * FROM others ORDER BY others_id")->fetchAll();
 $totalPages = ceil($total / $perPage);
 
 include 'template.html';
