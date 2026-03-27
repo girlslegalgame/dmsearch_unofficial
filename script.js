@@ -60,23 +60,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const isMultiOn = !multiColorBtn.classList.contains('is-off');
         const selectedMainCivIds = [];
         mainCivButtons.forEach(btn => {
-            if (!btn.classList.contains('is-off') && btn.dataset.civId !== '6') {
-                selectedMainCivIds.push(btn.dataset.civId);
-            }
+            if (!btn.classList.contains('is-off') && btn.dataset.civId !== '6') selectedMainCivIds.push(btn.dataset.civId);
         });
         const selectedCount = selectedMainCivIds.length;
         const isExactMode = (multiSearchTypeSelect && multiSearchTypeSelect.value === 'exact');
 
-        if (multiSearchTypeSection) {
-            multiSearchTypeSection.style.display = (isMultiOn && selectedCount >= 2) ? 'block' : 'none';
-        }
-        if (excludeSection) {
-            if (isMultiOn && selectedCount >= 1 && (selectedCount < 2 || !isExactMode)) {
-                excludeSection.style.display = 'block';
-            } else {
-                excludeSection.style.display = 'none';
-            }
-        }
+        if (multiSearchTypeSection) multiSearchTypeSection.style.display = (isMultiOn && selectedCount >= 2) ? 'block' : 'none';
+        if (excludeSection) excludeSection.style.display = (isMultiOn && selectedCount >= 1 && (selectedCount < 2 || !isExactMode)) ? 'block' : 'none';
         excludeCivWrappers.forEach(wrapper => {
             const civId = wrapper.id.replace('exclude-wrapper-', '');
             wrapper.style.display = selectedMainCivIds.includes(civId) ? 'none' : 'block';
@@ -213,6 +203,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (searchInput) searchInput.value = '';
             const keywordAnd = document.getElementById('keyword-and');
             if (keywordAnd) keywordAnd.checked = true;
+
+            // 特殊タイプ・カードタイプのAND/ORをリセット
+            const charAnd = document.getElementById('char-and'); if(charAnd) charAnd.checked = true;
+            const typeAnd = document.getElementById('cardtype-and'); if(typeAnd) typeAnd.checked = true;
+
             document.getElementsByName('search_name')[0].checked = true;
             document.getElementsByName('search_reading')[0].checked = true;
             document.getElementsByName('search_text')[0].checked = true;
@@ -221,7 +216,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementsByName('search_illus')[0].checked = false;
             updateToggleButtonLabel();
             [costMinInput, costMaxInput, powMinInput, powMaxInput].forEach(inp => { if(inp) { inp.disabled = false; inp.value = ''; } });
-            document.querySelectorAll('select.styled-select').forEach(s => { if (s.name === 'mana_filter') s.value = 'all'; else s.value = '0'; });
+            document.querySelectorAll('select.styled-select').forEach(s => { 
+                if (s.name === 'mana_filter') s.value = 'all'; 
+                else if (s.name !== 'sort_order') s.value = '0'; 
+            });
             if (goodsTypeSelect) goodsTypeSelect.dispatchEvent(new Event('change'));
             if (multiSearchTypeSelect) multiSearchTypeSelect.value = 'or'; 
             document.querySelectorAll('.civ-btn').forEach(b => {
@@ -256,7 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const updateDisp = () => {
             const names = Array.from(selectedItems.values());
-            document.querySelector(`.${displayClassName}`).textContent = names.join('、');
+            const displayArea = document.querySelector(`.${displayClassName}`);
+            if(displayArea) displayArea.textContent = names.join('、');
             selectBox.querySelector('.placeholder').style.display = names.length > 0 ? 'none' : 'block';
             searchForm.querySelectorAll(`input[name="${hiddenInputName}"]`).forEach(el => el.remove());
             selectedItems.forEach((name, id) => {
@@ -267,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const render = (items) => {
-            listEl.innerHTML = items.sort((a,b) => getSortableString(a.reading).localeCompare(getSortableString(b.reading)))
+            listEl.innerHTML = items.sort((a,b) => getSortableString(a.reading || '').localeCompare(getSortableString(b.reading || '')))
                 .map(item => `<div class="race-list-item"><label style="display:flex;justify-content:space-between;align-items:center;width:100%;cursor:pointer;"><span>${escapeHTML(item.name)}</span><input type="checkbox" data-id="${item.id}" data-name="${escapeHTML(item.name)}" ${selectedItems.has(String(item.id)) ? 'checked' : ''}></label></div>`).join('');
         };
 
@@ -294,10 +293,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modal.querySelector('.btn-primary').addEventListener('click', () => { updateDisp(); modal.style.display = 'none'; });
         modal.querySelector('.btn-secondary').addEventListener('click', () => modal.style.display = 'none');
-        modal.querySelector('.modal-clear-btn').addEventListener('click', () => { selectedItems.clear(); render(allItems); });
+        const clearBtn = modal.querySelector('.modal-clear-btn');
+        if(clearBtn) clearBtn.addEventListener('click', () => { selectedItems.clear(); render(allItems); });
         resetModalStates.push(() => { selectedItems.clear(); updateDisp(); });
     }
 
+    // 各モーダルの初期化（新設の2種を追加）
+    setupSearchModal({ modalType: 'characteristics', hiddenInputName: 'characteristics_ids[]', displayClassName: 'selected-char-display' });
+    setupSearchModal({ modalType: 'cardtype', hiddenInputName: 'cardtype_ids[]', displayClassName: 'selected-cardtype-display' });
     setupSearchModal({ modalType: 'race', hiddenInputName: 'race_ids[]', displayClassName: 'selected-races-display' });
     setupSearchModal({ modalType: 'ability', hiddenInputName: 'ability_ids[]', displayClassName: 'selected-abilities-display' });
     setupSearchModal({ modalType: 'others', hiddenInputName: 'others_ids[]', displayClassName: 'selected-others-display' });
@@ -309,11 +312,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function openCardDetailModal(cardId) {
         const container = document.getElementById('modal-cards-container');
         const title = document.getElementById('modal-card-name');
-        const readingEl = document.getElementById('modal-card-reading'); // 追記
+        const readingEl = document.getElementById('modal-card-reading');
         const template = document.getElementById('modal-card-template');
         cardDetailModal.style.display = 'flex';
         container.innerHTML = ''; title.textContent = '読み込み中...';
-        if (readingEl) readingEl.textContent = ''; // 追記
+        if (readingEl) readingEl.textContent = '';
 
         if (modalObserver) modalObserver.disconnect();
 
@@ -322,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 entries.forEach(entry => { 
                     if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
                         title.textContent = entry.target.dataset.cardName;
-                        if (readingEl) readingEl.textContent = entry.target.dataset.cardReading; // 追記
+                        if (readingEl) readingEl.textContent = entry.target.dataset.cardReading;
                     }
                 });
             }, { root: container, threshold: 0.5 });
@@ -331,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const clone = template.content.cloneNode(true);
                 const instance = clone.querySelector('.modal-card-instance');
                 instance.dataset.cardName = card.card_name;
-                instance.dataset.cardReading = card.reading; // 追記
+                instance.dataset.cardReading = card.reading;
                 
                 clone.querySelector('.modal-card-type').textContent = card.card_type;
                 clone.querySelector('.modal-civilization').textContent = card.civilization;
