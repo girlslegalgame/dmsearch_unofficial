@@ -24,7 +24,7 @@ $pow_infinity = isset($_GET['pow_infinity']);
 $year_min = $_GET['year_min'] ?? '';
 $year_max = $_GET['year_max'] ?? '';
 
-// 特殊タイプとカードタイプ（複数選択モーダル）
+// 特殊・カードタイプ複数選択
 $selected_char_ids = isset($_GET['characteristics_ids']) ? array_map('intval', $_GET['characteristics_ids']) : [];
 $char_search_mode = ($_GET['char_search_mode'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
 $selected_cardtype_ids = isset($_GET['cardtype_ids']) ? array_map('intval', $_GET['cardtype_ids']) : [];
@@ -68,33 +68,30 @@ if ($is_submitted) {
     $selected_main_civs = $selected_exclude_civs = [];
 }
 
-// === 3. SQL構築用変数 ===
+// === 3. SQL構築 ===
 $conditions = []; $params = []; $joins = [];
-$p_idx = 0; // プレースホルダー用連動カウンター
+$p_idx = 0; // すべてのプレースホルダに一意の番号を振るためのカウンター
 
-// キーワード検索
+// キーワード検索 (スペース区切り・完全ユニークプレースホルダ)
 if ($search !== '') {
     $words = preg_split('/[\s　]+/u', $search, -1, PREG_SPLIT_NO_EMPTY);
     $all_word_conditions = [];
     foreach ($words as $word) {
         $kwd_parts = [];
-        $p_idx++; $p_name = ":kwd_{$p_idx}";
-        if ($search_name) { $kwd_parts[] = "card.card_name LIKE $p_name"; }
-        if ($search_reading) { $kwd_parts[] = "card.reading LIKE $p_name"; }
-        if ($search_text) { $kwd_parts[] = "card.text LIKE $p_name"; }
-        if ($search_flavortext) { $kwd_parts[] = "card.flavortext LIKE $p_name"; }
+        // 各カラムのチェックごとに新しいプレースホルダ名を作る (HY093対策)
+        if ($search_name) { $p_idx++; $n = ":kn_{$p_idx}"; $kwd_parts[] = "card.card_name LIKE $n"; $params[$n] = "%$word%"; }
+        if ($search_reading) { $p_idx++; $n = ":kr_{$p_idx}"; $kwd_parts[] = "card.reading LIKE $n"; $params[$n] = "%$word%"; }
+        if ($search_text) { $p_idx++; $n = ":kt_{$p_idx}"; $kwd_parts[] = "card.text LIKE $n"; $params[$n] = "%$word%"; }
+        if ($search_flavortext) { $p_idx++; $n = ":kf_{$p_idx}"; $kwd_parts[] = "card.flavortext LIKE $n"; $params[$n] = "%$word%"; }
         if ($search_race) { 
             $joins['kw_r'] = 'LEFT JOIN card_race AS kw_cr ON card.card_id = kw_cr.card_id LEFT JOIN race AS kw_r ON kw_cr.race_id = kw_r.race_id'; 
-            $kwd_parts[] = "kw_r.race_name LIKE $p_name";
+            $p_idx++; $n = ":ksr_{$p_idx}"; $kwd_parts[] = "kw_r.race_name LIKE $n"; $params[$n] = "%$word%";
         }
         if ($search_illus) { 
             $joins['kw_i'] = 'LEFT JOIN card_illus AS kw_ci ON card.card_id = kw_ci.card_id LEFT JOIN illus AS kw_i ON kw_ci.illus_id = kw_i.illus_id'; 
-            $kwd_parts[] = "kw_i.illus_name LIKE $p_name";
+            $p_idx++; $n = ":ksi_{$p_idx}"; $kwd_parts[] = "kw_i.illus_name LIKE $n"; $params[$n] = "%$word%";
         }
-        if ($kwd_parts) {
-            $all_word_conditions[] = '(' . implode(' OR ', $kwd_parts) . ')';
-            $params[$p_name] = "%$word%";
-        }
+        if ($kwd_parts) $all_word_conditions[] = '(' . implode(' OR ', $kwd_parts) . ')';
     }
     if ($all_word_conditions) {
         $glue = ($keyword_mode === 'OR') ? ' OR ' : ' AND ';
@@ -102,22 +99,22 @@ if ($search !== '') {
     }
 }
 
-// 数値・年
+// 数値条件
 if ($cost_infinity) $conditions[] = 'card.cost = '.DM_INFINITY;
 elseif ($cost_zero) $conditions[] = 'card.cost IS NULL';
 else {
-    if (is_numeric($cost_min)) { $p_idx++; $name = ":cmin_{$p_idx}"; $conditions[] = "card.cost >= $name"; $params[$name] = intval($cost_min); }
-    if (is_numeric($cost_max)) { $p_idx++; $name = ":cmax_{$p_idx}"; $conditions[] = "card.cost <= $name"; $params[$name] = intval($cost_max); }
+    if (is_numeric($cost_min)) { $p_idx++; $n = ":cmin_{$p_idx}"; $conditions[] = "card.cost >= $n"; $params[$n] = intval($cost_min); }
+    if (is_numeric($cost_max)) { $p_idx++; $n = ":cmax_{$p_idx}"; $conditions[] = "card.cost <= $n"; $params[$n] = intval($cost_max); }
 }
 if ($pow_infinity) $conditions[] = 'card.pow = '.DM_INFINITY;
 else {
-    if (is_numeric($pow_min)) { $p_idx++; $name = ":pmin_{$p_idx}"; $conditions[] = "card.pow >= $name"; $params[$name] = intval($pow_min); }
-    if (is_numeric($pow_max)) { $p_idx++; $name = ":pmax_{$p_idx}"; $conditions[] = "card.pow <= $name"; $params[$name] = intval($pow_max); }
+    if (is_numeric($pow_min)) { $p_idx++; $n = ":pmin_{$p_idx}"; $conditions[] = "card.pow >= $n"; $params[$n] = intval($pow_min); }
+    if (is_numeric($pow_max)) { $p_idx++; $n = ":pmax_{$p_idx}"; $conditions[] = "card.pow <= $n"; $params[$n] = intval($pow_max); }
 }
-if (is_numeric($year_min)) { $p_idx++; $name = ":ymin_{$p_idx}"; $conditions[] = "cd.release_date >= $name"; $params[$name] = "$year_min-01-01"; }
-if (is_numeric($year_max)) { $p_idx++; $name = ":ymax_{$p_idx}"; $conditions[] = "cd.release_date <= $name"; $params[$name] = "$year_max-12-31"; }
+if (is_numeric($year_min)) { $p_idx++; $n = ":ymin_{$p_idx}"; $conditions[] = "cd.release_date >= $n"; $params[$n] = "$year_min-01-01"; }
+if (is_numeric($year_max)) { $p_idx++; $n = ":ymax_{$p_idx}"; $conditions[] = "cd.release_date <= $n"; $params[$n] = "$year_max-12-31"; }
 
-// 複数選択モーダルグループ（AND/OR）
+// 複数選択モーダルグループ
 $multi_groups = [
     ['ids'=>$selected_char_ids, 'mode'=>$char_search_mode, 'tbl'=>'card_characteristics', 'col'=>'characteristics_id'],
     ['ids'=>$selected_cardtype_ids, 'mode'=>$cardtype_search_mode, 'tbl'=>'card_cardtype', 'col'=>'cardtype_id'],
@@ -138,7 +135,7 @@ foreach ($multi_groups as $g) {
     }
 }
 
-// 単一選択系
+// 単一選択
 if ($selected_rarity_id > 0) { $p_idx++; $n = ":rar_{$p_idx}"; $joins['rty'] = 'LEFT JOIN card_rarity ON card.card_id = card_rarity.card_id'; $conditions[] = "card_rarity.rarity_id = $n"; $params[$n] = $selected_rarity_id; }
 if ($selected_frame_id > 0) { $p_idx++; $n = ":frm_{$p_idx}"; $conditions[] = "cd.frame_id = $n"; $params[$n] = $selected_frame_id; }
 if ($selected_goods_id > 0) { $p_idx++; $n = ":gds_{$p_idx}"; $conditions[] = "cd.goods_id = $n"; $params[$n] = $selected_goods_id; }
