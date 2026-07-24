@@ -89,7 +89,7 @@ foreach ($response['cards'] as $index => &$card) {
     $card['flavortext'] = format_card_text($flavor_content, false);
 
     // --- 画像パス ---
-    $card['image_url'] = get_card_image_url($modelnum, $part_char);
+    $card['image_url'] = get_card_image_url($card['imagepath'] ?? '');
 
     // --- デバッグ用 ---
     $stmt = $pdo->prepare("SELECT a.ability_name FROM card_ability ca JOIN ability a ON ca.ability_id = a.ability_id WHERE ca.card_id = ?");
