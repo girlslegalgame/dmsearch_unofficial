@@ -186,8 +186,7 @@ $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
 $cards = []; $total = 0;
 if ($ids) {
     $ph = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $pdo->prepare("SELECT c.card_id, c.card_name, c.reading, c.cost, c.pow, cd.modelnum, cd.release_date, cr.rarity_id, (SELECT COUNT(*) FROM card_civilization cc WHERE cc.card_id = c.card_id) as civ_count, (SELECT MIN(civilization_id) FROM card_civilization cc WHERE cc.card_id = c.card_id) as min_civ_id FROM card c JOIN card_detail cd ON c.card_id = cd.card_id LEFT JOIN card_rarity cr ON c.card_id = cr.card_id WHERE c.card_id IN ($ph)");
-    $stmt->execute($ids);
+    $stmt = $pdo->prepare("SELECT c.card_id, c.card_name, c.reading, c.cost, c.pow, cd.modelnum, cd.release_date, cd.imagepath, cr.rarity_id, (SELECT COUNT(*) FROM card_civilization cc WHERE cc.card_id = c.card_id) as civ_count, (SELECT MIN(civilization_id) FROM card_civilization cc WHERE cc.card_id = c.card_id) as min_civ_id FROM card c JOIN card_detail cd ON c.card_id = cd.card_id LEFT JOIN card_rarity cr ON c.card_id = cr.card_id WHERE c.card_id IN ($ph)");    $stmt->execute($ids);
     $details = $stmt->fetchAll();
     $unique = [];
     if ($show_same_name) { foreach ($details as $c) if (!isset($unique[$c['modelnum']])) $unique[$c['modelnum']] = $c; }
@@ -212,7 +211,7 @@ if ($ids) {
         return $civ_cmp ?: strcmp($a['modelnum'] ?? '', $b['modelnum'] ?? '');
     });
     $page_cards = array_slice($unique, $offset, $perPage);
-    foreach ($page_cards as $c) { $c['image_url'] = get_card_image_url($c['modelnum']); $cards[] = $c; }
+    foreach ($page_cards as $c) { $c['image_url'] = get_card_image_url($c['imagepath'] ?? ''); $cards[] = $c; }
 }
 
 // マスターデータ
