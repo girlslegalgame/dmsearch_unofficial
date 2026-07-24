@@ -10,9 +10,22 @@ function get_series_folder($modelnum) {
 
 /** 画像URL取得 */
 function get_card_image_url($imagepath) {
-    if (!$imagepath) return 'parts/no_image.webp';
-    // スラッシュの重複を防ぎつつ、「/card」にimagepathを結合
-    return '/card/' . ltrim($imagepath, '/');
+    // データベース上のパスが空、またはNULLの場合
+    if (!$imagepath) {
+        return 'parts/no_image.webp';
+    }
+
+    // サーバー上の実ファイルパス（例: card/dm01/dm01-1.webp）
+    $local_path = 'card/' . ltrim($imagepath, '/');
+
+    // 実際にファイルが存在するか確認
+    if (file_exists($local_path)) {
+        // 存在する場合は、ブラウザからアクセス可能なウェブパス（例: /card/dm01/dm01-1.webp）を返す
+        return '/card/' . ltrim($imagepath, '/');
+    }
+
+    // ファイルが存在しない場合
+    return 'parts/no_image.webp';
 }
 
 /** テキスト整形 */
