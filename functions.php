@@ -9,18 +9,10 @@ function get_series_folder($modelnum) {
 }
 
 /** 画像URL取得 */
-function get_card_image_url($modelnum, $part = '') {
-    if (!$modelnum) return 'parts/no_image.webp';
-    $series = get_series_folder($modelnum);
-    $base = "card/{$series}/{$modelnum}";
-    if ($part !== '') {
-        $path = "{$base}/{$modelnum}{$part}.webp";
-        return file_exists($path) ? $path : "parts/no_image.webp";
-    }
-    $single = "{$base}.webp";
-    if (file_exists($single) && !is_dir($base)) return $single;
-    $multi_a = "{$base}/{$modelnum}a.webp";
-    return file_exists($multi_a) ? $multi_a : "parts/no_image.webp";
+function get_card_image_url($imagepath) {
+    if (!$imagepath) return 'parts/no_image.webp';
+    // スラッシュの重複を防ぎつつ、「/card」にimagepathを結合
+    return '/card/' . ltrim($imagepath, '/');
 }
 
 /** テキスト整形 */
